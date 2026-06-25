@@ -1,0 +1,166 @@
+---
+/**
+ * ProduccionesSection.astro — Lista de producciones destacadas en la homepage.
+ *
+ * Diseño: fondo blanco/gris claro, lista horizontal de items con artwork,
+ * info de la producción y botón "ESCUCHAR" o "COMPRAR" a la derecha.
+ *
+ * NodeHive: paragraph bundle "_component_home_producciones"
+ * Items: nodos de tipo "produccion"
+ *   Campos por item: field_image, field_title, field_subtitle, field_price
+ */
+
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import Button from '@/components/ui/Button.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhEntityMeta } from '@/lib/nodehive';
+
+interface Produccion {
+  id: string;
+  image: string;
+  imageAlt: string;
+  title: string;
+  subtitle: string;
+  price?: string;
+  audioHref?: string;
+  buyHref: string;
+}
+
+interface Props {
+  items?: Produccion[];
+  nhSectionTitle?: string;
+  nhEntity?: NhEntityMeta;
+  lang?: string;
+}
+
+const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+
+const producciones: Produccion[] = items ?? [
+  {
+    id: '1',
+    image: '/images/prod-placeholder-1.jpg',
+    imageAlt: 'La Casa de la Música Cubana',
+    title: 'La Casa de la Música Cubana',
+    subtitle: 'Compilado · 2024 · EGREM Records',
+    price: '$15.00',
+    audioHref: '/audio/preview-casa-musica',
+    buyHref: '/catalogo/musica/casa-musica-cubana',
+  },
+  {
+    id: '2',
+    image: '/images/prod-placeholder-2.jpg',
+    imageAlt: 'Trova Cubana — 60 Años',
+    title: 'Trova Cubana — 60 Años',
+    subtitle: 'Edición Especial · 2024 · EGREM Records',
+    price: '$28.00',
+    audioHref: '/audio/preview-trova-60',
+    buyHref: '/catalogo/musica/trova-cubana-60-anos',
+  },
+  {
+    id: '3',
+    image: '/images/prod-placeholder-3.jpg',
+    imageAlt: 'Festival Jazz Cubano 2024',
+    title: 'Festival Jazz Cubano 2024',
+    subtitle: 'En Vivo · EGREM Records',
+    price: '$22.00',
+    audioHref: '/audio/preview-jazz-cubano',
+    buyHref: '/catalogo/musica/festival-jazz-cubano-2024',
+  },
+];
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? 'homepage_producciones'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
+  class="section-py bg-egrem-gray-light"
+  editLabel="Editar Producciones"
+  editField="field_title"
+>
+  <div class="container-site">
+
+    <SectionHeader
+      title={nhSectionTitle || "Producciones"}
+      linkText="Ver Todo"
+      linkHref="/catalogo"
+      theme="light"
+      nhField="field_section_title"
+    />
+
+    <div class="flex flex-col gap-4">
+      {producciones.map((prod, index) => (
+        <article
+          class="flex items-center gap-5 p-4 sm:p-5 bg-white rounded-2xl border border-black/8 hover:shadow-md transition-shadow group"
+          data-nodehive-entity-type="node"
+          data-nodehive-entity-bundle="produccion"
+          data-nodehive-entity-id={prod.id}
+        >
+          {/* Número */}
+          <span
+            class="font-display font-bold text-egrem-gray/40 text-2xl w-6 text-center shrink-0 hidden sm:block"
+            aria-hidden="true"
+          >
+            {String(index + 1).padStart(2, '0')}
+          </span>
+
+          {/* Artwork */}
+          <a href={prod.buyHref} class="shrink-0 no-underline" aria-tabindex={-1}>
+            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded overflow-hidden bg-egrem-dark relative">
+              <img
+                src={prod.image}
+                alt={prod.imageAlt}
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+                decoding="async"
+                data-nodehive-field="field_image"
+              />
+            </div>
+          </a>
+
+          {/* Info */}
+          <div class="flex-1 min-w-0">
+            <h3
+              class="font-display font-bold text-egrem-black text-base leading-snug m-0 line-clamp-1"
+              style="font-size: 1rem"
+            >
+              <a
+                href={prod.buyHref}
+                class="text-inherit no-underline hover:text-egrem-red transition-colors"
+                data-nodehive-field="field_title"
+              >
+                {prod.title}
+              </a>
+            </h3>
+            <p
+              class="font-display text-egrem-gray text-xs mt-1 m-0 line-clamp-1"
+              data-nodehive-field="field_subtitle"
+            >
+              {prod.subtitle}
+            </p>
+          </div>
+
+          {/* Precio + acción */}
+          <div class="flex items-center gap-3 shrink-0">
+            {prod.price && (
+              <span
+                class="font-display font-bold text-egrem-black text-sm hidden sm:block"
+                data-nodehive-field="field_price"
+              >
+                {prod.price}
+              </span>
+            )}
+            <Button variant="outline-red" size="sm" href={prod.audioHref ?? prod.buyHref} aria-label={`Escuchar ${prod.title}`}>
+              <span class="icon text-[1rem]">play_arrow</span>
+              Escuchar
+            </Button>
+          </div>
+        </article>
+      ))}
+    </div>
+
+  </div>
+</NodeHiveEntity>

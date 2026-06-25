@@ -1,0 +1,126 @@
+---
+/**
+ * EventosSection.astro — "PRÓXIMOS EVENTOS"
+ * Filas horizontales: fecha grande (rojo) + título/lugar + hora + botón Entradas.
+ * Acento dorado borde izquierdo en cada fila. Fondo blanco.
+ *
+ * NodeHive: paragraph bundle "_component_home_eventos"
+ */
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import Button from '@/components/ui/Button.astro';
+import ActionLink from '@/components/ui/ActionLink.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhEntityMeta } from '@/lib/nodehive';
+
+interface Props {
+  nhSectionTitle?: string;
+  nhEntity?: NhEntityMeta;
+  lang?: string;
+}
+const { nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+
+interface Evento {
+  day: string;
+  month: string;
+  title: string;
+  venue: string;
+  time: string;
+  href: string;
+}
+
+const eventos: Evento[] = [
+  {
+    day: '15',
+    month: 'Oct',
+    title: 'Buena Vista Tribute',
+    venue: 'Centro Cultural Habana',
+    time: '20:30 HRS',
+    href: '/eventos/buena-vista-tribute',
+  },
+  {
+    day: '22',
+    month: 'Oct',
+    title: 'Haila Mompié en Concierto',
+    venue: 'Teatro Karl Marx',
+    time: '21:00 HRS',
+    href: '/eventos/haila-mompie-concierto',
+  },
+  {
+    day: '05',
+    month: 'Nov',
+    title: 'Festival Jazz EGREM',
+    venue: 'Estudios Areito',
+    time: '18:00 HRS',
+    href: '/eventos/festival-jazz-egrem',
+  },
+];
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_homepage_eventos'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
+  class="section-py bg-white"
+  editLabel="Editar Eventos"
+  editField="field_title"
+>
+  <div class="container-site">
+    <SectionHeader
+      title={nhSectionTitle || "Próximos Eventos"}
+      accent="red"
+      linkText="Ver todos"
+      linkHref="/eventos"
+      theme="light"
+      nhField="field_section_title"
+    />
+
+    <div class="flex flex-col gap-4">
+      {eventos.map((evento) => (
+        <div
+          class="flex flex-wrap items-center justify-between p-6 bg-white border-l-4 border-egrem-gold shadow-sm hover:shadow-md transition-all rounded-2xl"
+          data-nodehive-field="field_eventos"
+        >
+          {/* Fecha + Título + Lugar */}
+          <div class="flex items-center gap-8 sm:gap-10">
+            {/* Fecha */}
+            <div class="text-center w-20 shrink-0">
+              <p class="font-display font-bold text-egrem-red m-0 leading-none" style="font-size: 2.5rem;">
+                {evento.day}
+              </p>
+              <p class="font-display font-bold uppercase m-0" style="font-size: 12px; letter-spacing: 0.05em; color: var(--color-text-secondary);">
+                {evento.month}
+              </p>
+            </div>
+
+            {/* Info */}
+            <div>
+              <h3 class="font-display font-bold text-egrem-black uppercase m-0" style="font-size: 1.2rem;">
+                {evento.title}
+              </h3>
+              <p class="font-display uppercase tracking-widest m-0 mt-1" style="font-size: 0.78rem; color: var(--color-text-secondary);">
+                {evento.venue}
+              </p>
+              <ActionLink href={evento.href} class="mt-2">
+                Ver detalles
+              </ActionLink>
+            </div>
+          </div>
+
+          {/* Hora + Botón */}
+          <div class="flex items-center gap-8 sm:gap-12 mt-4 sm:mt-0">
+            <span class="font-display font-bold" style="font-size: 12px; letter-spacing: 0.05em; color: var(--color-text-secondary);">
+              {evento.time}
+            </span>
+            <Button variant="primary" size="lg" href={evento.href}>
+              Entradas
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</NodeHiveEntity>

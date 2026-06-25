@@ -1,0 +1,19 @@
+---
+/**
+ * Badge.astro — Pill de categoría/etiqueta.
+ *
+ * Variantes:
+ *  - gold (default) — fondo dorado sutil, texto dorado
+ *  - red            — fondo rojo sutil, texto rojo
+ */
+interface Props {
+  variant?: 'gold' | 'red';
+  class?: string;
+}
+
+const { variant = 'gold', class: className } = Astro.props;
+---
+
+<span class:list={['badge', variant === 'red' && 'badge--red', className]}>
+  <slot />
+</span>

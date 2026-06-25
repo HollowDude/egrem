@@ -1,0 +1,20 @@
+---
+/**
+ * ActionLink.astro — Link con flecha animada.
+ *
+ * Patrón de la maqueta: "Leer más →", "Ver álbum →", "Ver video →", etc.
+ * Texto en uppercase + icono arrow_forward que se desplaza al hover.
+ */
+interface Props {
+  href: string;
+  class?: string;
+  [key: string]: unknown;
+}
+
+const { href, class: className, ...rest } = Astro.props;
+---
+
+<a href={href} class:list={['action-link', className]} {...rest}>
+  <slot />
+  <span class="icon" style="font-size: 18px;">arrow_forward</span>
+</a>

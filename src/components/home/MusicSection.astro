@@ -1,0 +1,162 @@
+---
+/**
+ * MusicSection.astro — Sección de música destacada en la homepage.
+ *
+ * Diseño: fondo oscuro, label de sección, 4 cards de álbum/track con precio.
+ *
+ * NodeHive: paragraph bundle "_component_home_music"
+ * Items: nodos de tipo "producto_musical" / "album"
+ *   Campos por item: field_image, field_artist, field_title, field_format, field_price
+ */
+
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+
+interface MusicItem {
+  id: string;
+  image: string;
+  imageAlt: string;
+  format: string;  // VINILO, CD, DIGITAL, etc.
+  artist: string;
+  title: string;
+  price: string;
+  href: string;
+}
+
+interface Props {
+  items?: MusicItem[];
+  sectionTitle?: string;
+}
+
+const { items, sectionTitle = 'Música Cubana' } = Astro.props;
+
+const tracks: MusicItem[] = items ?? [
+  {
+    id: '1',
+    image: '/images/music-placeholder-1.jpg',
+    imageAlt: 'Buena Vista Social Club - Edición Aniversario',
+    format: 'Vinilo',
+    artist: 'Buena Vista Social Club',
+    title: 'Edición Aniversario',
+    price: '$45.00',
+    href: '/catalogo/musica/buena-vista-social-club-aniversario',
+  },
+  {
+    id: '2',
+    image: '/images/music-placeholder-2.jpg',
+    imageAlt: 'Chucho Valdés - Piano Solo',
+    format: 'CD',
+    artist: 'Chucho Valdés',
+    title: 'Piano Solo',
+    price: '$18.00',
+    href: '/catalogo/musica/chucho-valdes-piano-solo',
+  },
+  {
+    id: '3',
+    image: '/images/music-placeholder-3.jpg',
+    imageAlt: 'Omara Portuondo - Lo Mejor',
+    format: 'Digital',
+    artist: 'Omara Portuondo',
+    title: 'Lo Mejor de Omara',
+    price: '$12.00',
+    href: '/catalogo/musica/omara-portuondo-lo-mejor',
+  },
+  {
+    id: '4',
+    image: '/images/music-placeholder-4.jpg',
+    imageAlt: 'Los Van Van - 50 Aniversario',
+    format: 'CD',
+    artist: 'Los Van Van',
+    title: '50 Aniversario',
+    price: '$22.00',
+    href: '/catalogo/musica/los-van-van-50-aniversario',
+  },
+];
+---
+
+{/*
+  NodeHive:
+  <NodeHiveEntity entityType="paragraph" bundle="_component_home_music" tag="section" editLabel="Editar Música" lang={lang}>
+*/}
+<section
+  class="bg-egrem-dark section-py"
+  aria-labelledby="music-heading"
+>
+  <div class="container-site">
+
+    <SectionHeader
+      title={sectionTitle}
+      linkText="Ver Todo"
+      linkHref="/catalogo/musica"
+      theme="dark"
+      nhField="field_section_title"
+    />
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      {tracks.map((track) => (
+        <article
+          class="card-dark group"
+          data-nodehive-entity-type="node"
+          data-nodehive-entity-bundle="producto_musical"
+          data-nodehive-entity-id={track.id}
+        >
+          {/* Imagen del álbum */}
+          <a href={track.href} class="block relative aspect-square overflow-hidden bg-egrem-dark-card no-underline">
+            <img
+              src={track.image}
+              alt={track.imageAlt}
+              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+              data-nodehive-field="field_image"
+            />
+            {/* Overlay dark */}
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"
+              aria-hidden="true"
+            ></div>
+            {/* Badge de formato */}
+            <span class="badge bg-egrem-red text-white absolute top-2.5 left-2.5 text-[0.6rem]">
+              {track.format}
+            </span>
+          </a>
+
+          {/* Info */}
+          <div class="p-4 flex flex-col gap-1.5">
+            <p
+              class="font-display text-[0.7rem] uppercase tracking-widest text-white/40 m-0"
+              data-nodehive-field="field_artist"
+            >
+              {track.artist}
+            </p>
+            <h3 class="font-display font-bold text-white text-base leading-tight m-0 line-clamp-2" style="font-size: 0.95rem">
+              <a
+                href={track.href}
+                class="text-inherit no-underline hover:text-egrem-gold transition-colors"
+                data-nodehive-field="field_title"
+              >
+                {track.title}
+              </a>
+            </h3>
+            <div class="flex items-center justify-between mt-2">
+              <span
+                class="font-display font-bold text-egrem-red text-base"
+                data-nodehive-field="field_price"
+              >
+                {track.price}
+              </span>
+              <a
+                href={track.href}
+                class="w-7 h-7 flex items-center justify-center bg-egrem-red rounded-full text-white hover:bg-egrem-red-dark transition-colors no-underline"
+                aria-label={`Comprar ${track.title}`}
+              >
+                <span class="icon text-[1rem]">add_shopping_cart</span>
+              </a>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+
+  </div>
+</section>
+{/* </NodeHiveEntity> */}

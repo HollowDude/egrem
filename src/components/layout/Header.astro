@@ -1,0 +1,36 @@
+---
+/**
+ * Header.astro — Shell estático del header.
+ *
+ * Delega toda la interactividad a HeaderNav.tsx (isla React).
+ * Este componente sólo provee el montaje del nodo del servidor.
+ *
+ * Para cambiar el estado de autenticación en el futuro:
+ *  - Leer la sesión del usuario desde Astro.locals o cookies
+ *  - Pasar isAuthenticated y cartCount como props a HeaderNav
+ */
+import HeaderNav from './HeaderNav.tsx';
+import type { NhHeaderFragment } from '@/lib/nodehive';
+import { resolveFileUrl } from '@/lib/nodehive';
+
+interface Props {
+  isAuthenticated?: boolean;
+  cartCount?: number;
+  nhHeader?: NhHeaderFragment | null;
+}
+
+const { isAuthenticated = false, cartCount = 0, nhHeader } = Astro.props;
+
+// If NodeHive provides a logo, resolve its URL
+const logoUrl = nhHeader?.logo?.url ? resolveFileUrl(nhHeader.logo.url) : null;
+---
+
+{/* El spacer compensa el header fixed para que el contenido no quede debajo */}
+<div class="h-16 lg:h-[4.5rem]" aria-hidden="true"></div>
+
+<HeaderNav
+  client:load
+  isAuthenticated={isAuthenticated}
+  cartCount={cartCount}
+  logoUrl={logoUrl}
+/>

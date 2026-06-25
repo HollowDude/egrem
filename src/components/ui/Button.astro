@@ -1,0 +1,70 @@
+---
+/**
+ * Button.astro — Botón reutilizable de la marca EGREM.
+ *
+ * Variantes:
+ *  - primary      → Rojo sólido (CTA principal)
+ *  - secondary    → Borde dorado, texto dorado (fondos oscuros/hero)
+ *  - ghost        → Contorno negro/oscuro (sobre fondos claros)
+ *  - gold         → Dorado sólido
+ *  - outline-red  → Contorno rojo (sobre fondos claros)
+ *
+ * Tamaños: sm | md | lg | xl
+ */
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'gold' | 'outline-red';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  class?: string;
+  disabled?: boolean;
+  [key: string]: unknown;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  href,
+  type = 'button',
+  class: className,
+  disabled,
+  ...rest
+} = Astro.props;
+
+const sizeClasses: Record<string, string> = {
+  sm: 'px-4 py-1.5 text-xs',
+  md: 'px-6 py-2.5 text-sm',
+  lg: 'px-8 py-3 text-lg',
+  xl: 'px-10 py-4 text-xl',
+};
+
+const variantClasses: Record<string, string> = {
+  primary:       'bg-egrem-red text-white border border-transparent hover:bg-egrem-red-dark shadow-lg hover:scale-105',
+  secondary:     'bg-white border-2 border-egrem-gold text-egrem-gold hover:bg-egrem-gold hover:text-white shadow-lg hover:scale-105',
+  ghost:         'bg-transparent text-egrem-black border border-egrem-black hover:bg-egrem-black hover:text-white',
+  gold:          'bg-egrem-gold text-white border border-transparent hover:opacity-90 shadow-lg',
+  'outline-red': 'bg-transparent text-egrem-red border border-egrem-red hover:bg-egrem-red hover:text-white',
+};
+
+const base = [
+  'inline-flex items-center justify-center gap-2',
+  'font-display font-bold tracking-wide uppercase',
+  'rounded-2xl transition-all duration-300 cursor-pointer no-underline',
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egrem-red',
+  'disabled:opacity-50 disabled:cursor-not-allowed',
+  sizeClasses[size],
+  variantClasses[variant],
+  className,
+].filter(Boolean).join(' ');
+
+---
+
+{href ? (
+  <a href={href} class={base} {...rest}>
+    <slot />
+  </a>
+) : (
+  <button type={type} class={base} disabled={disabled} {...rest}>
+    <slot />
+  </button>
+)}

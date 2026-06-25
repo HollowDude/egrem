@@ -1,0 +1,121 @@
+---
+/**
+ * HeroSection.astro — Sección hero principal de la homepage.
+ *
+ * Diseño: fondo oscuro con imagen de orquesta/concierto, superposición de gradiente,
+ * eslógan en Ravellin, nombre institucional en Myriad Pro Cond Bold, dos CTAs.
+ *
+ * NodeHive: paragraph bundle "_component_home_hero"
+ * Campos editables:
+ *   - field_slogan      → .slogan
+ *   - field_title       → h1
+ *   - field_cta_primary → botón rojo
+ *   - field_cta_secondary → botón outline
+ *   - field_background  → imagen de fondo
+ */
+
+import type { NhButton, NhEntityMeta } from '@/lib/nodehive';
+import Button from '@/components/ui/Button.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+
+interface Props {
+  nhTitle?: string;
+  nhSubtitle?: string;
+  nhButtons?: NhButton[];
+  nhEntity?: NhEntityMeta;
+  lang?: string;
+}
+
+const { nhTitle, nhSubtitle, nhButtons, nhEntity, lang = 'es' } = Astro.props;
+
+const title = nhTitle || 'Empresa de Grabaciones y Ediciones Musicales';
+const subtitle = nhSubtitle || 'siente la música';
+
+// Map NodeHive button style to Button component variant
+const variantMap: Record<string, 'primary' | 'secondary'> = {
+  primary: 'primary',
+  secondary: 'secondary',
+};
+
+// Use NodeHive buttons or placeholder
+const buttons = nhButtons ?? [
+  { id: '1', title: 'Explorar Catálogo', style: 'primary' as const, link: { uri: '/catalogo', title: '' } },
+  { id: '2', title: 'Ver Artistas', style: 'secondary' as const, link: { uri: '/catalogo/artistas', title: '' } },
+];
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_homepage_hero'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
+  class="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-egrem-dark"
+  editLabel="Editar Hero"
+  editField="field_title"
+>
+  {/* Imagen de fondo — reemplazar src con data-nodehive-field="field_background" */}
+  <div
+    class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+    style="background-image: url('/images/hero-bg.jpg')"
+    data-nodehive-field="field_background"
+    aria-hidden="true"
+  ></div>
+
+  {/* Gradiente superpuesto: oscurece la imagen para legibilidad */}
+  <div
+    class="absolute inset-0"
+    style="background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.72) 60%, rgba(0,0,0,0.88) 100%)"
+    aria-hidden="true"
+  ></div>
+
+  {/* Gradiente lateral de marca (toque rojo sutil) */}
+  <div
+    class="absolute inset-0 pointer-events-none"
+    style="background: radial-gradient(ellipse at 10% 50%, rgba(255,0,0,0.08) 0%, transparent 60%)"
+    aria-hidden="true"
+  ></div>
+
+  {/* Contenido centrado */}
+  <div class="container-site relative z-10 py-24 text-center">
+
+    {/* Eslógan en Ravellin */}
+    <p
+      class="slogan text-egrem-gold text-3xl sm:text-4xl mb-6 leading-tight"
+      data-nodehive-field="field_subtitle"
+    >
+      {subtitle}
+    </p>
+
+    {/* Título institucional */}
+    <h1
+      id="hero-heading"
+      class="font-display font-bold text-white uppercase leading-none tracking-tight mx-auto mb-10"
+      style="font-size: clamp(2.5rem, 7vw, 5.5rem); max-width: 18ch;"
+      data-nodehive-field="field_title"
+    >
+      {title}
+    </h1>
+
+    {/* CTAs — dinámicos desde NodeHive */}
+    <div class="flex flex-col md:flex-row items-center justify-center gap-6">
+      {buttons.map((btn) => (
+        <Button
+          variant={variantMap[btn.style] || 'primary'}
+          size="xl"
+          href={btn.link?.uri || '#'}
+          data-nodehive-field="field_buttons"
+        >
+          {btn.title}
+        </Button>
+      ))}
+    </div>
+  </div>
+
+  {/* Flecha de scroll */}
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce" aria-hidden="true">
+    <span class="icon text-white/50 text-[2rem]">keyboard_arrow_down</span>
+  </div>
+</NodeHiveEntity>

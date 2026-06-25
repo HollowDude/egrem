@@ -1,0 +1,305 @@
+---
+/**
+ * NodeHiveConnector.astro
+ *
+ * Puente postMessage entre el frontend Astro y el Visual Editor de NodeHive/Drupal.
+ * Incluir EXACTAMENTE UNA VEZ en el layout global de la aplicación.
+ *
+ * No produce HTML visible.
+ *
+ * CÓMO USAR EN UN LAYOUT:
+ *   import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
+ *   <NodeHiveConnector />
+ *
+ * VARIABLES GLOBALES REQUERIDAS EN EL LAYOUT:
+ *   <script define:vars={{ nodehiveBaseUrl: import.meta.env.NODEHIVE_BASE_URL, nodehiveLang: lang }}>
+ *     window.__NODEHIVE_BASE_URL__ = nodehiveBaseUrl;
+ *     window.__NODEHIVE_LANG__     = nodehiveLang;
+ *   </script>
+ */
+
+const devMode = import.meta.env.NODEHIVE_EDITOR_DEV_MODE === 'true';
+---
+
+<script is:inline define:vars={{ devMode }}>
+(function initNodeHiveConnector() {
+  'use strict';
+
+  /* ── Helpers ──────────────────────────────────────────────────────────── */
+
+  function log() {
+    try {
+      if (localStorage.getItem('__NODEHIVE_DEBUG__') === '1') {
+        console.log.apply(console, ['[NodeHive]'].concat(Array.prototype.slice.call(arguments)));
+      }
+    } catch (_) {}
+  }
+
+  /* ── API pública siempre disponible ───────────────────────────────────── */
+
+  window.__NODEHIVE_EDITOR__ = window.__NODEHIVE_EDITOR__ || {};
+
+  /**
+   * Cambia el idioma navegando a la ruta equivalente en el otro idioma.
+   * Usado por HeaderClient.tsx al cambiar idioma desde el header.
+   */
+  window.__NODEHIVE_EDITOR__.setLang = function (lang) {
+    var current = window.location.pathname;
+    var next = current.replace(/^\/(es|en)(\/|$)/, '/' + lang + '$2');
+    if (next === current) next = '/' + lang + '/';
+    window.location.href = next + window.location.search;
+  };
+
+  window.__NODEHIVE_EDITOR__.isEditorActive = function () {
+    return document.documentElement.classList.contains('nh-editor');
+  };
+
+  /* ── Detectar contexto ────────────────────────────────────────────────── */
+
+  var isInIframe = window.self !== window.top;
+  var editorToken = null;
+
+  try {
+    editorToken = sessionStorage.getItem('nodehive-editor-token');
+  } catch (_) {}
+
+  var shouldActivate = isInIframe || devMode;
+  log('shouldActivate:', shouldActivate, '| isInIframe:', isInIframe, '| devMode:', devMode);
+
+  if (!shouldActivate) return;
+
+  /* ── Activar modo editor ──────────────────────────────────────────────── */
+
+  document.documentElement.classList.add('nh-editor');
+
+  /* ── Estado del conector ──────────────────────────────────────────────── */
+
+  var parentOrigin = '*';
+
+  /* ── Comunicación con el editor padre ─────────────────────────────────── */
+
+  function sendToEditor(data) {
+    log('→ sending', JSON.stringify(data));
+    try {
+      window.parent.postMessage(data, parentOrigin);
+    } catch (_) {}
+  }
+
+  function notifyReady() {
+    sendToEditor({
+      type:  'frontend:ready',
+      url:   window.location.href,
+      lang:  window.__NODEHIVE_LANG__ || document.documentElement.lang || 'es',
+      token: editorToken,
+    });
+  }
+
+  /* ── Revalidación antes de recargar ───────────────────────────────────── */
+
+  function reloadWithRevalidation() {
+    try {
+      fetch('/api/nodehive/revalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: window.location.pathname }),
+      })
+        .catch(function () {})
+        .finally(function () {
+          window.location.reload();
+        });
+    } catch (_) {
+      window.location.reload();
+    }
+  }
+
+  /* ── Registrar campos editables (delegación en document) ─────────────── */
+  /*
+   * Usar delegación en lugar de escuchar cada elemento individualmente.
+   * Esto garantiza que funcione incluso con elementos añadidos después
+   * de la hidratación de React/Svelte/Vue.
+   */
+
+  var _fieldsSetup = false;
+
+  function setupEditableFields() {
+    if (_fieldsSetup) return;
+    _fieldsSetup = true;
+
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest('[data-nodehive-field]');
+      if (!el) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      /* Marcar como activo */
+      document.querySelectorAll('.--nh-active').forEach(function (a) {
+        a.classList.remove('--nh-active');
+      });
+      el.classList.add('--nh-active');
+
+      /* Encontrar el entity padre */
+      var entityEl = el.closest('[data-nodehive-entity-type]');
+      if (!entityEl) return;
+
+      var entityType     = entityEl.dataset.nodehiveEntityType     || '';
+      var entityUuid     = entityEl.dataset.nodehiveEntityId        || '';
+      var entityInternalId = entityEl.dataset.nodehiveEntityInternalId || '';
+      var entityParentId = entityEl.dataset.nodehiveParent_id       || '';
+
+      /* Idioma: usar el del pathname (más fiable en proyectos i18n) */
+      var pathLang = window.location.pathname.split('/')[1];
+      var langcode = (['es', 'en'].indexOf(pathLang) !== -1)
+        ? pathLang
+        : (window.__NODEHIVE_LANG__ || document.documentElement.lang || 'es');
+
+      var fieldName = el.dataset.nodehiveField || '';
+
+      log('click | type:', entityType, '| uuid:', entityUuid, '| field:', fieldName);
+
+      /* Mensaje de campo específico */
+      if (fieldName) {
+        sendToEditor({
+          type:     'field',
+          field:    fieldName,
+          id:       entityInternalId || entityUuid || '',
+          pathname: window.location.pathname,
+          lang:     langcode,
+        });
+      }
+
+      /* Mensaje según tipo de entidad */
+      if (entityType === 'paragraph') {
+        sendToEditor({
+          type:      'paragraph',
+          uuid:      entityUuid,
+          id:        entityInternalId || entityUuid,
+          parent_id: entityParentId,
+          pathname:  window.location.pathname,
+          langcode:  langcode,
+        });
+      }
+
+      if (entityType === 'nodehive_fragment') {
+        sendToEditor({
+          type:      'fragment',
+          uuid:      entityUuid,
+          id:        entityInternalId || entityUuid,
+          parent_id: entityParentId,
+          field:     fieldName,
+          pathname:  window.location.pathname,
+          langcode:  langcode,
+        });
+      }
+    }, true /* useCapture = true para interceptar antes que otros listeners */);
+  }
+
+  /* ── MutationObserver: detectar elementos añadidos por hidratación ────── */
+  /*
+   * React, Vue y otros frameworks añaden contenido después del primer render.
+   * Este observer re-evalúa si hay nuevos campos editables.
+   * No necesita hacer nada con ellos (la delegación de clic ya los cubre),
+   * pero notifica al editor que la página terminó de renderizar.
+   */
+
+  var _readyNotified = false;
+
+  var observer = new MutationObserver(function () {
+    var hasFields = document.querySelector('[data-nodehive-field]');
+    if (hasFields && !_readyNotified) {
+      _readyNotified = true;
+      log('MutationObserver: campos detectados, notificando ready');
+      notifyReady();
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree:   true,
+  });
+
+  /* Parar el observer después de 10 segundos (la hidratación ya terminó) */
+  setTimeout(function () {
+    observer.disconnect();
+  }, 10000);
+
+  /* ── Escuchar mensajes del editor ─────────────────────────────────────── */
+
+  window.addEventListener('message', function (event) {
+    log('← received from', event.origin, JSON.stringify(event.data));
+
+    var data = event.data;
+    if (!data) return;
+
+    /* Validar origen contra la URL base de Drupal */
+    var expectedBase = window.__NODEHIVE_BASE_URL__;
+    if (expectedBase && event.origin !== 'null' && event.origin) {
+      var expectedOrigin = expectedBase.replace(/\/$/, '').split('/').slice(0, 3).join('/');
+      if (event.origin !== expectedOrigin && expectedBase !== '*') {
+        log('origin mismatch — ignorando. Expected:', expectedOrigin, 'Got:', event.origin);
+      }
+    }
+
+    /* Capturar el origen real del editor */
+    if (event.origin && event.origin !== 'null' && event.origin !== 'null') {
+      parentOrigin = event.origin;
+    }
+
+    /* Mensaje legacy como string */
+    if (data === 'reloadFrame') {
+      reloadWithRevalidation();
+      return;
+    }
+
+    if (typeof data !== 'object') return;
+
+    switch (data.type) {
+      case 'nodehive-login':
+        if (data.token) {
+          editorToken = data.token;
+          try { sessionStorage.setItem('nodehive-editor-token', data.token); } catch (_) {}
+          notifyReady();
+        }
+        break;
+
+      case 'editor:init':
+      case 'editor:ready':
+        notifyReady();
+        break;
+
+      case 'reload':
+      case 'reloadFrame':
+        reloadWithRevalidation();
+        break;
+
+      case 'navigate':
+        if (data.url) window.location.href = data.url;
+        break;
+
+      case 'setLang':
+        if (data.lang) window.__NODEHIVE_EDITOR__.setLang(data.lang);
+        break;
+
+      default:
+        log('mensaje no manejado:', data.type);
+    }
+  });
+
+  /* ── Inicializar ──────────────────────────────────────────────────────── */
+
+  function init() {
+    setupEditableFields();
+    notifyReady();
+    /* Reenviar ready con delay para cubrir hidratación de React */
+    setTimeout(notifyReady, 600);
+    setTimeout(notifyReady, 1800);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>

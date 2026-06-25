@@ -1,0 +1,277 @@
+---
+/**
+ * Footer.astro — Pie de página global de EGREM.
+ *
+ * Estructura (fiel a la maqueta):
+ *  - Borde rojo superior (3px)
+ *  - 4 columnas: Identidad+Redes | Explorar | Información | Contacto
+ *  - Barra inferior con copyright y "volver arriba"
+ *
+ * Fondo: #1b1b1b | Texto: #c2b0ae | Headings: #bc0100 (rojo)
+ * Social buttons: borde #603e39, hover dorado.
+ *
+ * NodeHive: datos de contacto desde paragraph "_fragment_footer_contact"
+ */
+
+import type { NhFooterFragment } from '@/lib/nodehive';
+import EgremLogo from '@/components/ui/EgremLogo.astro';
+import Button from '@/components/ui/Button.astro';
+
+interface Props {
+  nhFooter?: NhFooterFragment | null;
+}
+const { nhFooter } = Astro.props;
+
+const currentYear = new Date().getFullYear();
+const derechos = nhFooter?.derechos || `© ${currentYear} EGREM — Empresa de Grabaciones y Ediciones Musicales. Todos los derechos reservados.`;
+const tagline = nhFooter?.tagline || 'Llevando la música cubana al mundo desde 1964';
+const contacto = nhFooter?.contacto;
+const redes = nhFooter?.redes ?? [];
+
+const navExplorar = [
+  { label: 'Tienda',         href: '/tienda'         },
+  { label: 'Actualidad',     href: '/actualidad'     },
+  { label: 'Eventos',        href: '/eventos'        },
+  { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
+];
+
+const navInfo = [
+  { label: 'Política de privacidad',  href: '/politica-privacidad' },
+  { label: 'Términos y condiciones',  href: '/terminos-condiciones' },
+  { label: 'Preguntas frecuentes',    href: '/preguntas-frecuentes' },
+];
+---
+
+<footer
+  style="background-color: var(--color-footer-bg); color: var(--color-footer-text); border-top: 3px solid var(--color-egrem-red);"
+>
+  {/* ── Cuerpo principal ── */}
+  <div class="container-site" style="padding-top: 3rem; padding-bottom: 0;">
+    <div class="footer-grid gap-8">
+
+      {/* ── Col 1: Identidad + Redes ── */}
+      <div class="flex flex-col gap-4">
+
+        {/* Logo */}
+        <EgremLogo variant="light" width={120} class="self-start" />
+
+        {/* Tagline en Ravellin dorado */}
+        <p
+          class="font-script text-egrem-gold leading-snug m-0"
+          style="font-size: 1.15rem"
+          data-nodehive-field="field_footer_tagline"
+        >
+          {tagline}
+        </p>
+
+        {/* Redes sociales */}
+        <div class="mt-2">
+          <p
+            class="footer-col-heading"
+            style="margin-bottom: 12px;"
+          >
+            Síguenos
+          </p>
+          <div class="flex items-center gap-3">
+            {redes.length > 0 ? (
+              redes.map((red) => {
+                const url = red.link?.uri ?? '#';
+                const name = red.link?.title ?? 'Red social';
+                return (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="social-btn no-underline"
+                    aria-label={name}
+                  >
+                    {name.toLowerCase().includes('facebook') ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                    ) : name.toLowerCase().includes('instagram') ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                    ) : name.toLowerCase().includes('youtube') ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/>
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                      </svg>
+                    )}
+                  </a>
+                );
+              })
+            ) : (
+              /* Fallback: hardcoded social icons */
+              <>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="social-btn no-underline" aria-label="Facebook">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="social-btn no-underline" aria-label="Instagram">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </a>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" class="social-btn no-underline" aria-label="YouTube">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/>
+                  </svg>
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Col 2: Explorar ── */}
+      <div>
+        <h3 class="footer-col-heading">Explorar</h3>
+        <nav>
+          {navExplorar.map((item) => (
+            <a href={item.href} class="footer-link block">
+              {item.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      {/* ── Col 3: Información de la empresa ── */}
+      <div>
+        <h3 class="footer-col-heading">Información de la Empresa</h3>
+        <nav>
+          {navInfo.map(item => (
+            <a href={item.href} class="footer-link block">
+              {item.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      {/* ── Col 4: Contacto ── */}
+      {/*
+        NodeHive: paragraph bundle "_fragment_footer_contact"
+        <NodeHiveEntity entityType="nodehive_fragment" bundle="_fragment_footer_contact" lang={lang}>
+      */}
+      <div class="flex flex-col gap-3">
+        <h3 class="footer-col-heading">Contacto</h3>
+
+        <div class="flex items-start gap-2" style="margin-bottom: 0.25rem;">
+          <span class="icon shrink-0 mt-0.5" style="font-size:1.1rem; color: var(--color-egrem-red);">location_on</span>
+          <p
+            class="font-display text-[0.8rem] m-0 leading-relaxed"
+            style="color: var(--color-footer-text);"
+            data-nodehive-field="field_address"
+          >
+            {contacto?.direccion || 'Calle 3ra No. 1008 e/ 10 y 12, Miramar, Playa, La Habana, Cuba'}
+          </p>
+        </div>
+
+        <a
+          href={`mailto:${contacto?.correo || 'info@egrem.co.cu'}`}
+          class="footer-link flex items-center gap-2"
+          data-nodehive-field="field_email"
+        >
+          <span class="icon shrink-0" style="font-size:1.1rem; color: var(--color-egrem-red);">mail</span>
+          {contacto?.correo || 'info@egrem.co.cu'}
+        </a>
+
+        <a
+          href={`tel:${(contacto?.telefono || '+53 7 204 9822').replace(/\s/g, '')}`}
+          class="footer-link flex items-center gap-2"
+          data-nodehive-field="field_phone"
+        >
+          <span class="icon shrink-0" style="font-size:1.1rem; color: var(--color-egrem-red);">call</span>
+          {contacto?.telefono || '+53 7 204 9822 / +53 7 204 9823'}
+        </a>
+
+        <Button variant="primary" size="sm" href={contacto?.boton?.link?.uri || '/contacto'} class="self-start mt-1">
+          <span class="icon" style="font-size:0.95rem">mail</span>
+          {contacto?.boton?.title || 'Contáctanos'}
+        </Button>
+      </div>
+      {/* </NodeHiveEntity> */}
+
+    </div>
+  </div>
+
+  {/* ── Divider ── */}
+  <div class="container-site">
+    <hr
+      style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 32px 0 24px;"
+      aria-hidden="true"
+    />
+  </div>
+
+  {/* ── Barra inferior ── */}
+  <div class="container-site pb-8 flex flex-col md:flex-row items-center justify-between" style="gap: 16px;">
+    <p
+      class="m-0 text-center md:text-left"
+      style="color: #c2b0ae; font-size: 13px; font-family: var(--font-sans); line-height: 1.5;"
+    >
+      {derechos}
+    </p>
+    <button
+      type="button"
+      onclick="window.scrollTo({top:0,behavior:'smooth'})"
+      class="footer-back-top flex items-center gap-1.5 font-display font-bold text-[0.68rem] uppercase tracking-widest cursor-pointer bg-transparent rounded px-3 py-1.5"
+      aria-label="Volver arriba"
+    >
+      ↑ Volver arriba
+    </button>
+  </div>
+
+</footer>
+
+<style>
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1.4fr 0.9fr 1.1fr 1.4fr;
+    }
+  }
+
+  .footer-col-heading {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin: 0 0 1rem 0;
+  }
+
+  .footer-link {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    color: var(--color-footer-text);
+    text-decoration: none;
+    padding: 0.25rem 0;
+    transition: color 0.2s ease;
+  }
+
+  .footer-link:hover {
+    color: var(--color-egrem-gold);
+    text-decoration: none;
+  }
+
+  .footer-back-top {
+    color: var(--color-footer-text);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  .footer-back-top:hover {
+    border-color: var(--color-egrem-gold);
+    color: var(--color-egrem-gold);
+  }
+</style>

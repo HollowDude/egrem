@@ -1,0 +1,423 @@
+@import "tailwindcss";
+
+/* ─── @font-face ─────────────────────────────────────────────────────────── */
+
+/* Ravellin: script caligráfica para eslóganes */
+@font-face {
+  font-family: 'Ravellin';
+  src: url('/fonts/Ravellin-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Myriad Pro Cond Bold: títulos institucionales y encabezados */
+@font-face {
+  font-family: 'Myriad Pro Cond';
+  src:
+    url('/fonts/MyriadPro-BoldCond.woff') format('woff'),
+    url('/fonts/MyriadPro-BoldCond.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Myriad Pro Cond (Regular → sustituye Light Cond): textos informativos secundarios */
+@font-face {
+  font-family: 'Myriad Pro Cond';
+  src:
+    url('/fonts/MyriadPro-Cond.woff') format('woff'),
+    url('/fonts/MyriadPro-Cond.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Myriad Pro Light: cuerpo de texto general */
+@font-face {
+  font-family: 'Myriad Pro';
+  src:
+    url('/fonts/MyriadPro-Light.woff') format('woff'),
+    url('/fonts/MyriadPro-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Material Symbols Outlined: iconografía UI */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  src: url('/fonts/material-symbols/material-symbols-outlined.woff2') format('woff2');
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Material Icons Outlined: iconografía UI (fallback) */
+@font-face {
+  font-family: 'Material Icons Outlined';
+  src: url('/fonts/material-icons/MaterialIconsOutlined-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+/* ─── Tokens de marca (Tailwind v4 @theme) ───────────────────────────────── */
+
+@theme {
+  /* Paleta EGREM */
+  --color-egrem-red:        #FF0000;
+  --color-egrem-red-dark:   #CC0000;
+  --color-egrem-gold:       #CC9933;
+  --color-egrem-gray:       #808080;
+  --color-egrem-gray-light: #F5F5F5;
+  --color-egrem-black:      #000000;
+  --color-egrem-dark:       #111111;
+  --color-egrem-dark-card:  #222222;
+
+  /* Footer — fondo oscuro cálido, no negro puro */
+  --color-footer-bg:        #1b1b1b;
+  --color-footer-border:    rgba(255, 255, 255, 0.08);
+  --color-footer-text:      #c2b0ae;
+  --color-footer-heading:   #bc0100;
+  --color-social-border:    #603e39;
+
+  /* Sección neutra (alternativa al blanco puro) */
+  --color-section-neutral:  #F8F7F7;
+  --color-surface-container: #eeeeee;
+
+  /* Texto secundario (maqueta: on-surface-variant) */
+  --color-text-secondary:   #603e39;
+
+  /* Rojo institucional (para nav, links de acción) */
+  --color-brand-primary:    #bc0100;
+
+  /* Tipografías */
+  --font-script:  'Ravellin', cursive;
+  --font-display: 'Myriad Pro Cond', 'Arial Narrow', Arial, sans-serif;
+  --font-sans:    'Myriad Pro', 'Arial Narrow', Arial, sans-serif;
+  --font-icons:   'Material Symbols Outlined';
+
+  /* Espaciado de sección */
+  --section-padding-y: 5rem;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    color: var(--color-egrem-black);
+    background-color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Encabezados → Myriad Pro Cond Bold */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--color-egrem-black);
+  }
+
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+  h2 { font-size: clamp(1.5rem, 3.5vw, 2.5rem); }
+  h3 { font-size: clamp(1.25rem, 2.5vw, 1.75rem); }
+  h4 { font-size: clamp(1rem, 2vw, 1.375rem); }
+
+  /* Párrafos y texto secundario → Myriad Pro Cond Light */
+  p, li, address, caption, figcaption {
+    font-family: var(--font-display);
+    font-weight: 300;
+    line-height: 1.65;
+  }
+
+  /* Datos de contacto y metadatos → Light Cond explícito */
+  address {
+    font-style: normal;
+    letter-spacing: 0.01em;
+  }
+
+  /* Eslóganes y frases emocionales → Ravellin */
+  .slogan, [data-font="script"] {
+    font-family: var(--font-script);
+    font-weight: 400;
+  }
+
+  /* Enlace: dorado como color de acento premium */
+  a {
+    color: var(--color-egrem-gold);
+    text-underline-offset: 3px;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 150ms ease, color 150ms ease;
+  }
+
+  a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* Botones y CTA primario: rojo EGREM */
+  button, [role="button"] {
+    cursor: pointer;
+  }
+
+  /* Bordes sutiles → gris medio */
+  hr {
+    border-color: var(--color-egrem-gray);
+    opacity: 0.3;
+  }
+
+  /* Selección de texto */
+  ::selection {
+    background-color: var(--color-egrem-red);
+    color: #ffffff;
+  }
+
+  /* Scroll suave global */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ─── Componentes reutilizables ──────────────────────────────────────────── */
+
+@layer components {
+  /* Contenedor principal del sitio */
+  .container-site {
+    width: 100%;
+    max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+
+    @media (min-width: 640px)  { padding-inline: 1.5rem; }
+    @media (min-width: 1024px) { padding-inline: 2rem; }
+  }
+
+  /* Espaciado vertical de sección */
+  .section-py {
+    padding-top: var(--section-padding-y);
+    padding-bottom: var(--section-padding-y);
+  }
+
+  /* Icono Material Symbols */
+  .icon {
+    font-family: var(--font-icons);
+    font-weight: normal;
+    font-style: normal;
+    font-size: 1.5rem;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    user-select: none;
+  }
+
+  .icon-filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* Overlay gradiente oscuro para imágenes */
+  .img-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* Badge — pill dorada (categorías, tags) */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(204, 153, 51, 0.1);
+    color: var(--color-egrem-gold);
+    border: 1px solid rgba(204, 153, 51, 0.3);
+  }
+
+  .badge--red {
+    background: rgba(188, 1, 0, 0.1);
+    color: var(--color-brand-primary);
+    border-color: rgba(188, 1, 0, 0.3);
+  }
+
+  /* Action link — "Leer más →", "Ver álbum →" etc. */
+  .action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-brand-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .action-link:hover {
+    text-decoration: none;
+  }
+
+  .action-link .icon {
+    transition: transform 0.2s ease;
+  }
+
+  .action-link:hover .icon {
+    transform: translateX(4px);
+  }
+
+  /* Card base — rounded-2xl con borde sutil */
+  .card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.10);
+  }
+
+  .card--hover-red:hover {
+    border-color: var(--color-egrem-red);
+  }
+
+  /* Tarjeta oscura base */
+  .card--dark {
+    background-color: var(--color-egrem-dark-card);
+  }
+
+  /* Eyebrow — etiqueta gold en Ravellin sobre títulos de sección */
+  .eyebrow {
+    font-family: var(--font-script);
+    color: var(--color-egrem-gold);
+    font-weight: 400;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    display: block;
+    margin-bottom: 0.15em;
+  }
+
+  /* Social button (footer, general) */
+  .social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--color-social-border);
+    border-radius: 50%;
+    color: var(--color-footer-text);
+    transition: all 0.2s ease;
+    background: transparent;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .social-btn:hover {
+    border-color: var(--color-egrem-gold);
+    color: var(--color-egrem-gold);
+    background-color: rgba(204, 153, 51, 0.08);
+    text-decoration: none;
+  }
+
+  /* Play overlay — botón circular rojo sobre thumbnails */
+  .play-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 9999px;
+    background: var(--color-brand-primary);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+  }
+
+  .play-overlay:hover,
+  .group:hover .play-overlay {
+    transform: scale(1.1);
+  }
+
+  /* Cabecera de sección estilo maqueta */
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    margin: 0;
+  }
+
+  /* Evento card — layout horizontal */
+  .event-card {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    transition: box-shadow 200ms ease;
+
+    &:hover {
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.09);
+    }
+
+    @media (max-width: 639px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Nav link — underline animation (header) */
+  .nav-link {
+    position: relative;
+    transition: color 0.2s ease;
+    cursor: pointer;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #bc0100;
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+
+  .nav-link:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Action button (search / cart / profile / hamburger) */
+  .action-btn {
+    color: #1b1b1b;
+    transition: color 0.18s ease, background-color 0.18s ease;
+  }
+
+  .action-btn:hover {
+    color: #bc0100;
+    background-color: rgba(188, 1, 0, 0.06);
+  }
+}

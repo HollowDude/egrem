@@ -1,0 +1,59 @@
+---
+/**
+ * PromoBannerSection.astro — Banner promocional de fondo rojo full-width.
+ *
+ * Diseño: fondo rojo EGREM, cita en fuente Ravellin centrada, texto blanco.
+ *
+ * NodeHive: paragraph bundle "_component_home_promo_banner"
+ * Campos editables:
+ *   - field_quote → texto de la cita
+ */
+
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhEntityMeta } from '@/lib/nodehive';
+
+interface Props {
+  quote?: string;
+  nhEntity?: NhEntityMeta;
+  lang?: string;
+}
+
+const { quote, nhEntity, lang = 'es' } = Astro.props;
+const displayQuote = quote || 'La música es el alma de Cuba, y nosotros somos sus guardianes eternos';
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_homepage_eslogan'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
+  class="bg-egrem-red py-14 sm:py-16 overflow-hidden relative"
+  editLabel="Editar Eslogan"
+  editField="field_title"
+>
+  {/* Decoración: círculo sutil */}
+  <div
+    class="absolute -left-16 -top-16 w-64 h-64 rounded-full"
+    style="background: rgba(255,255,255,0.05)"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="absolute -right-16 -bottom-16 w-96 h-96 rounded-full"
+    style="background: rgba(0,0,0,0.06)"
+    aria-hidden="true"
+  ></div>
+
+  <div class="flex items-center justify-center max-w-4xl mx-auto px-6 relative z-10">
+    <blockquote class="m-0" data-nodehive-field="field_quote">
+      <p
+        class="slogan text-white text-center leading-tight m-0 drop-shadow-md"
+        style="font-size: clamp(1.8rem, 5vw, 3.2rem)"
+      >
+        "{displayQuote}"
+      </p>
+    </blockquote>
+  </div>
+</NodeHiveEntity>

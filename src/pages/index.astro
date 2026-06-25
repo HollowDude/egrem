@@ -1,0 +1,84 @@
+---
+/**
+ * Homepage de EGREM.
+ *
+ * Secciones (en orden, determinadas por field_components en NodeHive):
+ *  1. HeroSection           → banner principal
+ *  2. NoticiasSection       → noticias recientes
+ *  3. PromoBannerSection    → cita/eslogan en fondo rojo
+ *  4. LanzamientosSection   → álbumes/singles destacados
+ *  5. EventosSection        → próximos eventos
+ *  6. ProduccionesSection   → lista de producciones
+ *  7. AudiovisualesSection  → galería de videos
+ *
+ * Los datos se obtienen de NodeHive (Drupal JSON:API).
+ * Cada sección recibe sus datos como props y mantiene fallbacks placeholder.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HeroSection from '@/components/home/HeroSection.astro';
+import NoticiasSection from '@/components/home/NoticiasSection.astro';
+import PromoBannerSection from '@/components/home/PromoBannerSection.astro';
+import LanzamientosSection from '@/components/home/LanzamientosSection.astro';
+import EventosSection from '@/components/home/EventosSection.astro';
+import ProduccionesSection from '@/components/home/ProduccionesSection.astro';
+import AudiovisualesSection from '@/components/home/AudiovisualesSection.astro';
+import { fetchHomePage } from '@/lib/nodehive';
+import type { NhEntityMeta, NhSection } from '@/lib/nodehive';
+
+let nhData: Awaited<ReturnType<typeof fetchHomePage>> | null = null;
+
+try {
+  nhData = await fetchHomePage('es');
+} catch (e) {
+  console.error('[NodeHive] Failed to fetch homepage:', e);
+}
+
+// Find section by paragraph type
+function findSection(type: string): NhSection | undefined {
+  return nhData?.sections.find((s) => s.type === type);
+}
+
+// Extract entity metadata from a section or entity
+function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | undefined {
+  if (!entity) return undefined;
+  return { id: entity.id, internalId: entity.internalId, parentId: entity.parentId, bundle: entity.bundle };
+}
+---
+
+<BaseLayout
+  title="EGREM"
+  description="Empresa de Grabaciones y Ediciones Musicales de Cuba. Descubre la música cubana auténtica, desde la Trova hasta el Jazz."
+>
+  <main id="main-content">
+    <HeroSection
+      nhTitle={nhData?.hero?.title}
+      nhSubtitle={nhData?.hero?.subtitle}
+      nhButtons={nhData?.hero?.buttons}
+      nhEntity={entityMeta(nhData?.hero)}
+    />
+    <NoticiasSection
+      nhSectionTitle={findSection('_component_homepage_novedades')?.title}
+      nhEntity={entityMeta(findSection('_component_homepage_novedades'))}
+    />
+    <PromoBannerSection
+      quote={nhData?.eslogan?.title}
+      nhEntity={entityMeta(nhData?.eslogan)}
+    />
+    <LanzamientosSection
+      nhSectionTitle={findSection('_component_homepage_lanzamientos')?.title}
+      nhEntity={entityMeta(findSection('_component_homepage_lanzamientos'))}
+    />
+    <EventosSection
+      nhSectionTitle={findSection('_component_homepage_eventos')?.title}
+      nhEntity={entityMeta(findSection('_component_homepage_eventos'))}
+    />
+    <ProduccionesSection
+      nhSectionTitle={findSection('homepage_producciones')?.title}
+      nhEntity={entityMeta(findSection('homepage_producciones'))}
+    />
+    <AudiovisualesSection
+      nhSectionTitle={findSection('_component_homepage_videos')?.title}
+      nhEntity={entityMeta(findSection('_component_homepage_videos'))}
+    />
+  </main>
+</BaseLayout>

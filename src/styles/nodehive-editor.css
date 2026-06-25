@@ -1,0 +1,180 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   nodehive-editor.css
+   Estilos para el sistema de Visual Editor de NodeHive.
+   Solo tienen efecto cuando la clase `nh-editor` está en <html>.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Botones de edición (.nh-only) ───────────────────────────────────── */
+
+/**
+ * Por defecto OCULTOS. Se muestran solo cuando el editor está activo.
+ * Se aplica !important para que no sea sobreescrito por clases de Tailwind.
+ */
+.nh-only {
+  display: none !important;
+}
+
+html.nh-editor .nh-only {
+  display: inline-flex !important;
+}
+
+/* ── 2. Estilo base del botón de edición ────────────────────────────────── */
+
+.nh-edit-btn {
+  position: absolute;
+  z-index: 9999;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(235, 71, 99, 0.30);
+  background: rgba(255, 255, 255, 0.92);
+  color: #eb4763;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.nh-edit-btn:hover {
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(235, 71, 99, 0.25);
+}
+
+/* Posicionamiento del botón */
+.nh-edit-btn.nh-pos-top-right    { top: 0.75rem;    right: 0.75rem;  bottom: auto; left: auto;  }
+.nh-edit-btn.nh-pos-top-left     { top: 0.75rem;    left: 0.75rem;   bottom: auto; right: auto; }
+.nh-edit-btn.nh-pos-bottom-right { bottom: 0.75rem; right: 0.75rem;  top: auto;    left: auto;  }
+.nh-edit-btn.nh-pos-bottom-left  { bottom: 0.75rem; left: 0.75rem;   top: auto;    right: auto; }
+
+/* ── 3. Entidades editables (html.nh-editor activo) ─────────────────────── */
+
+/**
+ * El contenedor relativo es necesario para que el botón absoluto se posicione bien.
+ * Se asegura que exista sin importar qué tag use el consumidor.
+ */
+html.nh-editor [data-nodehive-entity-type] {
+  position: relative;
+}
+
+/**
+ * Highlight visual al hacer hover sobre una entidad editable.
+ * Solo visible en modo editor.
+ */
+html.nh-editor [data-nodehive-entity-type]:hover > .nh-only {
+  display: inline-flex !important;
+}
+
+/* ── 4. Campos individuales (data-nodehive-field) ─────────────────────────
+   El conector inyecta estos estilos dinámicamente cuando está en modo editor.
+   Se definen aquí también como fallback / referencia documentada.
+   ─────────────────────────────────────────────────────────────────────── */
+
+html.nh-editor [data-nodehive-field] {
+  outline: 2px dashed rgba(235, 71, 99, 0.55);
+  outline-offset: 2px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: outline-color 0.15s, background 0.15s;
+}
+
+html.nh-editor [data-nodehive-field]:hover {
+  outline-color: rgba(235, 71, 99, 1);
+  background: rgba(235, 71, 99, 0.04);
+}
+
+html.nh-editor [data-nodehive-field].--nh-active {
+  outline: 2px solid rgba(235, 71, 99, 1);
+  background: rgba(235, 71, 99, 0.07);
+}
+
+/* ── 5. Barra flotante del editor (NodeHiveToolbar) ─────────────────────── */
+
+.nh-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  height: 2.5rem;
+  background: linear-gradient(90deg, #211114 0%, #3a1a20 100%);
+  color: #fdeff1;
+  font-family: system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  padding-inline: 1rem;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.nh-toolbar__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #eb4763;
+  color: white;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.nh-toolbar__badge::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #fff;
+  animation: nh-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes nh-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.nh-toolbar__url {
+  color: rgba(253, 239, 241, 0.55);
+  font-size: 0.6875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40ch;
+}
+
+.nh-toolbar__spacer {
+  flex: 1;
+}
+
+.nh-toolbar__lang-btn {
+  background: transparent;
+  border: 1px solid rgba(253, 239, 241, 0.25);
+  color: rgba(253, 239, 241, 0.70);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nh-toolbar__lang-btn:hover,
+.nh-toolbar__lang-btn.--active {
+  background: rgba(235, 71, 99, 0.35);
+  color: #fff;
+  border-color: rgba(235, 71, 99, 0.55);
+}
+
+/* Empuja el contenido de la página hacia abajo cuando la toolbar es visible */
+html.nh-editor body {
+  padding-top: 2.5rem;
+}

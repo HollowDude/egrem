@@ -1,0 +1,90 @@
+---
+const token = Astro.url.searchParams.get('token') ?? '';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NodeHive Editor — Login</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #fdeff1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 1rem;
+      }
+      .card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem 2.5rem;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+        text-align: center;
+        max-width: 320px;
+        width: 100%;
+      }
+      .logo {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #6d5157;
+        margin-bottom: 0.5rem;
+      }
+      .status {
+        font-size: 0.9375rem;
+        color: #89656b;
+        margin-top: 0.75rem;
+      }
+      .status.success { color: #16a34a; }
+      .status.error   { color: #eb4763; }
+      .spinner {
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid #fdeff1;
+        border-top-color: #eb4763;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        margin: 1rem auto 0;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="logo">NodeHive Editor</div>
+      <div class="spinner" id="spinner"></div>
+      <p class="status" id="status">Autenticando…</p>
+    </div>
+
+    <script is:inline define:vars={{ token }}>
+      var statusEl  = document.getElementById('status');
+      var spinnerEl = document.getElementById('spinner');
+
+      function setStatus(msg, type) {
+        statusEl.textContent  = msg;
+        statusEl.className    = 'status ' + (type || '');
+        spinnerEl.style.display = type === 'error' ? 'none' : '';
+      }
+
+      if (!token) {
+        setStatus('No se proporcionó token.', 'error');
+      } else {
+        try {
+          sessionStorage.setItem('nodehive-editor-token', token);
+          setStatus('¡Listo! Cerrando…', 'success');
+          spinnerEl.style.display = 'none';
+          setTimeout(function () {
+            try { window.close(); } catch (_) {}
+            document.body.innerHTML = '<div style="font-family:system-ui;text-align:center;padding:2rem;color:#89656b">Autenticación completada. Puedes cerrar esta ventana.</div>';
+          }, 800);
+        } catch (err) {
+          setStatus('Error al guardar token: ' + err.message, 'error');
+        }
+      }
+    </script>
+  </body>
+</html>

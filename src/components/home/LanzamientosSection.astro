@@ -1,0 +1,108 @@
+---
+/**
+ * LanzamientosSection.astro — "NUEVOS LANZAMIENTOS"
+ * 4 tarjetas de álbumes en fondo gris claro (#eeeeee).
+ * Acento dorado en título. Play overlay al hover.
+ *
+ * NodeHive: paragraph bundle "_component_home_lanzamientos"
+ */
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import ActionLink from '@/components/ui/ActionLink.astro';
+import PlayOverlay from '@/components/ui/PlayOverlay.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhEntityMeta } from '@/lib/nodehive';
+
+interface Props {
+  nhSectionTitle?: string;
+  nhEntity?: NhEntityMeta;
+  lang?: string;
+}
+const { nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+
+const lanzamientos = [
+  {
+    cover: '/images/placeholder-album-1.jpg',
+    artist: 'Omara Portuondo',
+    title: 'Vida y Esperanza',
+    href: '/catalogo/musica/omara-vida-esperanza',
+  },
+  {
+    cover: '/images/placeholder-album-2.jpg',
+    artist: 'Chucho Valdés',
+    title: 'Ritos Modernos',
+    href: '/catalogo/musica/chucho-ritos-modernos',
+  },
+  {
+    cover: '/images/placeholder-album-3.jpg',
+    artist: 'Alexander Abreu',
+    title: 'Timba Total',
+    href: '/catalogo/musica/alexander-timba-total',
+  },
+  {
+    cover: '/images/placeholder-album-4.jpg',
+    artist: 'Eliades Ochoa',
+    title: 'Alma Guajira',
+    href: '/catalogo/musica/eliades-alma-guajira',
+  },
+];
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_homepage_lanzamientos'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
+  class="section-py bg-surface-container"
+  editLabel="Editar Lanzamientos"
+  editField="field_title"
+>
+  <div class="container-site">
+    <SectionHeader
+      title={nhSectionTitle || "Nuevos Lanzamientos"}
+      accent="gold"
+      linkText="Ver todo"
+      linkHref="/catalogo/musica"
+      theme="light"
+      nhField="field_section_title"
+    />
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-5">
+      {lanzamientos.map((album) => (
+        <div
+          class="group cursor-pointer"
+          data-nodehive-field="field_lanzamientos"
+        >
+          {/* Portada cuadrada */}
+          <a href={album.href} class="block no-underline">
+            <div class="aspect-square relative overflow-hidden rounded-2xl shadow-sm group-hover:shadow-lg transition-all duration-300 mb-4"
+              style="background: #d0d0d0;"
+            >
+              <img
+                src={album.cover}
+                alt={`${album.title} — ${album.artist}`}
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+                onerror="this.style.display='none'"
+              />
+              <PlayOverlay mode="hover" icon="play_circle" />
+            </div>
+          </a>
+
+          {/* Info — artista arriba, título abajo */}
+          <p class="font-display font-bold uppercase tracking-wider m-0 mb-1" style="font-size: 0.72rem; color: var(--color-text-secondary);">
+            {album.artist}
+          </p>
+          <h4 class="font-display font-bold text-egrem-black uppercase m-0" style="font-size: 1.05rem; line-height: 1.2;">
+            {album.title}
+          </h4>
+          <ActionLink href={album.href} class="mt-2">
+            Ver álbum
+          </ActionLink>
+        </div>
+      ))}
+    </div>
+  </div>
+</NodeHiveEntity>

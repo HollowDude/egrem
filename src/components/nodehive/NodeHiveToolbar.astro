@@ -1,0 +1,43 @@
+---
+/**
+ * NodeHiveToolbar.astro
+ *
+ * Barra flotante informativa visible solo en modo editor de NodeHive.
+ * Incluir en el layout global, preferentemente justo después de <body>.
+ *
+ * CÓMO USAR:
+ *   <NodeHiveToolbar lang={lang} langs={['es', 'en']} />
+ *
+ * Requiere que nodehive-editor.css esté cargado en el layout.
+ */
+
+interface Props {
+  /** Idioma activo. */
+  lang?: string;
+  /** Lista de idiomas disponibles. Default: ['es', 'en']. */
+  langs?: string[];
+}
+
+const { lang = 'es', langs = ['es', 'en'] } = Astro.props;
+---
+
+<div class="nh-only nh-toolbar" role="banner" aria-label="NodeHive Visual Editor toolbar">
+  <span class="nh-toolbar__badge">Editor</span>
+  <span class="nh-toolbar__url" id="nh-toolbar-url"></span>
+  <span class="nh-toolbar__spacer"></span>
+  {langs.map((l) => (
+    <button
+      type="button"
+      class:list={['nh-toolbar__lang-btn', { '--active': l === lang }]}
+      data-lang={l}
+      onclick={`window.__NODEHIVE_EDITOR__ && window.__NODEHIVE_EDITOR__.setLang('${l}')`}
+    >
+      {l.toUpperCase()}
+    </button>
+  ))}
+</div>
+
+<script is:inline>
+  var urlEl = document.getElementById('nh-toolbar-url');
+  if (urlEl) urlEl.textContent = window.location.pathname;
+</script>

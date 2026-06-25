@@ -1,0 +1,141 @@
+---
+/**
+ * NoticiasSection.astro — "NOVEDADES" — sección de noticias en homepage.
+ *
+ * Diseño: fondo blanco, 3 cards con imagen, badge de categoría, título, excerpt.
+ * Fiel a la maqueta: badge en cuerpo de la card, hover borde rojo.
+ *
+ * NodeHive: paragraph bundle "_component_home_news"
+ */
+
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import Badge from '@/components/ui/Badge.astro';
+import ActionLink from '@/components/ui/ActionLink.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhEntityMeta } from '@/lib/nodehive';
+
+interface Noticia {
+  id: string;
+  image: string;
+  imageAlt: string;
+  category: string;
+  title: string;
+  excerpt: string;
+  href: string;
+}
+
+interface Props {
+  noticias?: Noticia[];
+  nhSectionTitle?: string;
+  nhEntity?: NhEntityMeta;
+  lang?: string;
+}
+
+const { noticias, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+
+const items: Noticia[] = noticias ?? [
+  {
+    id: '1',
+    image: '/images/news-placeholder-1.jpg',
+    imageAlt: 'EGREM celebra 60 años de Son Cubano',
+    category: 'Cultura',
+    title: 'EGREM celebra 60 años de Son Cubano',
+    excerpt: 'Una mirada profunda a las grabaciones maestras que definieron el sonido de la nación durante décadas.',
+    href: '/actualidad/noticias/egrem-60-anos-son',
+  },
+  {
+    id: '2',
+    image: '/images/news-placeholder-2.jpg',
+    imageAlt: 'Gala de Premios de la Música 2024',
+    category: 'Evento',
+    title: 'Gala de Premios de la Música 2024',
+    excerpt: 'Los mejores artistas del sello se reúnen en una noche histórica de jazz y salsa en el Teatro Nacional.',
+    href: '/actualidad/noticias/gala-premios-musica-2024',
+  },
+  {
+    id: '3',
+    image: '/images/news-placeholder-3.jpg',
+    imageAlt: 'Reediciones en Vinilo: Serie Platino',
+    category: 'Lanzamiento',
+    title: 'Reediciones en Vinilo: Serie Platino',
+    excerpt: 'Nuevas versiones remasterizadas de los clásicos de Benny Moré y Bebo Valdés ya disponibles.',
+    href: '/actualidad/noticias/reediciones-vinilo-platino',
+  },
+];
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_homepage_novedades'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
+  class="bg-white section-py"
+  editLabel="Editar Novedades"
+  editField="field_title"
+>
+  <div class="container-site">
+
+    <SectionHeader
+      title={nhSectionTitle || "Novedades"}
+      accent="red"
+      linkText="Ver Más"
+      linkHref="/actualidad"
+      theme="light"
+      nhField="field_section_title"
+    />
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {items.map((noticia) => (
+        <article
+          class="card card--hover-red group flex flex-col"
+          data-nodehive-entity-type="node"
+          data-nodehive-entity-bundle="noticia"
+          data-nodehive-entity-id={noticia.id}
+        >
+          {/* Imagen */}
+          <a href={noticia.href} class="block overflow-hidden no-underline shrink-0" style="height: 16rem;">
+            <img
+              src={noticia.image}
+              alt={noticia.imageAlt}
+              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              loading="lazy"
+              decoding="async"
+              data-nodehive-field="field_image"
+              onerror="this.parentElement.style.background='#eeeeee'"
+            />
+          </a>
+
+          {/* Cuerpo */}
+          <div class="p-6 flex flex-col flex-1">
+            <Badge class="mb-4 self-start">{noticia.category}</Badge>
+
+            <h3
+              class="font-display font-bold text-egrem-black text-xl leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors"
+              data-nodehive-field="field_title"
+            >
+              <a href={noticia.href} class="text-inherit no-underline">
+                {noticia.title}
+              </a>
+            </h3>
+
+            <p
+              class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-2"
+              style="color: var(--color-text-secondary);"
+              data-nodehive-field="field_excerpt"
+            >
+              {noticia.excerpt}
+            </p>
+
+            <ActionLink href={noticia.href} class="mt-4">
+              Leer más
+            </ActionLink>
+          </div>
+        </article>
+      ))}
+    </div>
+
+  </div>
+</NodeHiveEntity>

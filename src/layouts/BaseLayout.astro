@@ -1,0 +1,117 @@
+---
+/**
+ * BaseLayout.astro — Layout principal del sitio.
+ *
+ * Incluye:
+ *  - <head> con meta tags, estilos y scripts globales
+ *  - Header (fixed, isla React)
+ *  - NodeHiveToolbar + NodeHiveConnector (solo cuando NodeHive esté configurado)
+ *  - Slot para el contenido de la página
+ *  - Footer estático
+ *
+ * Uso:
+ *   <BaseLayout title="Título de página" description="Meta descripción">
+ *     <main>contenido</main>
+ *   </BaseLayout>
+ */
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import '@/styles/globals.css';
+import '@/styles/nodehive-editor.css';
+import { fetchHeaderFragment, fetchFooterFragment } from '@/lib/nodehive';
+import type { NhHeaderFragment, NhFooterFragment } from '@/lib/nodehive';
+
+import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
+import NodeHiveToolbar from '@/components/nodehive/NodeHiveToolbar.astro';
+
+interface Props {
+  /** Título de la página (se añade "| EGREM" al final) */
+  title?: string;
+  /** Meta descripción */
+  description?: string;
+  /** URL canónica */
+  canonical?: string;
+  /** OG image path */
+  ogImage?: string;
+  /** Idioma activo */
+  lang?: string;
+  /** Pasar true cuando el usuario esté autenticado */
+  isAuthenticated?: boolean;
+  /** Número de items en el carrito */
+  cartCount?: number;
+}
+
+const {
+  title = 'EGREM',
+  description = 'Empresa de Grabaciones y Ediciones Musicales de Cuba. Descubre la música cubana auténtica.',
+  canonical,
+  ogImage = '/og-default.jpg',
+  lang = 'es',
+  isAuthenticated = false,
+  cartCount = 0,
+} = Astro.props;
+
+const pageTitle = title === 'EGREM' ? 'EGREM — Empresa de Grabaciones y Ediciones Musicales' : `${title} | EGREM`;
+const canonicalUrl = canonical ?? Astro.url.href;
+
+// Fetch NodeHive fragments (header/footer) — fail gracefully
+let nhHeader: NhHeaderFragment | null = null;
+let nhFooter: NhFooterFragment | null = null;
+try {
+  [nhHeader, nhFooter] = await Promise.all([
+    fetchHeaderFragment(lang),
+    fetchFooterFragment(lang),
+  ]);
+} catch (e) {
+  console.error('[NodeHive] Failed to fetch fragments:', e);
+}
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    {/* Favicon */}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+
+    {/* Open Graph */}
+    <meta property="og:type"        content="website" />
+    <meta property="og:title"       content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url"         content={canonicalUrl} />
+    <meta property="og:image"       content={ogImage} />
+    <meta property="og:locale"      content={lang === 'en' ? 'en_US' : 'es_CU'} />
+    <meta property="og:site_name"   content="EGREM" />
+
+    {/* NodeHive: variables globales para el Visual Editor */}
+    <script define:vars={{ nodehiveBaseUrl: import.meta.env.NODEHIVE_BASE_URL, nodehiveLang: lang }}>
+      window.__NODEHIVE_BASE_URL__ = nodehiveBaseUrl;
+      window.__NODEHIVE_LANG__     = nodehiveLang;
+    </script>
+    <meta http-equiv="X-Frame-Options" content="ALLOWALL" />
+  </head>
+
+  <body class="min-h-screen flex flex-col">
+
+    <NodeHiveToolbar lang={lang} />
+
+    <Header isAuthenticated={isAuthenticated} cartCount={cartCount} nhHeader={nhHeader} />
+
+    <div class="flex-1">
+      <slot />
+    </div>
+
+    <Footer nhFooter={nhFooter} />
+
+    <NodeHiveConnector />
+
+  </body>
+</html>

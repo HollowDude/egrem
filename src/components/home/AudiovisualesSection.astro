@@ -1,0 +1,123 @@
+---
+/**
+ * AudiovisualesSection.astro — "GALERÍA DE VIDEOS"
+ * 3 tarjetas aspect-video sobre fondo gris claro (#eeeeee).
+ * Botón play rojo siempre visible en el centro.
+ *
+ * NodeHive: paragraph bundle "_component_home_audiovisuales"
+ */
+
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import ActionLink from '@/components/ui/ActionLink.astro';
+import PlayOverlay from '@/components/ui/PlayOverlay.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhEntityMeta } from '@/lib/nodehive';
+
+interface VideoItem {
+  id: string;
+  image: string;
+  imageAlt: string;
+  title: string;
+  href: string;
+}
+
+interface Props {
+  items?: VideoItem[];
+  nhSectionTitle?: string;
+  nhEntity?: NhEntityMeta;
+  lang?: string;
+}
+
+const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+
+const videos: VideoItem[] = items ?? [
+  {
+    id: '1',
+    image: '/images/av-placeholder-1.jpg',
+    imageAlt: 'Sesiones en Areito: Vol. 1',
+    title: 'Sesiones en Areito: Vol. 1',
+    href: '/catalogo/videos/sesiones-areito-vol-1',
+  },
+  {
+    id: '2',
+    image: '/images/av-placeholder-2.jpg',
+    imageAlt: 'Documental: 80 Años de Son',
+    title: 'Documental: 80 Años de Son',
+    href: '/catalogo/videos/documental-80-anos-son',
+  },
+  {
+    id: '3',
+    image: '/images/av-placeholder-3.jpg',
+    imageAlt: 'Gira Nacional 2023: Resumen',
+    title: 'Gira Nacional 2023: Resumen',
+    href: '/catalogo/videos/gira-nacional-2023',
+  },
+];
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_homepage_videos'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
+  class="section-py bg-surface-container"
+  editLabel="Editar Videos"
+  editField="field_title"
+>
+  <div class="container-site">
+
+    <SectionHeader
+      title={nhSectionTitle || "Galería de Videos"}
+      accent="red"
+      linkText="Ver Todo"
+      linkHref="/catalogo/videos"
+      theme="light"
+      nhField="field_section_title"
+    />
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {videos.map((item) => (
+        <div
+          data-nodehive-entity-type="node"
+          data-nodehive-entity-bundle="audiovisual"
+          data-nodehive-entity-id={item.id}
+        >
+          {/* Video thumbnail */}
+          <a
+            href={item.href}
+            class="group relative cursor-pointer aspect-video bg-black overflow-hidden rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 block no-underline"
+          >
+            <img
+              src={item.image}
+              alt={item.imageAlt}
+              class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+              loading="lazy"
+              decoding="async"
+              data-nodehive-field="field_image"
+              onerror="this.style.display='none'"
+            />
+            <PlayOverlay mode="always" />
+          </a>
+
+          {/* Título debajo del video */}
+          <div class="mt-3">
+            <p
+              class="font-bold uppercase tracking-wider m-0"
+              style="font-size: 0.85rem; color: var(--color-egrem-black);"
+              data-nodehive-field="field_title"
+            >
+              {item.title}
+            </p>
+            <ActionLink href={item.href} class="mt-1">
+              Ver video
+            </ActionLink>
+          </div>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</NodeHiveEntity>

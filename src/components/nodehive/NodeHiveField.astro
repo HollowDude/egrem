@@ -1,0 +1,43 @@
+---
+/**
+ * NodeHiveField.astro
+ *
+ * Marca un elemento HTML como campo editable individual.
+ * El conector NodeHiveConnector detecta el clic y envía el nombre del campo a Drupal.
+ *
+ * CÓMO USAR:
+ *
+ *   <NodeHiveField field="field_title" tag="h2" class="font-heading text-4xl">
+ *     {titulo}
+ *   </NodeHiveField>
+ *
+ * SALIDA HTML:
+ *
+ *   <h2 data-nodehive-field="field_title" class="font-heading text-4xl">
+ *     Título de la sección
+ *   </h2>
+ *
+ * NOTA: Este componente es opcional. En muchos casos basta con agregar
+ * data-nodehive-field directamente al elemento HTML:
+ *   <h2 data-nodehive-field="field_title">{titulo}</h2>
+ */
+
+interface Props {
+  /** Nombre exacto del campo en Drupal. Ej: "field_title", "field_description". */
+  field: string;
+  /** Tag HTML del wrapper. Default: 'span'. */
+  tag?: string;
+  /** Clases CSS adicionales. */
+  class?: string;
+}
+
+const { field, tag = 'span', class: className } = Astro.props;
+const Tag = tag;
+---
+
+<Tag
+  data-nodehive-field={field}
+  class:list={[className]}
+>
+  <slot />
+</Tag>

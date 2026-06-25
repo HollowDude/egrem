@@ -1,0 +1,108 @@
+---
+/**
+ * NodeHiveEntity.astro
+ *
+ * Wrapper para secciones editables que corresponden a un paragraph o fragment de Drupal.
+ *
+ * CÓMO USAR:
+ *
+ *   import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+ *
+ *   <NodeHiveEntity
+ *     entityType="paragraph"
+ *     bundle="_component_home_hero"
+ *     id={data.paragraphId}
+ *     internalId={data.paragraphInternalId}
+ *     parentId={data.parentId}
+ *     lang={lang}
+ *     tag="section"
+ *     class="py-16"
+ *     editLabel="Editar Hero"
+ *     editField="field_title"
+ *   >
+ *     <h1>{titulo}</h1>
+ *   </NodeHiveEntity>
+ *
+ * SALIDA HTML GENERADA:
+ *
+ *   <section
+ *     class="py-16"
+ *     data-nodehive-entity-type="paragraph"
+ *     data-nodehive-entity-bundle="_component_home_hero"
+ *     data-nodehive-entity-id="uuid-drupal"
+ *     data-nodehive-entity-internal-id="42"
+ *     data-nodehive-parent_id="7"
+ *     data-nodehive-langcode="es"
+ *   >
+ *     <button class="nh-only nh-edit-btn nh-pos-top-right" data-nodehive-field="field_title">
+ *       <svg>...</svg> Editar Hero
+ *     </button>
+ *     <h1>Título</h1>
+ *   </section>
+ */
+
+import NodeHiveEditButton from './NodeHiveEditButton.astro';
+import type { NodeHiveEntityType } from '@/types/nodehive-editor';
+
+interface Props {
+  /** Tipo de entidad Drupal. Requerido. */
+  entityType: NodeHiveEntityType;
+  /** Bundle del paragraph o fragment. Requerido. */
+  bundle: string;
+  /** UUID de la entidad en Drupal (paragraphId en los servicios). */
+  id?: string | null;
+  /** ID interno de Drupal (paragraphInternalId / drupal_internal__id). */
+  internalId?: number | null;
+  /** ID del nodo padre que contiene esta entidad. */
+  parentId?: string | number | null;
+  /** Código de idioma activo. Ej: "es", "en". */
+  lang?: string;
+  /**
+   * Tag HTML del elemento raíz. Default: 'section'.
+   * Acepta cualquier tag HTML válido: 'div', 'article', 'header', 'footer', etc.
+   */
+  tag?: string;
+  /** Clases CSS adicionales para el elemento raíz. */
+  class?: string;
+  /** Texto del botón de edición. Default: 'Editar'. */
+  editLabel?: string;
+  /**
+   * Campo Drupal que se abrirá en el editor al hacer clic.
+   * Si se omite, el clic enviará solo la info del paragraph/fragment
+   * y Drupal abrirá el formulario completo.
+   */
+  editField?: string;
+}
+
+const {
+  entityType,
+  bundle,
+  id,
+  internalId,
+  parentId,
+  lang,
+  tag = 'section',
+  class: className,
+  editLabel = 'Editar',
+  editField,
+} = Astro.props;
+
+const Tag = tag;
+---
+
+<Tag
+  class:list={[className]}
+  data-nodehive-entity-type={entityType}
+  data-nodehive-entity-bundle={bundle}
+  data-nodehive-entity-id={id ?? undefined}
+  data-nodehive-entity-internal-id={internalId?.toString() ?? undefined}
+  data-nodehive-parent_id={parentId?.toString() ?? undefined}
+  data-nodehive-langcode={lang ?? undefined}
+>
+  <NodeHiveEditButton
+    label={editLabel}
+    field={editField}
+    position="top-right"
+  />
+  <slot />
+</Tag>
