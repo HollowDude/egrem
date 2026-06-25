@@ -13,6 +13,8 @@ import Badge from '@/components/ui/Badge.astro';
 import ActionLink from '@/components/ui/ActionLink.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
 
 interface Noticia {
   id: string;
@@ -28,10 +30,11 @@ interface Props {
   noticias?: Noticia[];
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
-  lang?: string;
+  lang?: Lang;
 }
 
 const { noticias, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
 
 const items: Noticia[] = noticias ?? [
   {
@@ -81,7 +84,7 @@ const items: Noticia[] = noticias ?? [
     <SectionHeader
       title={nhSectionTitle || "Novedades"}
       accent="red"
-      linkText="Ver Más"
+      linkText={tr('home.section.see_more')}
       linkHref="/actualidad"
       theme="light"
       nhField="field_section_title"
@@ -130,7 +133,7 @@ const items: Noticia[] = noticias ?? [
             </p>
 
             <ActionLink href={noticia.href} class="mt-4">
-              Leer más
+              {tr('home.news.read_more')}
             </ActionLink>
           </div>
         </article>

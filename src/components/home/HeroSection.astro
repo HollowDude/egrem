@@ -17,19 +17,22 @@
 import type { NhButton, NhEntityMeta } from '@/lib/nodehive';
 import Button from '@/components/ui/Button.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
 
 interface Props {
   nhTitle?: string;
   nhSubtitle?: string;
   nhButtons?: NhButton[];
   nhEntity?: NhEntityMeta;
-  lang?: string;
+  lang?: Lang;
 }
 
 const { nhTitle, nhSubtitle, nhButtons, nhEntity, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
 
 const title = nhTitle || 'Empresa de Grabaciones y Ediciones Musicales';
-const subtitle = nhSubtitle || 'siente la música';
+const subtitle = nhSubtitle || tr('home.hero.subtitle');
 
 // Map NodeHive button style to Button component variant
 const variantMap: Record<string, 'primary' | 'secondary'> = {
@@ -39,8 +42,8 @@ const variantMap: Record<string, 'primary' | 'secondary'> = {
 
 // Use NodeHive buttons or placeholder
 const buttons = nhButtons ?? [
-  { id: '1', title: 'Explorar Catálogo', style: 'primary' as const, link: { uri: '/catalogo', title: '' } },
-  { id: '2', title: 'Ver Artistas', style: 'secondary' as const, link: { uri: '/catalogo/artistas', title: '' } },
+  { id: '1', title: tr('home.hero.explore_catalog'), style: 'primary' as const, link: { uri: '/catalogo', title: '' } },
+  { id: '2', title: tr('home.hero.view_artists'), style: 'secondary' as const, link: { uri: '/catalogo/artistas', title: '' } },
 ];
 ---
 

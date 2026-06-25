@@ -14,6 +14,9 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from '@/i18n/translations';
+import type { Lang } from '@/i18n';
+import LanguageSwitcherReact from '@/components/ui/LanguageSwitcherReact';
 
 interface NavDropdownItem {
   label: string;
@@ -29,43 +32,47 @@ interface NavItem {
 interface Props {
   isAuthenticated?: boolean;
   cartCount?: number;
-  lang?: string;
+  lang?: Lang;
   /** URL absoluta del logo desde NodeHive (null = usar SVG fallback) */
   logoUrl?: string | null;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Tienda', href: '/tienda' },
-  {
-    label: 'Actualidad',
-    href: '/actualidad',
-    dropdown: [
-      { label: 'Noticias',   href: '/actualidad/noticias' },
-      { label: 'Blog',       href: '/actualidad/blog' },
-      { label: 'Patrimonio', href: '/actualidad/patrimonio' },
-      { label: 'Artistas',   href: '/actualidad/artistas' },
-    ],
-  },
-  {
-    label: 'Catálogo',
-    href: '/catalogo',
-    dropdown: [
-      { label: 'Música',   href: '/catalogo/musica' },
-      { label: 'Videos',   href: '/catalogo/videos' },
-      { label: 'Artistas', href: '/catalogo/artistas' },
-    ],
-  },
-  { label: 'Eventos',       href: '/eventos' },
-  { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
-  { label: 'Contáctanos',   href: '/contacto' },
-];
+function getNavItems(tr: (key: string) => string): NavItem[] {
+  return [
+    { label: tr('nav.store'), href: '/tienda' },
+    {
+      label: tr('nav.news'),
+      href: '/actualidad',
+      dropdown: [
+        { label: tr('nav.news.news'),    href: '/actualidad/noticias' },
+        { label: tr('nav.news.blog'),    href: '/actualidad/blog' },
+        { label: tr('nav.news.heritage'),href: '/actualidad/patrimonio' },
+        { label: tr('nav.news.artists'), href: '/actualidad/artistas' },
+      ],
+    },
+    {
+      label: tr('nav.catalog'),
+      href: '/catalogo',
+      dropdown: [
+        { label: tr('nav.catalog.music'),   href: '/catalogo/musica' },
+        { label: tr('nav.catalog.videos'),  href: '/catalogo/videos' },
+        { label: tr('nav.catalog.artists'), href: '/catalogo/artistas' },
+      ],
+    },
+    { label: tr('nav.events'), href: '/eventos' },
+    { label: tr('nav.about'),  href: '/sobre-nosotros' },
+    { label: tr('nav.contact'),href: '/contacto' },
+  ];
+}
 
 export default function HeaderNav({
   isAuthenticated = false,
   cartCount = 0,
-  lang: _lang = 'es',
+  lang = 'es',
   logoUrl,
 }: Props) {
+  const tr = useTranslations(lang);
+  const NAV_ITEMS = getNavItems(tr);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -192,12 +199,17 @@ export default function HeaderNav({
 
           {/* ── Acciones derecha ── */}
           <div className="flex items-center gap-1">
+            {/* Language switcher desktop */}
+            <div className="hidden sm:flex">
+              <LanguageSwitcherReact lang={lang} />
+            </div>
+
             {/* Buscar */}
             <button
               type="button"
               className="action-btn bg-transparent border-none cursor-pointer p-2 rounded-2xl flex items-center justify-center"
               style={{ color: '#1b1b1b' }}
-              aria-label="Buscar"
+              aria-label={tr('nav.search')}
             >
               <span className="icon text-[22px]">search</span>
             </button>
@@ -210,7 +222,7 @@ export default function HeaderNav({
                   href="/carrito"
                   className="action-btn relative no-underline p-2 rounded-2xl flex items-center justify-center"
                   style={{ color: '#1b1b1b' }}
-                  aria-label={`Carrito (${cartCount} artículos)`}
+                  aria-label={`${tr('nav.cart')} (${cartCount})`}
                 >
                   <span className="icon text-[22px]">shopping_cart</span>
                   {cartCount > 0 && (
@@ -233,7 +245,7 @@ export default function HeaderNav({
                   href="/mi-cuenta"
                   className="action-btn relative no-underline p-2 rounded-2xl flex items-center justify-center hidden lg:flex"
                   style={{ color: '#1b1b1b' }}
-                  aria-label="Mi cuenta"
+                  aria-label={tr('nav.account')}
                 >
                   <span className="icon text-[22px]">account_circle</span>
                 </a>
@@ -245,13 +257,13 @@ export default function HeaderNav({
                   href="/login"
                   className="px-4 py-2 font-display font-bold text-[0.75rem] uppercase tracking-wide text-egrem-black border border-black/20 rounded hover:border-egrem-red hover:text-egrem-red transition-colors no-underline"
                 >
-                  Iniciar Sesión
+                  {tr('nav.login')}
                 </a>
                 <a
                   href="/registro"
                   className="px-4 py-2 font-display font-bold text-[0.75rem] uppercase tracking-wide text-white bg-egrem-red rounded hover:bg-egrem-red-dark transition-colors no-underline"
                 >
-                  Registrarse
+                  {tr('nav.register')}
                 </a>
               </div>
             )}
@@ -262,7 +274,7 @@ export default function HeaderNav({
               className="lg:hidden action-btn bg-transparent border-none cursor-pointer p-2 rounded-2xl flex items-center justify-center"
               style={{ color: '#1b1b1b' }}
               onClick={() => setMobileOpen(prev => !prev)}
-              aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+              aria-label={mobileOpen ? tr('nav.close_menu') : tr('nav.open_menu')}
               aria-expanded={mobileOpen}
             >
               <span className="icon text-[1.5rem]">
@@ -359,6 +371,11 @@ export default function HeaderNav({
             </div>
           ))}
 
+          {/* Language switcher mobile */}
+          <div className="border-t px-4 py-3 flex items-center" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+            <LanguageSwitcherReact lang={lang} />
+          </div>
+
           {/* Auth buttons mobile */}
           {!isAuthenticated && (
             <div className="border-t px-4 py-4 flex items-center gap-3" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
@@ -366,13 +383,13 @@ export default function HeaderNav({
                 href="/login"
                 className="flex-1 text-center py-2.5 font-display font-bold text-xs uppercase tracking-wide text-egrem-black border border-black/20 rounded hover:border-egrem-red hover:text-egrem-red transition-colors no-underline"
               >
-                Iniciar Sesión
+                {tr('nav.login')}
               </a>
               <a
                 href="/registro"
                 className="flex-1 text-center py-2.5 font-display font-bold text-xs uppercase tracking-wide text-white bg-egrem-red rounded hover:bg-egrem-red-dark transition-colors no-underline"
               >
-                Registrarse
+                {tr('nav.register')}
               </a>
             </div>
           )}
@@ -385,7 +402,7 @@ export default function HeaderNav({
               <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(188,1,0,0.1)' }}>
                 <span className="icon" style={{ color: '#bc0100', fontSize: '20px' }}>account_circle</span>
               </div>
-              <span>Mi Perfil</span>
+              <span>{tr('nav.profile')}</span>
             </a>
           </div>
         )}

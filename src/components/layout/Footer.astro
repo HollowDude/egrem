@@ -16,29 +16,33 @@
 import type { NhFooterFragment } from '@/lib/nodehive';
 import EgremLogo from '@/components/ui/EgremLogo.astro';
 import Button from '@/components/ui/Button.astro';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
 
 interface Props {
   nhFooter?: NhFooterFragment | null;
+  lang?: Lang;
 }
-const { nhFooter } = Astro.props;
+const { nhFooter, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
 
 const currentYear = new Date().getFullYear();
-const derechos = nhFooter?.derechos || `© ${currentYear} EGREM — Empresa de Grabaciones y Ediciones Musicales. Todos los derechos reservados.`;
+const derechos = nhFooter?.derechos || `© ${currentYear} EGREM — ${lang === 'en' ? 'Recording and Music Publishing Company of Cuba. All rights reserved.' : 'Empresa de Grabaciones y Ediciones Musicales. Todos los derechos reservados.'}`;
 const tagline = nhFooter?.tagline || 'Llevando la música cubana al mundo desde 1964';
 const contacto = nhFooter?.contacto;
 const redes = nhFooter?.redes ?? [];
 
 const navExplorar = [
-  { label: 'Tienda',         href: '/tienda'         },
-  { label: 'Actualidad',     href: '/actualidad'     },
-  { label: 'Eventos',        href: '/eventos'        },
-  { label: 'Sobre Nosotros', href: '/sobre-nosotros' },
+  { label: tr('nav.store'),   href: '/tienda'         },
+  { label: tr('nav.news'),    href: '/actualidad'     },
+  { label: tr('nav.events'),  href: '/eventos'        },
+  { label: tr('nav.about'),   href: '/sobre-nosotros' },
 ];
 
 const navInfo = [
-  { label: 'Política de privacidad',  href: '/politica-privacidad' },
-  { label: 'Términos y condiciones',  href: '/terminos-condiciones' },
-  { label: 'Preguntas frecuentes',    href: '/preguntas-frecuentes' },
+  { label: tr('footer.privacy'),  href: '/politica-privacidad' },
+  { label: tr('footer.terms'),    href: '/terminos-condiciones' },
+  { label: tr('footer.faq'),      href: '/preguntas-frecuentes' },
 ];
 ---
 
@@ -70,7 +74,7 @@ const navInfo = [
             class="footer-col-heading"
             style="margin-bottom: 12px;"
           >
-            Síguenos
+            {tr('footer.follow')}
           </p>
           <div class="flex items-center gap-3">
             {redes.length > 0 ? (
@@ -131,7 +135,7 @@ const navInfo = [
 
       {/* ── Col 2: Explorar ── */}
       <div>
-        <h3 class="footer-col-heading">Explorar</h3>
+        <h3 class="footer-col-heading">{tr('footer.explore')}</h3>
         <nav>
           {navExplorar.map((item) => (
             <a href={item.href} class="footer-link block">
@@ -143,7 +147,7 @@ const navInfo = [
 
       {/* ── Col 3: Información de la empresa ── */}
       <div>
-        <h3 class="footer-col-heading">Información de la Empresa</h3>
+        <h3 class="footer-col-heading">{tr('footer.info')}</h3>
         <nav>
           {navInfo.map(item => (
             <a href={item.href} class="footer-link block">
@@ -159,7 +163,7 @@ const navInfo = [
         <NodeHiveEntity entityType="nodehive_fragment" bundle="_fragment_footer_contact" lang={lang}>
       */}
       <div class="flex flex-col gap-3">
-        <h3 class="footer-col-heading">Contacto</h3>
+        <h3 class="footer-col-heading">{tr('footer.contact')}</h3>
 
         <div class="flex items-start gap-2" style="margin-bottom: 0.25rem;">
           <span class="icon shrink-0 mt-0.5" style="font-size:1.1rem; color: var(--color-egrem-red);">location_on</span>
@@ -192,7 +196,7 @@ const navInfo = [
 
         <Button variant="primary" size="sm" href={contacto?.boton?.link?.uri || '/contacto'} class="self-start mt-1">
           <span class="icon" style="font-size:0.95rem">mail</span>
-          {contacto?.boton?.title || 'Contáctanos'}
+          {contacto?.boton?.title || tr('nav.contact')}
         </Button>
       </div>
       {/* </NodeHiveEntity> */}
@@ -220,9 +224,9 @@ const navInfo = [
       type="button"
       onclick="window.scrollTo({top:0,behavior:'smooth'})"
       class="footer-back-top flex items-center gap-1.5 font-display font-bold text-[0.68rem] uppercase tracking-widest cursor-pointer bg-transparent rounded px-3 py-1.5"
-      aria-label="Volver arriba"
+      aria-label={tr('footer.back_top')}
     >
-      ↑ Volver arriba
+      {tr('footer.back_top')}
     </button>
   </div>
 

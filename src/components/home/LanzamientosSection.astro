@@ -11,13 +11,16 @@ import ActionLink from '@/components/ui/ActionLink.astro';
 import PlayOverlay from '@/components/ui/PlayOverlay.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
 
 interface Props {
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
-  lang?: string;
+  lang?: Lang;
 }
 const { nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
 
 const lanzamientos = [
   {
@@ -63,7 +66,7 @@ const lanzamientos = [
     <SectionHeader
       title={nhSectionTitle || "Nuevos Lanzamientos"}
       accent="gold"
-      linkText="Ver todo"
+      linkText={tr('home.section.see_all')}
       linkHref="/catalogo/musica"
       theme="light"
       nhField="field_section_title"
@@ -99,7 +102,7 @@ const lanzamientos = [
             {album.title}
           </h4>
           <ActionLink href={album.href} class="mt-2">
-            Ver álbum
+            {tr('home.section.see_album')}
           </ActionLink>
         </div>
       ))}

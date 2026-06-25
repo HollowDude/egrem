@@ -1,5 +1,11 @@
 /// <reference path="../.astro/types.d.ts" />
 
+declare namespace App {
+  interface Locals {
+    lang: import('@/i18n').Lang;
+  }
+}
+
 interface ImportMetaEnv {
   readonly NODEHIVE_BASE_URL: string;
   readonly NODEHIVE_EDITOR_DEV_MODE: string;

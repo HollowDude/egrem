@@ -12,14 +12,16 @@
 import HeaderNav from './HeaderNav.tsx';
 import type { NhHeaderFragment } from '@/lib/nodehive';
 import { resolveFileUrl } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
 
 interface Props {
   isAuthenticated?: boolean;
   cartCount?: number;
   nhHeader?: NhHeaderFragment | null;
+  lang?: Lang;
 }
 
-const { isAuthenticated = false, cartCount = 0, nhHeader } = Astro.props;
+const { isAuthenticated = false, cartCount = 0, nhHeader, lang = 'es' } = Astro.props;
 
 // If NodeHive provides a logo, resolve its URL
 const logoUrl = nhHeader?.logo?.url ? resolveFileUrl(nhHeader.logo.url) : null;
@@ -33,4 +35,5 @@ const logoUrl = nhHeader?.logo?.url ? resolveFileUrl(nhHeader.logo.url) : null;
   isAuthenticated={isAuthenticated}
   cartCount={cartCount}
   logoUrl={logoUrl}
+  lang={lang}
 />

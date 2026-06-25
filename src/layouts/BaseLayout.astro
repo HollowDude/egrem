@@ -46,10 +46,11 @@ const {
   description = 'Empresa de Grabaciones y Ediciones Musicales de Cuba. Descubre la música cubana auténtica.',
   canonical,
   ogImage = '/og-default.jpg',
-  lang = 'es',
   isAuthenticated = false,
   cartCount = 0,
 } = Astro.props;
+
+const lang = Astro.locals.lang;
 
 const pageTitle = title === 'EGREM' ? 'EGREM — Empresa de Grabaciones y Ediciones Musicales' : `${title} | EGREM`;
 const canonicalUrl = canonical ?? Astro.url.href;
@@ -103,13 +104,13 @@ try {
 
     <NodeHiveToolbar lang={lang} />
 
-    <Header isAuthenticated={isAuthenticated} cartCount={cartCount} nhHeader={nhHeader} />
+    <Header isAuthenticated={isAuthenticated} cartCount={cartCount} nhHeader={nhHeader} lang={lang} />
 
     <div class="flex-1">
       <slot />
     </div>
 
-    <Footer nhFooter={nhFooter} />
+    <Footer nhFooter={nhFooter} lang={lang} />
 
     <NodeHiveConnector />
 

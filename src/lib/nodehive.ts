@@ -222,7 +222,7 @@ function parseMediaImage(
  * UUIDs are hardcoded for now — in production, use a router or slug lookup.
  */
 export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
-  const PAGE_UUID = '1cfdb266-b8d9-4b45-b25a-706873147773';
+  const PAGE_UUID = '01c42d09-c898-45d4-9366-98275a2de7fc';
 
   const res = await jsonApiFetch(
     `node/page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo`,

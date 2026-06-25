@@ -25,10 +25,12 @@ import AudiovisualesSection from '@/components/home/AudiovisualesSection.astro';
 import { fetchHomePage } from '@/lib/nodehive';
 import type { NhEntityMeta, NhSection } from '@/lib/nodehive';
 
+const lang = Astro.locals.lang;
+
 let nhData: Awaited<ReturnType<typeof fetchHomePage>> | null = null;
 
 try {
-  nhData = await fetchHomePage('es');
+  nhData = await fetchHomePage(lang);
 } catch (e) {
   console.error('[NodeHive] Failed to fetch homepage:', e);
 }
@@ -55,30 +57,37 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
       nhSubtitle={nhData?.hero?.subtitle}
       nhButtons={nhData?.hero?.buttons}
       nhEntity={entityMeta(nhData?.hero)}
+      lang={lang}
     />
     <NoticiasSection
       nhSectionTitle={findSection('_component_homepage_novedades')?.title}
       nhEntity={entityMeta(findSection('_component_homepage_novedades'))}
+      lang={lang}
     />
     <PromoBannerSection
       quote={nhData?.eslogan?.title}
       nhEntity={entityMeta(nhData?.eslogan)}
+      lang={lang}
     />
     <LanzamientosSection
       nhSectionTitle={findSection('_component_homepage_lanzamientos')?.title}
       nhEntity={entityMeta(findSection('_component_homepage_lanzamientos'))}
+      lang={lang}
     />
     <EventosSection
       nhSectionTitle={findSection('_component_homepage_eventos')?.title}
       nhEntity={entityMeta(findSection('_component_homepage_eventos'))}
+      lang={lang}
     />
     <ProduccionesSection
       nhSectionTitle={findSection('homepage_producciones')?.title}
       nhEntity={entityMeta(findSection('homepage_producciones'))}
+      lang={lang}
     />
     <AudiovisualesSection
       nhSectionTitle={findSection('_component_homepage_videos')?.title}
       nhEntity={entityMeta(findSection('_component_homepage_videos'))}
+      lang={lang}
     />
   </main>
 </BaseLayout>
