@@ -10,7 +10,12 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check",
+    "lint": "eslint src/ --ext .js,.ts,.astro",
+    "format": "prettier --write 'src/**/*.{js,ts,astro,css}'",
+    "format:check": "prettier --check 'src/**/*.{js,ts,astro,css}'",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",

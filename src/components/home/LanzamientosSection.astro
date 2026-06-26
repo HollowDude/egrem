@@ -16,14 +16,15 @@ import { useTranslations } from '@/i18n/translations';
 import type { NhAlbum } from '@/types/drupal';
 
 interface Props {
+  items?: NhAlbum[];
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
   lang?: Lang;
 }
-const { nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const lanzamientos: NhAlbum[] = [
+const lanzamientos: NhAlbum[] = items ?? [
   {
     id: '1',
     cover: { url: '/images/placeholder-album-1.jpg', alt: 'Vida y Esperanza — Omara Portuondo', filename: 'album-1.jpg' },

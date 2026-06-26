@@ -21,15 +21,16 @@ function formatMonth(dateStr: string): string {
 }
 
 interface Props {
+  items?: NhEvento[];
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
   lang?: Lang;
 }
 
-const { nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
+const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const eventos: NhEvento[] = [
+const eventos: NhEvento[] = items ?? [
   {
     id: '1',
     title: 'Buena Vista Tribute',

@@ -3,6 +3,7 @@ import { findIncluded, resolveRelIds } from './helpers';
 import { parseButton, parseMediaImage } from './parsers';
 import type { NhButton, NhMediaImage, NhEntityMeta } from './parsers';
 import type { JsonApiResource } from './client';
+import { NODEHIVE_CONFIG } from './config';
 
 export interface NhHero extends NhEntityMeta {
   title: string;
@@ -30,7 +31,7 @@ export interface NhHomePage {
 }
 
 export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
-  const PAGE_UUID = '01c42d09-c898-45d4-9366-98275a2de7fc';
+  const PAGE_UUID = NODEHIVE_CONFIG.pages.home;
 
   const res = await jsonApiFetch(
     `node/page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo`,

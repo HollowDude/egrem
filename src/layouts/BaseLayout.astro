@@ -22,6 +22,7 @@ import { fetchHeaderFragment, fetchFooterFragment } from '@/lib/nodehive';
 import type { NhHeaderFragment, NhFooterFragment } from '@/lib/nodehive';
 
 import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
+import NodeHiveToolbar from '@/components/nodehive/NodeHiveToolbar.astro';
 
 interface Props {
   /** Título de la página (se añade "| EGREM" al final) */
@@ -92,14 +93,15 @@ try {
     <meta property="og:site_name"   content="EGREM" />
 
     {/* NodeHive: variables globales para el Visual Editor */}
-    <script define:vars={{ nodehiveBaseUrl: import.meta.env.NODEHIVE_BASE_URL, nodehiveLang: lang }}>
+    <script is:inline define:vars={{ nodehiveBaseUrl: import.meta.env.NODEHIVE_BASE_URL, nodehiveLang: lang }}>
       window.__NODEHIVE_BASE_URL__ = nodehiveBaseUrl;
       window.__NODEHIVE_LANG__     = nodehiveLang;
     </script>
-    <meta http-equiv="X-Frame-Options" content="ALLOWALL" />
   </head>
 
   <body class="min-h-screen flex flex-col">
+
+    <NodeHiveToolbar lang={lang} />
 
     <Header isAuthenticated={isAuthenticated} cartCount={cartCount} nhHeader={nhHeader} lang={lang} />
 

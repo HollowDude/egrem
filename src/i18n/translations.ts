@@ -1,92 +1,24 @@
+/**
+ * Traducciones — diccionario plano organizado por namespaces.
+ *
+ * Cada namespace es un archivo separado en src/i18n/.
+ * Para añadir una key nueva: agrégala al namespace correspondiente
+ * (nav.ts, footer.ts, home.ts) en ambos idiomas.
+ *
+ * Consumir con:
+ *   import { useTranslations } from '@/i18n/translations';
+ *   const tr = useTranslations(lang);
+ *   tr('nav.store')   // "Tienda"
+ */
+
 import type { Lang } from './index';
+import { nav } from './nav';
+import { footer } from './footer';
+import { home } from './home';
 
 export const t: Record<Lang, Record<string, string>> = {
-  es: {
-    'nav.store': 'Tienda',
-    'nav.news': 'Actualidad',
-    'nav.news.news': 'Noticias',
-    'nav.news.blog': 'Blog',
-    'nav.news.heritage': 'Patrimonio',
-    'nav.news.artists': 'Artistas',
-    'nav.catalog': 'Catálogo',
-    'nav.catalog.music': 'Música',
-    'nav.catalog.videos': 'Videos',
-    'nav.catalog.artists': 'Artistas',
-    'nav.events': 'Eventos',
-    'nav.about': 'Sobre Nosotros',
-    'nav.contact': 'Contáctanos',
-    'nav.login': 'Iniciar Sesión',
-    'nav.register': 'Registrarse',
-    'nav.cart': 'Carrito',
-    'nav.account': 'Mi cuenta',
-    'nav.profile': 'Mi Perfil',
-    'nav.close_menu': 'Cerrar menú',
-    'nav.open_menu': 'Abrir menú',
-    'nav.search': 'Buscar',
-    'footer.follow': 'Síguenos',
-    'footer.explore': 'Explorar',
-    'footer.info': 'Información de la Empresa',
-    'footer.contact': 'Contacto',
-    'footer.back_top': '↑ Volver arriba',
-    'footer.privacy': 'Política de privacidad',
-    'footer.terms': 'Términos y condiciones',
-    'footer.faq': 'Preguntas frecuentes',
-    'home.hero.subtitle': 'siente la música',
-    'home.hero.explore_catalog': 'Explorar Catálogo',
-    'home.hero.view_artists': 'Ver Artistas',
-    'home.news.read_more': 'Leer más',
-    'home.section.see_more': 'Ver Más',
-    'home.section.see_all': 'Ver todo',
-    'home.section.see_details': 'Ver detalles',
-    'home.section.see_album': 'Ver álbum',
-    'home.section.listen': 'Escuchar',
-    'home.section.tickets': 'Entradas',
-    'home.section.watch': 'Ver video',
-    'home.section.buy': 'Comprar',
-  },
-  en: {
-    'nav.store': 'Store',
-    'nav.news': 'News',
-    'nav.news.news': 'News',
-    'nav.news.blog': 'Blog',
-    'nav.news.heritage': 'Heritage',
-    'nav.news.artists': 'Artists',
-    'nav.catalog': 'Catalog',
-    'nav.catalog.music': 'Music',
-    'nav.catalog.videos': 'Videos',
-    'nav.catalog.artists': 'Artists',
-    'nav.events': 'Events',
-    'nav.about': 'About Us',
-    'nav.contact': 'Contact Us',
-    'nav.login': 'Log In',
-    'nav.register': 'Register',
-    'nav.cart': 'Cart',
-    'nav.account': 'My Account',
-    'nav.profile': 'My Profile',
-    'nav.close_menu': 'Close menu',
-    'nav.open_menu': 'Open menu',
-    'nav.search': 'Search',
-    'footer.follow': 'Follow Us',
-    'footer.explore': 'Explore',
-    'footer.info': 'Company Info',
-    'footer.contact': 'Contact',
-    'footer.back_top': '↑ Back to top',
-    'footer.privacy': 'Privacy Policy',
-    'footer.terms': 'Terms & Conditions',
-    'footer.faq': 'FAQ',
-    'home.hero.subtitle': 'feel the music',
-    'home.hero.explore_catalog': 'Explore Catalog',
-    'home.hero.view_artists': 'View Artists',
-    'home.news.read_more': 'Read more',
-    'home.section.see_more': 'See More',
-    'home.section.see_all': 'See all',
-    'home.section.see_details': 'See details',
-    'home.section.see_album': 'View album',
-    'home.section.listen': 'Listen',
-    'home.section.tickets': 'Tickets',
-    'home.section.watch': 'Watch video',
-    'home.section.buy': 'Buy',
-  },
+  es: { ...nav.es, ...footer.es, ...home.es },
+  en: { ...nav.en, ...footer.en, ...home.en },
 };
 
 export function useTranslations(lang: Lang) {

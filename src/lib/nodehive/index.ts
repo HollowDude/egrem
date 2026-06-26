@@ -12,5 +12,9 @@ export { fetchHeaderFragment, fetchFooterFragment } from './fragments';
 export type { NhHero, NhEslogan, NhSection, NhHomePage } from './pages';
 export { fetchHomePage } from './pages';
 
+// Content fetchers
+export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion } from '@/types/drupal';
+export { fetchNoticias, fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from './fetchers';
+
 // Utilities
 export { resolveFileUrl } from './parsers';

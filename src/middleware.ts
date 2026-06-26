@@ -2,6 +2,22 @@ import { defineMiddleware } from 'astro:middleware';
 import { isValidLang, DEFAULT_LANG, LANG_COOKIE, LANG_COOKIE_MAX_AGE } from '@/i18n';
 import type { Lang } from '@/i18n';
 
+const NODEHIVE_BASE_URL = import.meta.env.NODEHIVE_BASE_URL as string | undefined;
+
+/**
+ * Deriva el dominio permitido para frame-ancestors desde
+ * NODEHIVE_BASE_URL, o usa '*' si no está configurado.
+ */
+function getFrameAncestors(): string {
+  if (!NODEHIVE_BASE_URL) return '*';
+  try {
+    const origin = new URL(NODEHIVE_BASE_URL).origin;
+    return origin;
+  } catch {
+    return '*';
+  }
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
   const pathname = url.pathname;
@@ -28,5 +44,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const lang: Lang = isValidLang(cookieLang) ? cookieLang : DEFAULT_LANG;
   context.locals.lang = lang;
 
-  return next();
+  const response = await next();
+
+  // Cabeceras de seguridad para iframe de Drupal (middleware aplica siempre,
+  // a diferencia de vite.server.headers que solo funciona en dev server)
+  const frameAncestors = getFrameAncestors();
+  response.headers.set('X-Frame-Options', 'ALLOWALL');
+  response.headers.set('Content-Security-Policy', `frame-ancestors ${frameAncestors};`);
+  response.headers.set('Cross-Origin-Opener-Policy', 'unsafe-none');
+  response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none');
+
+  return response;
 });

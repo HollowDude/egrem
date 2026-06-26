@@ -146,7 +146,7 @@ export default function HeaderNav({
                       onClick={() => toggleDropdown(item.label)}
                       onMouseEnter={() => setActiveDropdown(item.label)}
                       className="nav-link flex items-center gap-0.5 bg-transparent border-none p-0 cursor-pointer"
-                      style={{ color: '#1b1b1b', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500 }}
+                      style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}
                       aria-expanded={activeDropdown === item.label}
                       aria-haspopup="true"
                     >
@@ -172,7 +172,7 @@ export default function HeaderNav({
                             key={sub.href}
                             href={sub.href}
                             className="block px-4 py-2.5 no-underline transition-colors"
-                            style={{ color: '#1b1b1b', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500 }}
+                            style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}
                             role="menuitem"
                             onClick={() => setActiveDropdown(null)}
                             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(188,1,0,0.06)'; e.currentTarget.style.color = '#bc0100'; }}
@@ -188,7 +188,7 @@ export default function HeaderNav({
                   <a
                     href={item.href}
                     className="nav-link no-underline block"
-                    style={{ color: '#1b1b1b', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500 }}
+                    style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}
                   >
                     {item.label}
                   </a>
@@ -335,7 +335,7 @@ export default function HeaderNav({
                     type="button"
                     onClick={() => toggleDropdown(item.label)}
                     className="flex items-center justify-between w-full px-4 py-3 bg-transparent border-none cursor-pointer text-left transition-colors"
-                    style={{ color: '#1b1b1b', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500 }}
+                    style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}
                   >
                     {item.label}
                     <span className={`icon text-[1.1rem] transition-transform duration-200 ${activeDropdown === item.label ? 'rotate-180' : ''}`} style={{ color: '#603e39' }}>
@@ -349,7 +349,7 @@ export default function HeaderNav({
                           key={sub.href}
                           href={sub.href}
                           className="block no-underline py-2.5 transition-colors"
-                          style={{ paddingLeft: '3.5rem', paddingRight: '1rem', color: '#1b1b1b', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500 }}
+                          style={{ paddingLeft: '3.5rem', paddingRight: '1rem', color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 700 }}
                           onClick={() => setMobileOpen(false)}
                         >
                           {sub.label}
@@ -362,7 +362,7 @@ export default function HeaderNav({
                 <a
                   href={item.href}
                   className="flex items-center px-4 py-3 no-underline transition-colors"
-                  style={{ color: '#1b1b1b', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500 }}
+                  style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}
                   onClick={() => setMobileOpen(false)}
                 >
                   {item.label}
@@ -398,7 +398,7 @@ export default function HeaderNav({
         {/* Profile link in drawer */}
         {isAuthenticated && (
           <div className="border-t px-4 py-4" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-            <a href="/mi-cuenta" className="flex items-center gap-3 no-underline transition-colors" style={{ color: '#1b1b1b', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500 }}>
+            <a href="/mi-cuenta" className="flex items-center gap-3 no-underline transition-colors" style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}>
               <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(188,1,0,0.1)' }}>
                 <span className="icon" style={{ color: '#bc0100', fontSize: '20px' }}>account_circle</span>
               </div>

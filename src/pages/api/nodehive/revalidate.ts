@@ -9,9 +9,8 @@ import type { APIRoute } from 'astro';
  * Body esperado (JSON):
  *   { path?: string, type?: string, bundle?: string }
  *
- * En el proyecto consumidor (Maggy), importar y llamar a clearCache():
- *   import { clearCache } from '@/services/nodehive/nodehive.client';
- *   clearCache(bundle ?? path ?? undefined);
+ * TODO(nodehive): implementar invalidación de caché real (purgar CDN, etc.)
+ * Hoy solo hace logging del evento.
  */
 export const POST: APIRoute = async ({ request }) => {
   let body: Record<string, unknown> = {};

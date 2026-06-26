@@ -3,6 +3,7 @@ import { findIncluded, findAllIncluded, resolveRelIds } from './helpers';
 import { parseButton, parseMediaImage } from './parsers';
 import type { NhLink, NhButton, NhMediaImage, NhBase } from './parsers';
 import type { JsonApiResource } from './client';
+import { NODEHIVE_CONFIG } from './config';
 
 export interface NhRed {
   id: string;
@@ -32,7 +33,7 @@ export interface NhFooterFragment extends NhBase {
 }
 
 export async function fetchHeaderFragment(lang = 'es'): Promise<NhHeaderFragment> {
-  const HEADER_UUID = 'd1aa2e61-9d1a-45b7-9433-fcb1d4127190';
+  const HEADER_UUID = NODEHIVE_CONFIG.fragments.header;
 
   const res = await jsonApiFetch(
     `nodehive_fragment/header/${HEADER_UUID}?include=field_logo,field_logo.field_media_image`,
@@ -58,7 +59,7 @@ export async function fetchHeaderFragment(lang = 'es'): Promise<NhHeaderFragment
 }
 
 export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment> {
-  const FOOTER_UUID = 'b1ba077b-47d7-4968-bbda-56c48d2ecb1e';
+  const FOOTER_UUID = NODEHIVE_CONFIG.fragments.footer;
 
   const [resBase, resRedes, resContacto] = await Promise.all([
     jsonApiFetch(
