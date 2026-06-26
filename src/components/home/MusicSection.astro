@@ -1,39 +1,25 @@
 ---
-/**
- * MusicSection.astro — Sección de música destacada en la homepage.
- *
- * Diseño: fondo oscuro, label de sección, 4 cards de álbum/track con precio.
- *
- * NodeHive: paragraph bundle "_component_home_music"
- * Items: nodos de tipo "producto_musical" / "album"
- *   Campos por item: field_image, field_artist, field_title, field_format, field_price
- */
-
 import SectionHeader from '@/components/ui/SectionHeader.astro';
-
-interface MusicItem {
-  id: string;
-  image: string;
-  imageAlt: string;
-  format: string;  // VINILO, CD, DIGITAL, etc.
-  artist: string;
-  title: string;
-  price: string;
-  href: string;
-}
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhEntityMeta } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+import type { NhAlbum } from '@/types/drupal';
 
 interface Props {
-  items?: MusicItem[];
+  items?: NhAlbum[];
   sectionTitle?: string;
+  nhEntity?: NhEntityMeta;
+  lang?: Lang;
 }
 
-const { items, sectionTitle = 'Música Cubana' } = Astro.props;
+const { items, sectionTitle = 'Música Cubana', nhEntity, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
 
-const tracks: MusicItem[] = items ?? [
+const tracks: NhAlbum[] = items ?? [
   {
     id: '1',
-    image: '/images/music-placeholder-1.jpg',
-    imageAlt: 'Buena Vista Social Club - Edición Aniversario',
+    cover: { url: '/images/music-placeholder-1.jpg', alt: 'Buena Vista Social Club - Edición Aniversario', filename: 'music-1.jpg' },
     format: 'Vinilo',
     artist: 'Buena Vista Social Club',
     title: 'Edición Aniversario',
@@ -42,8 +28,7 @@ const tracks: MusicItem[] = items ?? [
   },
   {
     id: '2',
-    image: '/images/music-placeholder-2.jpg',
-    imageAlt: 'Chucho Valdés - Piano Solo',
+    cover: { url: '/images/music-placeholder-2.jpg', alt: 'Chucho Valdés - Piano Solo', filename: 'music-2.jpg' },
     format: 'CD',
     artist: 'Chucho Valdés',
     title: 'Piano Solo',
@@ -52,8 +37,7 @@ const tracks: MusicItem[] = items ?? [
   },
   {
     id: '3',
-    image: '/images/music-placeholder-3.jpg',
-    imageAlt: 'Omara Portuondo - Lo Mejor',
+    cover: { url: '/images/music-placeholder-3.jpg', alt: 'Omara Portuondo - Lo Mejor', filename: 'music-3.jpg' },
     format: 'Digital',
     artist: 'Omara Portuondo',
     title: 'Lo Mejor de Omara',
@@ -62,8 +46,7 @@ const tracks: MusicItem[] = items ?? [
   },
   {
     id: '4',
-    image: '/images/music-placeholder-4.jpg',
-    imageAlt: 'Los Van Van - 50 Aniversario',
+    cover: { url: '/images/music-placeholder-4.jpg', alt: 'Los Van Van - 50 Aniversario', filename: 'music-4.jpg' },
     format: 'CD',
     artist: 'Los Van Van',
     title: '50 Aniversario',
@@ -73,19 +56,23 @@ const tracks: MusicItem[] = items ?? [
 ];
 ---
 
-{/*
-  NodeHive:
-  <NodeHiveEntity entityType="paragraph" bundle="_component_home_music" tag="section" editLabel="Editar Música" lang={lang}>
-*/}
-<section
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_home_music'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={lang}
+  tag="section"
   class="bg-egrem-dark section-py"
-  aria-labelledby="music-heading"
+  editLabel="Editar Música"
+  editField="field_title"
 >
   <div class="container-site">
 
     <SectionHeader
       title={sectionTitle}
-      linkText="Ver Todo"
+      linkText={tr('home.section.see_all')}
       linkHref="/catalogo/musica"
       theme="dark"
       nhField="field_section_title"
@@ -99,28 +86,26 @@ const tracks: MusicItem[] = items ?? [
           data-nodehive-entity-bundle="producto_musical"
           data-nodehive-entity-id={track.id}
         >
-          {/* Imagen del álbum */}
           <a href={track.href} class="block relative aspect-square overflow-hidden bg-egrem-dark-card no-underline">
             <img
-              src={track.image}
-              alt={track.imageAlt}
+              src={track.cover?.url}
+              alt={track.cover?.alt ?? track.title}
               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
               decoding="async"
               data-nodehive-field="field_image"
             />
-            {/* Overlay dark */}
             <div
               class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"
               aria-hidden="true"
             ></div>
-            {/* Badge de formato */}
-            <span class="badge bg-egrem-red text-white absolute top-2.5 left-2.5 text-[0.6rem]">
-              {track.format}
-            </span>
+            {track.format && (
+              <span class="badge bg-egrem-red text-white absolute top-2.5 left-2.5 text-[0.6rem]">
+                {track.format}
+              </span>
+            )}
           </a>
 
-          {/* Info */}
           <div class="p-4 flex flex-col gap-1.5">
             <p
               class="font-display text-[0.7rem] uppercase tracking-widest text-white/40 m-0"
@@ -138,16 +123,18 @@ const tracks: MusicItem[] = items ?? [
               </a>
             </h3>
             <div class="flex items-center justify-between mt-2">
-              <span
-                class="font-display font-bold text-egrem-red text-base"
-                data-nodehive-field="field_price"
-              >
-                {track.price}
-              </span>
+              {track.price && (
+                <span
+                  class="font-display font-bold text-egrem-red text-base"
+                  data-nodehive-field="field_price"
+                >
+                  {track.price}
+                </span>
+              )}
               <a
                 href={track.href}
                 class="w-7 h-7 flex items-center justify-center bg-egrem-red rounded-full text-white hover:bg-egrem-red-dark transition-colors no-underline"
-                aria-label={`Comprar ${track.title}`}
+                aria-label={`${tr('home.section.buy')} ${track.title}`}
               >
                 <span class="icon text-[1rem]">add_shopping_cart</span>
               </a>
@@ -158,5 +145,4 @@ const tracks: MusicItem[] = items ?? [
     </div>
 
   </div>
-</section>
-{/* </NodeHiveEntity> */}
+</NodeHiveEntity>

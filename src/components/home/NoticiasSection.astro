@@ -15,19 +15,10 @@ import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
-
-interface Noticia {
-  id: string;
-  image: string;
-  imageAlt: string;
-  category: string;
-  title: string;
-  excerpt: string;
-  href: string;
-}
+import type { NhNoticia } from '@/types/drupal';
 
 interface Props {
-  noticias?: Noticia[];
+  noticias?: NhNoticia[];
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
   lang?: Lang;
@@ -36,33 +27,33 @@ interface Props {
 const { noticias, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const items: Noticia[] = noticias ?? [
+const items: NhNoticia[] = noticias ?? [
   {
     id: '1',
-    image: '/images/news-placeholder-1.jpg',
-    imageAlt: 'EGREM celebra 60 años de Son Cubano',
+    image: { url: '/images/news-placeholder-1.jpg', alt: 'EGREM celebra 60 años de Son Cubano', filename: 'news-1.jpg' },
     category: 'Cultura',
     title: 'EGREM celebra 60 años de Son Cubano',
     excerpt: 'Una mirada profunda a las grabaciones maestras que definieron el sonido de la nación durante décadas.',
     href: '/actualidad/noticias/egrem-60-anos-son',
+    date: '2026-01-15',
   },
   {
     id: '2',
-    image: '/images/news-placeholder-2.jpg',
-    imageAlt: 'Gala de Premios de la Música 2024',
+    image: { url: '/images/news-placeholder-2.jpg', alt: 'Gala de Premios de la Música 2024', filename: 'news-2.jpg' },
     category: 'Evento',
     title: 'Gala de Premios de la Música 2024',
     excerpt: 'Los mejores artistas del sello se reúnen en una noche histórica de jazz y salsa en el Teatro Nacional.',
     href: '/actualidad/noticias/gala-premios-musica-2024',
+    date: '2026-02-20',
   },
   {
     id: '3',
-    image: '/images/news-placeholder-3.jpg',
-    imageAlt: 'Reediciones en Vinilo: Serie Platino',
+    image: { url: '/images/news-placeholder-3.jpg', alt: 'Reediciones en Vinilo: Serie Platino', filename: 'news-3.jpg' },
     category: 'Lanzamiento',
     title: 'Reediciones en Vinilo: Serie Platino',
     excerpt: 'Nuevas versiones remasterizadas de los clásicos de Benny Moré y Bebo Valdés ya disponibles.',
     href: '/actualidad/noticias/reediciones-vinilo-platino',
+    date: '2026-03-10',
   },
 ];
 ---
@@ -101,8 +92,8 @@ const items: Noticia[] = noticias ?? [
           {/* Imagen */}
           <a href={noticia.href} class="block overflow-hidden no-underline shrink-0" style="height: 16rem;">
             <img
-              src={noticia.image}
-              alt={noticia.imageAlt}
+              src={noticia.image?.url}
+              alt={noticia.image?.alt ?? ''}
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               loading="lazy"
               decoding="async"

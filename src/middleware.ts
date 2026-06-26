@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { isValidLang, DEFAULT_LANG, LANG_COOKIE, LANG_COOKIE_MAX_AGE, SUPPORTED_LANGS } from '@/i18n';
+import { isValidLang, DEFAULT_LANG, LANG_COOKIE, LANG_COOKIE_MAX_AGE } from '@/i18n';
 import type { Lang } from '@/i18n';
 
 export const onRequest = defineMiddleware(async (context, next) => {

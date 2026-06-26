@@ -8,6 +8,7 @@ declare namespace App {
 
 interface ImportMetaEnv {
   readonly NODEHIVE_BASE_URL: string;
+  readonly NODEHIVE_API_KEY: string;
   readonly NODEHIVE_EDITOR_DEV_MODE: string;
 }
 

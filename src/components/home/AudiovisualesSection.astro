@@ -14,17 +14,10 @@ import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
-
-interface VideoItem {
-  id: string;
-  image: string;
-  imageAlt: string;
-  title: string;
-  href: string;
-}
+import type { NhVideo } from '@/types/drupal';
 
 interface Props {
-  items?: VideoItem[];
+  items?: NhVideo[];
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
   lang?: Lang;
@@ -33,25 +26,22 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const videos: VideoItem[] = items ?? [
+const videos: NhVideo[] = items ?? [
   {
     id: '1',
-    image: '/images/av-placeholder-1.jpg',
-    imageAlt: 'Sesiones en Areito: Vol. 1',
+    thumbnail: { url: '/images/av-placeholder-1.jpg', alt: 'Sesiones en Areito: Vol. 1', filename: 'av-1.jpg' },
     title: 'Sesiones en Areito: Vol. 1',
     href: '/catalogo/videos/sesiones-areito-vol-1',
   },
   {
     id: '2',
-    image: '/images/av-placeholder-2.jpg',
-    imageAlt: 'Documental: 80 Años de Son',
+    thumbnail: { url: '/images/av-placeholder-2.jpg', alt: 'Documental: 80 Años de Son', filename: 'av-2.jpg' },
     title: 'Documental: 80 Años de Son',
     href: '/catalogo/videos/documental-80-anos-son',
   },
   {
     id: '3',
-    image: '/images/av-placeholder-3.jpg',
-    imageAlt: 'Gira Nacional 2023: Resumen',
+    thumbnail: { url: '/images/av-placeholder-3.jpg', alt: 'Gira Nacional 2023: Resumen', filename: 'av-3.jpg' },
     title: 'Gira Nacional 2023: Resumen',
     href: '/catalogo/videos/gira-nacional-2023',
   },
@@ -94,8 +84,8 @@ const videos: VideoItem[] = items ?? [
             class="group relative cursor-pointer aspect-video bg-black overflow-hidden rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 block no-underline"
           >
             <img
-              src={item.image}
-              alt={item.imageAlt}
+              src={item.thumbnail?.url}
+              alt={item.thumbnail?.alt ?? ''}
               class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
               decoding="async"

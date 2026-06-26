@@ -13,6 +13,7 @@ import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
+import type { NhAlbum } from '@/types/drupal';
 
 interface Props {
   nhSectionTitle?: string;
@@ -22,27 +23,31 @@ interface Props {
 const { nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const lanzamientos = [
+const lanzamientos: NhAlbum[] = [
   {
-    cover: '/images/placeholder-album-1.jpg',
+    id: '1',
+    cover: { url: '/images/placeholder-album-1.jpg', alt: 'Vida y Esperanza — Omara Portuondo', filename: 'album-1.jpg' },
     artist: 'Omara Portuondo',
     title: 'Vida y Esperanza',
     href: '/catalogo/musica/omara-vida-esperanza',
   },
   {
-    cover: '/images/placeholder-album-2.jpg',
+    id: '2',
+    cover: { url: '/images/placeholder-album-2.jpg', alt: 'Ritos Modernos — Chucho Valdés', filename: 'album-2.jpg' },
     artist: 'Chucho Valdés',
     title: 'Ritos Modernos',
     href: '/catalogo/musica/chucho-ritos-modernos',
   },
   {
-    cover: '/images/placeholder-album-3.jpg',
+    id: '3',
+    cover: { url: '/images/placeholder-album-3.jpg', alt: 'Timba Total — Alexander Abreu', filename: 'album-3.jpg' },
     artist: 'Alexander Abreu',
     title: 'Timba Total',
     href: '/catalogo/musica/alexander-timba-total',
   },
   {
-    cover: '/images/placeholder-album-4.jpg',
+    id: '4',
+    cover: { url: '/images/placeholder-album-4.jpg', alt: 'Alma Guajira — Eliades Ochoa', filename: 'album-4.jpg' },
     artist: 'Eliades Ochoa',
     title: 'Alma Guajira',
     href: '/catalogo/musica/eliades-alma-guajira',
@@ -84,8 +89,8 @@ const lanzamientos = [
               style="background: #d0d0d0;"
             >
               <img
-                src={album.cover}
-                alt={`${album.title} — ${album.artist}`}
+                src={album.cover?.url}
+                alt={album.cover?.alt ?? `${album.title} — ${album.artist}`}
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
                 onerror="this.style.display='none'"

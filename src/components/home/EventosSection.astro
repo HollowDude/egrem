@@ -13,46 +13,44 @@ import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
+import type { NhEvento } from '@/types/drupal';
+
+function formatDay(dateStr: string): string { return new Date(dateStr).getDate().toString(); }
+function formatMonth(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('es', { month: 'short' }).replace('.', '');
+}
 
 interface Props {
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
   lang?: Lang;
 }
+
 const { nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-interface Evento {
-  day: string;
-  month: string;
-  title: string;
-  venue: string;
-  time: string;
-  href: string;
-}
-
-const eventos: Evento[] = [
+const eventos: NhEvento[] = [
   {
-    day: '15',
-    month: 'Oct',
+    id: '1',
     title: 'Buena Vista Tribute',
     venue: 'Centro Cultural Habana',
+    date: '2026-10-15',
     time: '20:30 HRS',
     href: '/eventos/buena-vista-tribute',
   },
   {
-    day: '22',
-    month: 'Oct',
+    id: '2',
     title: 'Haila Mompié en Concierto',
     venue: 'Teatro Karl Marx',
+    date: '2026-10-22',
     time: '21:00 HRS',
     href: '/eventos/haila-mompie-concierto',
   },
   {
-    day: '05',
-    month: 'Nov',
+    id: '3',
     title: 'Festival Jazz EGREM',
     venue: 'Estudios Areito',
+    date: '2026-11-05',
     time: '18:00 HRS',
     href: '/eventos/festival-jazz-egrem',
   },
@@ -92,10 +90,10 @@ const eventos: Evento[] = [
             {/* Fecha */}
             <div class="text-center w-20 shrink-0">
               <p class="font-display font-bold text-egrem-red m-0 leading-none" style="font-size: 2.5rem;">
-                {evento.day}
+                {formatDay(evento.date)}
               </p>
               <p class="font-display font-bold uppercase m-0" style="font-size: 12px; letter-spacing: 0.05em; color: var(--color-text-secondary);">
-                {evento.month}
+                {formatMonth(evento.date)}
               </p>
             </div>
 

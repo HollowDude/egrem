@@ -16,20 +16,10 @@ import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
-
-interface Produccion {
-  id: string;
-  image: string;
-  imageAlt: string;
-  title: string;
-  subtitle: string;
-  price?: string;
-  audioHref?: string;
-  buyHref: string;
-}
+import type { NhProduccion } from '@/types/drupal';
 
 interface Props {
-  items?: Produccion[];
+  items?: NhProduccion[];
   nhSectionTitle?: string;
   nhEntity?: NhEntityMeta;
   lang?: Lang;
@@ -38,11 +28,10 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const producciones: Produccion[] = items ?? [
+const producciones: NhProduccion[] = items ?? [
   {
     id: '1',
-    image: '/images/prod-placeholder-1.jpg',
-    imageAlt: 'La Casa de la Música Cubana',
+    image: { url: '/images/prod-placeholder-1.jpg', alt: 'La Casa de la Música Cubana', filename: 'prod-1.jpg' },
     title: 'La Casa de la Música Cubana',
     subtitle: 'Compilado · 2024 · EGREM Records',
     price: '$15.00',
@@ -51,8 +40,7 @@ const producciones: Produccion[] = items ?? [
   },
   {
     id: '2',
-    image: '/images/prod-placeholder-2.jpg',
-    imageAlt: 'Trova Cubana — 60 Años',
+    image: { url: '/images/prod-placeholder-2.jpg', alt: 'Trova Cubana — 60 Años', filename: 'prod-2.jpg' },
     title: 'Trova Cubana — 60 Años',
     subtitle: 'Edición Especial · 2024 · EGREM Records',
     price: '$28.00',
@@ -61,8 +49,7 @@ const producciones: Produccion[] = items ?? [
   },
   {
     id: '3',
-    image: '/images/prod-placeholder-3.jpg',
-    imageAlt: 'Festival Jazz Cubano 2024',
+    image: { url: '/images/prod-placeholder-3.jpg', alt: 'Festival Jazz Cubano 2024', filename: 'prod-3.jpg' },
     title: 'Festival Jazz Cubano 2024',
     subtitle: 'En Vivo · EGREM Records',
     price: '$22.00',
@@ -114,8 +101,8 @@ const producciones: Produccion[] = items ?? [
           <a href={prod.buyHref} class="shrink-0 no-underline" aria-tabindex={-1}>
             <div class="w-16 h-16 sm:w-20 sm:h-20 rounded overflow-hidden bg-egrem-dark relative">
               <img
-                src={prod.image}
-                alt={prod.imageAlt}
+                src={prod.image?.url}
+                alt={prod.image?.alt ?? ''}
                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
