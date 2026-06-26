@@ -1,42 +1,35 @@
 ---
 import type { Lang } from '@/i18n';
+import { LANG_COOKIE } from '@/i18n';
 
 interface Props {
   lang: Lang;
   class?: string;
 }
 const { lang, class: className } = Astro.props;
-const returnTo = Astro.url.pathname + Astro.url.search;
 ---
 
 <div class:list={['lang-switcher', className]}>
-  <form method="GET" action="/api/set-lang" class="lang-form">
-    <input type="hidden" name="returnTo" value={returnTo} />
-    <button
-      type="submit"
-      name="lang"
-      value="es"
-      class:list={['lang-btn', { 'lang-btn--active': lang === 'es' }]}
-      aria-pressed={lang === 'es'}
-    >ES</button>
-    <span aria-hidden="true">|</span>
-    <button
-      type="submit"
-      name="lang"
-      value="en"
-      class:list={['lang-btn', { 'lang-btn--active': lang === 'en' }]}
-      aria-pressed={lang === 'en'}
-    >EN</button>
-  </form>
+  <a
+    href="/es/"
+    class:list={['lang-btn', { 'lang-btn--active': lang === 'es' }]}
+    aria-pressed={lang === 'es'}
+  >ES</a>
+  <span aria-hidden="true">|</span>
+  <a
+    href="/en/"
+    class:list={['lang-btn', { 'lang-btn--active': lang === 'en' }]}
+    aria-pressed={lang === 'en'}
+  >EN</a>
 </div>
 
 <style>
-  .lang-switcher { display: flex; align-items: center; }
-  .lang-switcher form { display: flex; align-items: center; gap: 4px; }
+  .lang-switcher { display: flex; align-items: center; gap: 4px; }
   .lang-btn {
     background: none; border: none; cursor: pointer; padding: 2px 4px;
     font-family: var(--font-display); font-size: 12px; font-weight: 700;
     letter-spacing: 0.08em; color: #808080;
+    text-decoration: none;
     transition: color 0.2s;
   }
   .lang-btn--active { color: #bc0100; }

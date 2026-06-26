@@ -40,14 +40,12 @@ const devMode = import.meta.env.NODEHIVE_EDITOR_DEV_MODE === 'true';
   window.__NODEHIVE_EDITOR__ = window.__NODEHIVE_EDITOR__ || {};
 
   /**
-   * Cambia el idioma navegando a la ruta equivalente en el otro idioma.
-   * Usado por HeaderClient.tsx al cambiar idioma desde el header.
+   * Cambia el idioma navegando a /es/ o /en/ (el middleware hace el rewrite).
    */
   window.__NODEHIVE_EDITOR__.setLang = function (lang) {
     var current = window.location.pathname;
-    var next = current.replace(/^\/(es|en)(\/|$)/, '/' + lang + '$2');
-    if (next === current) next = '/' + lang + '/';
-    window.location.href = next + window.location.search;
+    var next = '/' + lang + '/' + current.replace(/^\/(es|en)?\/?/, '');
+    window.location.href = next;
   };
 
   window.__NODEHIVE_EDITOR__.isEditorActive = function () {
@@ -147,11 +145,8 @@ const devMode = import.meta.env.NODEHIVE_EDITOR_DEV_MODE === 'true';
       var entityInternalId = entityEl.dataset.nodehiveEntityInternalId || '';
       var entityParentId = entityEl.dataset.nodehiveParent_id       || '';
 
-      /* Idioma: usar el del pathname (más fiable en proyectos i18n) */
-      var pathLang = window.location.pathname.split('/')[1];
-      var langcode = (['es', 'en'].indexOf(pathLang) !== -1)
-        ? pathLang
-        : (window.__NODEHIVE_LANG__ || document.documentElement.lang || 'es');
+      /* Idioma: usar window.__NODEHIVE_LANG__ (seteado desde el middleware por cookie) */
+      var langcode = window.__NODEHIVE_LANG__ || document.documentElement.lang || 'es';
 
       var fieldName = el.dataset.nodehiveField || '';
 

@@ -3,10 +3,11 @@ interface Props {
 }
 
 export default function LanguageSwitcherReact({ lang }: Props) {
-  const switchLang = async (newLang: 'es' | 'en') => {
+  const switchLang = (newLang: 'es' | 'en') => {
     if (newLang === lang) return;
-    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `/api/set-lang?lang=${newLang}&returnTo=${returnTo}`;
+    const current = window.location.pathname;
+    const next = '/' + newLang + '/' + current.replace(/^\/(es|en)?\/?/, '');
+    window.location.href = next;
   };
 
   return (
