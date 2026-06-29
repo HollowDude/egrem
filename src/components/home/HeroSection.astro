@@ -109,6 +109,8 @@ const buttons = nhButtons ?? [
           variant={variantMap[btn.style] || 'primary'}
           size="xl"
           href={btn.link?.uri || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
           data-nodehive-field="field_buttons"
         >
           {btn.title}

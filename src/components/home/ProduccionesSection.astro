@@ -28,7 +28,7 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const producciones: NhProduccion[] = items ?? [
+const producciones: NhProduccion[] = items?.length ? items : [
   {
     id: '1',
     image: { url: '/images/prod-placeholder-1.jpg', alt: 'La Casa de la Música Cubana', filename: 'prod-1.jpg' },
@@ -61,7 +61,7 @@ const producciones: NhProduccion[] = items ?? [
 
 <NodeHiveEntity
   entityType="paragraph"
-  bundle={nhEntity?.bundle ?? 'homepage_producciones'}
+  bundle={nhEntity?.bundle ?? '_component_homepage_producciones'}
   id={nhEntity?.id}
   internalId={nhEntity?.internalId}
   parentId={nhEntity?.parentId}

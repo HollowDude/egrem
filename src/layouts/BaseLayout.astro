@@ -22,7 +22,7 @@ import { fetchHeaderFragment, fetchFooterFragment } from '@/lib/nodehive';
 import type { NhHeaderFragment, NhFooterFragment } from '@/lib/nodehive';
 
 import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
-import NodeHiveToolbar from '@/components/nodehive/NodeHiveToolbar.astro';
+import AccessibilityWidget from '@/components/ui/AccessibilityWidget';
 
 interface Props {
   /** Título de la página (se añade "| EGREM" al final) */
@@ -55,16 +55,14 @@ const lang = Astro.locals.lang;
 const pageTitle = title === 'EGREM' ? 'EGREM — Empresa de Grabaciones y Ediciones Musicales' : `${title} | EGREM`;
 const canonicalUrl = canonical ?? Astro.url.href;
 
-// Fetch NodeHive fragments (header/footer) — fail gracefully
+// Fetch NodeHive fragments (header/footer) — cada uno falla independientemente
 let nhHeader: NhHeaderFragment | null = null;
 let nhFooter: NhFooterFragment | null = null;
-try {
-  [nhHeader, nhFooter] = await Promise.all([
-    fetchHeaderFragment(lang),
-    fetchFooterFragment(lang),
-  ]);
-} catch (e) {
-  console.error('[NodeHive] Failed to fetch fragments:', e);
+try { nhHeader = await fetchHeaderFragment(lang); } catch (e) {
+  console.error('[NodeHive] Failed to fetch header fragment:', e);
+}
+try { nhFooter = await fetchFooterFragment(lang); } catch (e) {
+  console.error('[NodeHive] Failed to fetch footer fragment:', e);
 }
 ---
 
@@ -101,7 +99,7 @@ try {
 
   <body class="min-h-screen flex flex-col">
 
-    <NodeHiveToolbar lang={lang} />
+    <AccessibilityWidget client:load />
 
     <Header isAuthenticated={isAuthenticated} cartCount={cartCount} nhHeader={nhHeader} lang={lang} />
 

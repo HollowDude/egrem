@@ -27,7 +27,6 @@ export interface NhFooterFragment extends NhBase {
   title: string;
   derechos: string;
   logo: NhMediaImage | null;
-  tagline: string;
   redes: NhRed[];
   contacto: NhContacto | null;
 }
@@ -67,11 +66,11 @@ export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment
       lang,
     ),
     jsonApiFetch(
-      `nodehive_fragment/footer/${FOOTER_UUID}?include=field_redes,field_redes.field_redes`,
+      `nodehive_fragment/footer/${FOOTER_UUID}?include=field_redes`,
       lang,
     ),
     jsonApiFetch(
-      `nodehive_fragment/footer/${FOOTER_UUID}?include=field_contacto,field_contacto.field_boton`,
+      `nodehive_fragment/footer/${FOOTER_UUID}?include=field_contacto,field_contacto.field_button`,
       lang,
     ),
   ]);
@@ -96,12 +95,6 @@ export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment
     }
   }
 
-  let tagline = '';
-  const redesParent = findAllIncluded(resRedes.included, 'paragraph--redes');
-  if (redesParent.length) {
-    tagline = ((redesParent[0].attributes as Record<string, unknown>).field_title as string) ?? '';
-  }
-
   let contacto: NhContacto | null = null;
   const contactoItems = findAllIncluded(resContacto.included, 'paragraph--_component_footer_contacto');
   if (contactoItems.length) {
@@ -121,7 +114,6 @@ export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment
     title: (attrs.title as string) ?? '',
     derechos: (attrs.field_derechos as string) ?? '',
     logo,
-    tagline,
     redes,
     contacto,
   };

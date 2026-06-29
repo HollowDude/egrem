@@ -30,7 +30,7 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const eventos: NhEvento[] = items ?? [
+const eventos: NhEvento[] = items?.length ? items : [
   {
     id: '1',
     title: 'Buena Vista Tribute',

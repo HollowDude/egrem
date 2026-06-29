@@ -24,7 +24,7 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const lanzamientos: NhAlbum[] = items ?? [
+const lanzamientos: NhAlbum[] = items?.length ? items : [
   {
     id: '1',
     cover: { url: '/images/placeholder-album-1.jpg', alt: 'Vida y Esperanza — Omara Portuondo', filename: 'album-1.jpg' },

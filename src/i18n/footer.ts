@@ -10,6 +10,7 @@ export const footer: Record<Lang, Record<string, string>> = {
     'footer.privacy': 'Política de privacidad',
     'footer.terms': 'Términos y condiciones',
     'footer.faq': 'Preguntas frecuentes',
+    'footer.tagline': 'Llevando la música cubana al mundo desde 1964',
   },
   en: {
     'footer.follow': 'Follow Us',
@@ -20,5 +21,6 @@ export const footer: Record<Lang, Record<string, string>> = {
     'footer.privacy': 'Privacy Policy',
     'footer.terms': 'Terms & Conditions',
     'footer.faq': 'FAQ',
+    'footer.tagline': 'Bringing Cuban music to the world since 1964',
   },
 };

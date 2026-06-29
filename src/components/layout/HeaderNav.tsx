@@ -118,7 +118,7 @@ export default function HeaderNav({
           {/* ── Logo ── */}
           <a href="/" className="flex items-center gap-2 shrink-0 no-underline" aria-label="EGREM — Inicio">
             {logoUrl ? (
-              <img src={logoUrl} alt="EGREM" className="h-10 w-auto" style={{ maxWidth: 120 }} />
+              <img src={logoUrl} alt="EGREM" className="h-10 w-auto" style={{ maxWidth: 120 }} data-nodehive-field="field_logo" />
             ) : (
               <>
                 <svg width="36" height="36" viewBox="0 0 40 40" fill="none" aria-hidden="true">
@@ -306,7 +306,7 @@ export default function HeaderNav({
         <div className="flex items-center justify-between px-4 py-4 border-b" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
           <a href="/" className="no-underline">
             {logoUrl ? (
-              <img src={logoUrl} alt="EGREM" className="h-8 w-auto" style={{ maxWidth: 100 }} />
+              <img src={logoUrl} alt="EGREM" className="h-8 w-auto" style={{ maxWidth: 100 }} data-nodehive-field="field_logo" />
             ) : (
               <svg width="32" height="32" viewBox="0 0 40 40" fill="none" aria-hidden="true">
                 <ellipse cx="20" cy="20" rx="20" ry="20" fill="#FF0000"/>

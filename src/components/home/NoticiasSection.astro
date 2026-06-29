@@ -27,7 +27,7 @@ interface Props {
 const { noticias, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const items: NhNoticia[] = noticias ?? [
+const items: NhNoticia[] = noticias?.length ? noticias : [
   {
     id: '1',
     image: { url: '/images/news-placeholder-1.jpg', alt: 'EGREM celebra 60 años de Son Cubano', filename: 'news-1.jpg' },

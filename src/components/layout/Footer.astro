@@ -14,8 +14,10 @@
  */
 
 import type { NhFooterFragment } from '@/lib/nodehive';
+import { resolveFileUrl } from '@/lib/nodehive';
 import EgremLogo from '@/components/ui/EgremLogo.astro';
 import Button from '@/components/ui/Button.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
 
@@ -28,8 +30,9 @@ const tr = useTranslations(lang);
 
 const currentYear = new Date().getFullYear();
 const derechos = nhFooter?.derechos || `© ${currentYear} EGREM — ${lang === 'en' ? 'Recording and Music Publishing Company of Cuba. All rights reserved.' : 'Empresa de Grabaciones y Ediciones Musicales. Todos los derechos reservados.'}`;
-const tagline = nhFooter?.tagline || 'Llevando la música cubana al mundo desde 1964';
+const tagline = nhFooter?.title || tr('footer.tagline');
 const contacto = nhFooter?.contacto;
+const logoUrl = nhFooter?.logo?.url ? resolveFileUrl(nhFooter.logo.url) : null;
 const redes = nhFooter?.redes ?? [];
 
 const navExplorar = [
@@ -49,6 +52,15 @@ const navInfo = [
 <footer
   style="background-color: var(--color-footer-bg); color: var(--color-footer-text); border-top: 3px solid var(--color-egrem-red);"
 >
+<NodeHiveEntity
+  entityType="nodehive_fragment"
+  bundle="footer"
+  id={nhFooter?.id}
+  lang={lang}
+  tag="div"
+  class=""
+  editLabel="Editar Footer"
+>
   {/* ── Cuerpo principal ── */}
   <div class="container-site" style="padding-top: 3rem; padding-bottom: 0;">
     <div class="footer-grid gap-8">
@@ -57,13 +69,12 @@ const navInfo = [
       <div class="flex flex-col gap-4">
 
         {/* Logo */}
-        <EgremLogo variant="light" width={120} class="self-start" />
+        <EgremLogo variant="light" width={120} class="self-start" src={logoUrl} />
 
         {/* Tagline en Ravellin dorado */}
         <p
           class="font-script text-egrem-gold leading-snug m-0"
           style="font-size: 1.15rem"
-          data-nodehive-field="field_footer_tagline"
         >
           {tagline}
         </p>
@@ -170,7 +181,6 @@ const navInfo = [
           <p
             class="font-display text-[0.8rem] m-0 leading-relaxed"
             style="color: var(--color-footer-text);"
-            data-nodehive-field="field_address"
           >
             {contacto?.direccion || 'Calle 3ra No. 1008 e/ 10 y 12, Miramar, Playa, La Habana, Cuba'}
           </p>
@@ -179,7 +189,6 @@ const navInfo = [
         <a
           href={`mailto:${contacto?.correo || 'info@egrem.co.cu'}`}
           class="footer-link flex items-center gap-2"
-          data-nodehive-field="field_email"
         >
           <span class="icon shrink-0" style="font-size:1.1rem; color: var(--color-egrem-red);">mail</span>
           {contacto?.correo || 'info@egrem.co.cu'}
@@ -188,18 +197,16 @@ const navInfo = [
         <a
           href={`tel:${(contacto?.telefono || '+53 7 204 9822').replace(/\s/g, '')}`}
           class="footer-link flex items-center gap-2"
-          data-nodehive-field="field_phone"
         >
           <span class="icon shrink-0" style="font-size:1.1rem; color: var(--color-egrem-red);">call</span>
           {contacto?.telefono || '+53 7 204 9822 / +53 7 204 9823'}
         </a>
 
-        <Button variant="primary" size="sm" href={contacto?.boton?.link?.uri || '/contacto'} class="self-start mt-1">
+        <Button variant="primary" size="sm" href={contacto?.boton?.link?.uri || '/contacto'} target="_blank" rel="noopener noreferrer" class="self-start mt-1">
           <span class="icon" style="font-size:0.95rem">mail</span>
           {contacto?.boton?.title || tr('nav.contact')}
         </Button>
       </div>
-      {/* </NodeHiveEntity> */}
 
     </div>
   </div>
@@ -230,6 +237,7 @@ const navInfo = [
     </button>
   </div>
 
+</NodeHiveEntity>
 </footer>
 
 <style>

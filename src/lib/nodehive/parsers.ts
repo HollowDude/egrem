@@ -37,7 +37,7 @@ export function parseButton(res: JsonApiResource): NhButton {
   return {
     id: res.id,
     title: (a.field_title as string) ?? '',
-    style: (a.field_style as 'primary' | 'secondary') ?? 'primary',
+    style: (a.field_style === 'secundary' ? 'secondary' : a.field_style) as 'primary' | 'secondary' ?? 'primary',
     link: link ? { uri: link.uri, title: link.title ?? '' } : null,
   };
 }

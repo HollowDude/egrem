@@ -1,20 +1,19 @@
 /**
  * Configuración de contenido NodeHive.
  *
- * Los UUIDs identifican contenido en Drupal. Distintos entornos
- * (dev / staging / prod) usan distintos UUIDs — configúralos vía
- * variables de entorno o edita los defaults aquí.
+ * UUIDs de los contenidos en Drupal. Se configuran aquí directamente
+ * para distinguir por entorno si es necesario.
  *
- * Para añadir una página nueva: agrega su UUID aquí y crea el
- * fetch en pages.ts.
+ * Para añadir una página nueva: agrega su UUID aquí y crea el fetch
+ * en pages.ts.
  */
 
 export const NODEHIVE_CONFIG = {
   fragments: {
-    header: import.meta.env.NODEHIVE_HEADER_UUID as string | undefined ?? 'd1aa2e61-9d1a-45b7-9433-fcb1d4127190',
-    footer: import.meta.env.NODEHIVE_FOOTER_UUID as string | undefined ?? 'b1ba077b-47d7-4968-bbda-56c48d2ecb1e',
+    header: '3b4e275f-0dfc-48e1-992e-4cd6e8ba04e8',
+    footer: '60f5e816-d6d2-45e3-a08e-709c3f2ab194',
   },
   pages: {
-    home: import.meta.env.NODEHIVE_HOME_UUID as string | undefined ?? '01c42d09-c898-45d4-9366-98275a2de7fc',
+    home: 'f7fa8944-3347-4223-9f2c-1b7feda12bf5',
   },
 } as const;

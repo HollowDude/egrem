@@ -2,7 +2,7 @@
 /**
  * EgremLogo.astro
  * Logo de EGREM — emblema rojo + texto.
- * Reemplazar src del <img> cuando haya un archivo de logo oficial en /public/images/.
+ * Cuando se pasa `src`, renderiza la imagen de Drupal en lugar del SVG estático.
  */
 interface Props {
   /** Ancho del logo en píxeles. Default: 120 */
@@ -11,9 +11,11 @@ interface Props {
   class?: string;
   /** Variante de color del texto: 'dark' (negro) | 'light' (blanco) | 'brand' (rojo) */
   variant?: 'dark' | 'light' | 'brand';
+  /** URL absoluta del logo desde NodeHive (opcional) */
+  src?: string | null;
 }
 
-const { width = 120, class: className, variant = 'dark' } = Astro.props;
+const { width = 120, class: className, variant = 'dark', src } = Astro.props;
 
 const textColor = {
   dark:  '#000000',
@@ -22,45 +24,51 @@ const textColor = {
 }[variant];
 ---
 
-<a href="/" class:list={['inline-flex items-center gap-2 no-underline', className]} aria-label="EGREM — Inicio">
-  {/* Emblema rojo */}
-  <svg
-    width={Math.round(width * 0.33)}
-    height={Math.round(width * 0.33)}
-    viewBox="0 0 40 40"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <ellipse cx="20" cy="20" rx="20" ry="20" fill="#FF0000"/>
-    {/* Disco/vinyl stylizado */}
-    <circle cx="20" cy="20" r="13" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
-    <circle cx="20" cy="20" r="4.5" fill="white" opacity="0.9"/>
-    <circle cx="20" cy="20" r="1.5" fill="#FF0000"/>
-    {/* Destello superior */}
-    <ellipse cx="14" cy="13" rx="4" ry="2.5" fill="white" opacity="0.15" transform="rotate(-35 14 13)"/>
-  </svg>
+{src ? (
+  <a href="/" class:list={className} aria-label="EGREM — Inicio">
+    <img src={src} alt="EGREM" class="h-auto" style={`max-width: ${width}px; max-height: ${width * 0.4}px;`} />
+  </a>
+) : (
+  <a href="/" class:list={['inline-flex items-center gap-2 no-underline', className]} aria-label="EGREM — Inicio">
+    {/* Emblema rojo */}
+    <svg
+      width={Math.round(width * 0.33)}
+      height={Math.round(width * 0.33)}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <ellipse cx="20" cy="20" rx="20" ry="20" fill="#FF0000"/>
+      {/* Disco/vinyl stylizado */}
+      <circle cx="20" cy="20" r="13" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+      <circle cx="20" cy="20" r="4.5" fill="white" opacity="0.9"/>
+      <circle cx="20" cy="20" r="1.5" fill="#FF0000"/>
+      {/* Destello superior */}
+      <ellipse cx="14" cy="13" rx="4" ry="2.5" fill="white" opacity="0.15" transform="rotate(-35 14 13)"/>
+    </svg>
 
-  {/* Wordmark */}
-  <svg
-    width={Math.round(width * 0.67)}
-    height={Math.round(width * 0.22)}
-    viewBox="0 0 80 26"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <text
-      x="0"
-      y="22"
-      font-family="'Myriad Pro Cond', 'Arial Narrow', Arial, sans-serif"
-      font-size="26"
-      font-weight="700"
-      fill={textColor}
-      letter-spacing="-0.5"
-    >egrem</text>
-  </svg>
-</a>
+    {/* Wordmark */}
+    <svg
+      width={Math.round(width * 0.67)}
+      height={Math.round(width * 0.22)}
+      viewBox="0 0 80 26"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <text
+        x="0"
+        y="22"
+        font-family="'Myriad Pro Cond', 'Arial Narrow', Arial, sans-serif"
+        font-size="26"
+        font-weight="700"
+        fill={textColor}
+        letter-spacing="-0.5"
+      >egrem</text>
+    </svg>
+  </a>
+)}
 
 <style>
   a {

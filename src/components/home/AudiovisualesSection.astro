@@ -26,7 +26,7 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const videos: NhVideo[] = items ?? [
+const videos: NhVideo[] = items?.length ? items : [
   {
     id: '1',
     thumbnail: { url: '/images/av-placeholder-1.jpg', alt: 'Sesiones en Areito: Vol. 1', filename: 'av-1.jpg' },
