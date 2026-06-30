@@ -176,10 +176,13 @@ const devMode = import.meta.env.NODEHIVE_EDITOR_DEV_MODE === 'true';
       }
 
       if (entityType === 'nodehive_fragment') {
+        /* Usar el internalId (fid) si existe, ya que la ruta Drupal 
+           /nodehive/fragment/{id} espera el FID entero, no el UUID */
+        var fragmentId = entityInternalId || entityUuid;
         sendToEditor({
           type:      'fragment',
           uuid:      entityUuid,
-          id:        entityInternalId || entityUuid,
+          id:        fragmentId,
           parent_id: entityParentId,
           field:     fieldName,
           pathname:  window.location.pathname,

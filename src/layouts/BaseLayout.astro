@@ -22,7 +22,6 @@ import { fetchHeaderFragment, fetchFooterFragment } from '@/lib/nodehive';
 import type { NhHeaderFragment, NhFooterFragment } from '@/lib/nodehive';
 
 import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
-import AccessibilityWidget from '@/components/ui/AccessibilityWidget';
 
 interface Props {
   /** Título de la página (se añade "| EGREM" al final) */
@@ -98,8 +97,6 @@ try { nhFooter = await fetchFooterFragment(lang); } catch (e) {
   </head>
 
   <body class="min-h-screen flex flex-col">
-
-    <AccessibilityWidget client:load />
 
     <Header isAuthenticated={isAuthenticated} cartCount={cartCount} nhHeader={nhHeader} lang={lang} />
 

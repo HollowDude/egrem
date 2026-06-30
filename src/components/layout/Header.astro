@@ -13,6 +13,7 @@ import HeaderNav from './HeaderNav.tsx';
 import type { NhHeaderFragment } from '@/lib/nodehive';
 import { resolveFileUrl } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 
 interface Props {
   isAuthenticated?: boolean;
@@ -30,10 +31,19 @@ const logoUrl = nhHeader?.logo?.url ? resolveFileUrl(nhHeader.logo.url) : null;
 {/* El spacer compensa el header fixed para que el contenido no quede debajo */}
   <div class="h-16 lg:h-[4.5rem]" aria-hidden="true"></div>
 
-  <HeaderNav
-    client:load
-    isAuthenticated={isAuthenticated}
-    cartCount={cartCount}
-    logoUrl={logoUrl}
+  <NodeHiveEntity
+    entityType="nodehive_fragment"
+    bundle="header"
+    id={nhHeader?.id}
+    internalId={nhHeader?.drupalInternalFid}
     lang={lang}
-  />
+    tag="div"
+  >
+    <HeaderNav
+      client:load
+      isAuthenticated={isAuthenticated}
+      cartCount={cartCount}
+      logoUrl={logoUrl}
+      lang={lang}
+    />
+  </NodeHiveEntity>

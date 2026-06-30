@@ -1,19 +1,39 @@
 /**
  * Configuración de contenido NodeHive.
  *
- * UUIDs de los contenidos en Drupal. Se configuran aquí directamente
- * para distinguir por entorno si es necesario.
+ * UUIDs de los contenidos en Drupal.
+ * Local → UUIDs de desarrollo local.
+ * Remoto (lombaoestudios.com) → UUIDs del servidor remoto.
  *
- * Para añadir una página nueva: agrega su UUID aquí y crea el fetch
- * en pages.ts.
+ * TODO: migrar a import.meta.env.NODEHIVE_*_UUID con fallback a local.
  */
+
+const LOCAL = {
+  header: '3b4e275f-0dfc-48e1-992e-4cd6e8ba04e8',
+  footer: '60f5e816-d6d2-45e3-a08e-709c3f2ab194',
+  home:   'f7fa8944-3347-4223-9f2c-1b7feda12bf5',
+} as const;
+
+const REMOTE = {
+  header: '1fd7eda9-acf9-488d-9c2b-c8b9ba3c3eb0',
+  footer: 'b86003b8-555c-4d3d-b046-480f68d1e4b9',
+  home:   '6e8fc6ae-b1e3-4b8c-8fbb-c4425042b018',
+} as const;
+
+function getEnv(): 'local' | 'remote' {
+  const baseUrl = import.meta.env.NODEHIVE_BASE_URL ?? '';
+  return baseUrl.includes('lombaoestudios.com') ? 'remote' : 'local';
+}
+
+const env = getEnv();
+const UUID = env === 'remote' ? REMOTE : LOCAL;
 
 export const NODEHIVE_CONFIG = {
   fragments: {
-    header: '3b4e275f-0dfc-48e1-992e-4cd6e8ba04e8',
-    footer: '60f5e816-d6d2-45e3-a08e-709c3f2ab194',
+    header: UUID.header,
+    footer: UUID.footer,
   },
   pages: {
-    home: 'f7fa8944-3347-4223-9f2c-1b7feda12bf5',
+    home: UUID.home,
   },
-} as const;
+};

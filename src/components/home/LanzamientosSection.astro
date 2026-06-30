@@ -27,30 +27,30 @@ const tr = useTranslations(lang);
 const lanzamientos: NhAlbum[] = items?.length ? items : [
   {
     id: '1',
-    cover: { url: '/images/placeholder-album-1.jpg', alt: 'Vida y Esperanza — Omara Portuondo', filename: 'album-1.jpg' },
-    artist: 'Omara Portuondo',
-    title: 'Vida y Esperanza',
+    cover: { url: '/images/placeholder-album-1.jpg', alt: `${tr('home.releases.card_1_title')} — ${tr('home.releases.card_1_artist')}`, filename: 'album-1.jpg' },
+    artist: tr('home.releases.card_1_artist'),
+    title: tr('home.releases.card_1_title'),
     href: '/catalogo/musica/omara-vida-esperanza',
   },
   {
     id: '2',
-    cover: { url: '/images/placeholder-album-2.jpg', alt: 'Ritos Modernos — Chucho Valdés', filename: 'album-2.jpg' },
-    artist: 'Chucho Valdés',
-    title: 'Ritos Modernos',
+    cover: { url: '/images/placeholder-album-2.jpg', alt: `${tr('home.releases.card_2_title')} — ${tr('home.releases.card_2_artist')}`, filename: 'album-2.jpg' },
+    artist: tr('home.releases.card_2_artist'),
+    title: tr('home.releases.card_2_title'),
     href: '/catalogo/musica/chucho-ritos-modernos',
   },
   {
     id: '3',
-    cover: { url: '/images/placeholder-album-3.jpg', alt: 'Timba Total — Alexander Abreu', filename: 'album-3.jpg' },
-    artist: 'Alexander Abreu',
-    title: 'Timba Total',
+    cover: { url: '/images/placeholder-album-3.jpg', alt: `${tr('home.releases.card_3_title')} — ${tr('home.releases.card_3_artist')}`, filename: 'album-3.jpg' },
+    artist: tr('home.releases.card_3_artist'),
+    title: tr('home.releases.card_3_title'),
     href: '/catalogo/musica/alexander-timba-total',
   },
   {
     id: '4',
-    cover: { url: '/images/placeholder-album-4.jpg', alt: 'Alma Guajira — Eliades Ochoa', filename: 'album-4.jpg' },
-    artist: 'Eliades Ochoa',
-    title: 'Alma Guajira',
+    cover: { url: '/images/placeholder-album-4.jpg', alt: `${tr('home.releases.card_4_title')} — ${tr('home.releases.card_4_artist')}`, filename: 'album-4.jpg' },
+    artist: tr('home.releases.card_4_artist'),
+    title: tr('home.releases.card_4_title'),
     href: '/catalogo/musica/eliades-alma-guajira',
   },
 ];
@@ -70,7 +70,7 @@ const lanzamientos: NhAlbum[] = items?.length ? items : [
 >
   <div class="container-site">
     <SectionHeader
-      title={nhSectionTitle || "Nuevos Lanzamientos"}
+      title={nhSectionTitle || tr('home.section.releases_title')}
       accent="gold"
       linkText={tr('home.section.see_all')}
       linkHref="/catalogo/musica"

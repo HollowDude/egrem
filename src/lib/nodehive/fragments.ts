@@ -21,6 +21,7 @@ export interface NhContacto {
 export interface NhHeaderFragment extends NhBase {
   title: string;
   logo: NhMediaImage | null;
+  drupalInternalFid: number;
 }
 
 export interface NhFooterFragment extends NhBase {
@@ -29,6 +30,7 @@ export interface NhFooterFragment extends NhBase {
   logo: NhMediaImage | null;
   redes: NhRed[];
   contacto: NhContacto | null;
+  drupalInternalFid: number;
 }
 
 export async function fetchHeaderFragment(lang = 'es'): Promise<NhHeaderFragment> {
@@ -54,6 +56,7 @@ export async function fetchHeaderFragment(lang = 'es'): Promise<NhHeaderFragment
     id: data.id,
     title: (attrs.title as string) ?? '',
     logo,
+    drupalInternalFid: (attrs.drupal_internal__fid as number) ?? 0,
   };
 }
 
@@ -111,10 +114,11 @@ export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment
 
   return {
     id: data.id,
-    title: (attrs.title as string) ?? '',
+    title: (attrs.field_footer as string) ?? (attrs.field_title as string) ?? '',
     derechos: (attrs.field_derechos as string) ?? '',
     logo,
     redes,
     contacto,
+    drupalInternalFid: (attrs.drupal_internal__fid as number) ?? 0,
   };
 }

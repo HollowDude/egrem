@@ -33,26 +33,26 @@ const tr = useTranslations(lang);
 const eventos: NhEvento[] = items?.length ? items : [
   {
     id: '1',
-    title: 'Buena Vista Tribute',
-    venue: 'Centro Cultural Habana',
+    title: tr('home.events.card_1_title'),
+    venue: tr('home.events.card_1_venue'),
     date: '2026-10-15',
-    time: '20:30 HRS',
+    time: tr('home.events.card_1_time'),
     href: '/eventos/buena-vista-tribute',
   },
   {
     id: '2',
-    title: 'Haila Mompié en Concierto',
-    venue: 'Teatro Karl Marx',
+    title: tr('home.events.card_2_title'),
+    venue: tr('home.events.card_2_venue'),
     date: '2026-10-22',
-    time: '21:00 HRS',
+    time: tr('home.events.card_2_time'),
     href: '/eventos/haila-mompie-concierto',
   },
   {
     id: '3',
-    title: 'Festival Jazz EGREM',
-    venue: 'Estudios Areito',
+    title: tr('home.events.card_3_title'),
+    venue: tr('home.events.card_3_venue'),
     date: '2026-11-05',
-    time: '18:00 HRS',
+    time: tr('home.events.card_3_time'),
     href: '/eventos/festival-jazz-egrem',
   },
 ];
@@ -72,7 +72,7 @@ const eventos: NhEvento[] = items?.length ? items : [
 >
   <div class="container-site">
     <SectionHeader
-      title={nhSectionTitle || "Próximos Eventos"}
+      title={nhSectionTitle || tr('home.section.events_title')}
       accent="red"
       linkText={tr('home.section.see_all')}
       linkHref="/eventos"

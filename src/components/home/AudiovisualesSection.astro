@@ -29,20 +29,20 @@ const tr = useTranslations(lang);
 const videos: NhVideo[] = items?.length ? items : [
   {
     id: '1',
-    thumbnail: { url: '/images/av-placeholder-1.jpg', alt: 'Sesiones en Areito: Vol. 1', filename: 'av-1.jpg' },
-    title: 'Sesiones en Areito: Vol. 1',
+    thumbnail: { url: '/images/av-placeholder-1.jpg', alt: tr('home.videos.card_1_title'), filename: 'av-1.jpg' },
+    title: tr('home.videos.card_1_title'),
     href: '/catalogo/videos/sesiones-areito-vol-1',
   },
   {
     id: '2',
-    thumbnail: { url: '/images/av-placeholder-2.jpg', alt: 'Documental: 80 Años de Son', filename: 'av-2.jpg' },
-    title: 'Documental: 80 Años de Son',
+    thumbnail: { url: '/images/av-placeholder-2.jpg', alt: tr('home.videos.card_2_title'), filename: 'av-2.jpg' },
+    title: tr('home.videos.card_2_title'),
     href: '/catalogo/videos/documental-80-anos-son',
   },
   {
     id: '3',
-    thumbnail: { url: '/images/av-placeholder-3.jpg', alt: 'Gira Nacional 2023: Resumen', filename: 'av-3.jpg' },
-    title: 'Gira Nacional 2023: Resumen',
+    thumbnail: { url: '/images/av-placeholder-3.jpg', alt: tr('home.videos.card_3_title'), filename: 'av-3.jpg' },
+    title: tr('home.videos.card_3_title'),
     href: '/catalogo/videos/gira-nacional-2023',
   },
 ];
@@ -63,7 +63,7 @@ const videos: NhVideo[] = items?.length ? items : [
   <div class="container-site">
 
     <SectionHeader
-      title={nhSectionTitle || "Galería de Videos"}
+      title={nhSectionTitle || tr('home.section.videos_title')}
       accent="red"
       linkText={tr('home.section.see_all')}
       linkHref="/catalogo/videos"

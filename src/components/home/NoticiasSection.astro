@@ -30,28 +30,28 @@ const tr = useTranslations(lang);
 const items: NhNoticia[] = noticias?.length ? noticias : [
   {
     id: '1',
-    image: { url: '/images/news-placeholder-1.jpg', alt: 'EGREM celebra 60 años de Son Cubano', filename: 'news-1.jpg' },
-    category: 'Cultura',
-    title: 'EGREM celebra 60 años de Son Cubano',
-    excerpt: 'Una mirada profunda a las grabaciones maestras que definieron el sonido de la nación durante décadas.',
+    image: { url: '/images/news-placeholder-1.jpg', alt: tr('home.news.card_1_title'), filename: 'news-1.jpg' },
+    category: tr('home.news.card_1_category'),
+    title: tr('home.news.card_1_title'),
+    excerpt: tr('home.news.card_1_excerpt'),
     href: '/actualidad/noticias/egrem-60-anos-son',
     date: '2026-01-15',
   },
   {
     id: '2',
-    image: { url: '/images/news-placeholder-2.jpg', alt: 'Gala de Premios de la Música 2024', filename: 'news-2.jpg' },
-    category: 'Evento',
-    title: 'Gala de Premios de la Música 2024',
-    excerpt: 'Los mejores artistas del sello se reúnen en una noche histórica de jazz y salsa en el Teatro Nacional.',
+    image: { url: '/images/news-placeholder-2.jpg', alt: tr('home.news.card_2_title'), filename: 'news-2.jpg' },
+    category: tr('home.news.card_2_category'),
+    title: tr('home.news.card_2_title'),
+    excerpt: tr('home.news.card_2_excerpt'),
     href: '/actualidad/noticias/gala-premios-musica-2024',
     date: '2026-02-20',
   },
   {
     id: '3',
-    image: { url: '/images/news-placeholder-3.jpg', alt: 'Reediciones en Vinilo: Serie Platino', filename: 'news-3.jpg' },
-    category: 'Lanzamiento',
-    title: 'Reediciones en Vinilo: Serie Platino',
-    excerpt: 'Nuevas versiones remasterizadas de los clásicos de Benny Moré y Bebo Valdés ya disponibles.',
+    image: { url: '/images/news-placeholder-3.jpg', alt: tr('home.news.card_3_title'), filename: 'news-3.jpg' },
+    category: tr('home.news.card_3_category'),
+    title: tr('home.news.card_3_title'),
+    excerpt: tr('home.news.card_3_excerpt'),
     href: '/actualidad/noticias/reediciones-vinilo-platino',
     date: '2026-03-10',
   },
@@ -73,7 +73,7 @@ const items: NhNoticia[] = noticias?.length ? noticias : [
   <div class="container-site">
 
     <SectionHeader
-      title={nhSectionTitle || "Novedades"}
+      title={nhSectionTitle || tr('home.section.news_title')}
       accent="red"
       linkText={tr('home.section.see_more')}
       linkHref="/actualidad"

@@ -14,7 +14,8 @@
  *   - field_background  → imagen de fondo
  */
 
-import type { NhButton, NhEntityMeta } from '@/lib/nodehive';
+import type { NhButton, NhEntityMeta, NhMediaImage } from '@/lib/nodehive';
+import { resolveFileUrl } from '@/lib/nodehive';
 import Button from '@/components/ui/Button.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { Lang } from '@/i18n';
@@ -24,14 +25,15 @@ interface Props {
   nhTitle?: string;
   nhSubtitle?: string;
   nhButtons?: NhButton[];
+  nhPhoto?: NhMediaImage | null;
   nhEntity?: NhEntityMeta;
   lang?: Lang;
 }
 
-const { nhTitle, nhSubtitle, nhButtons, nhEntity, lang = 'es' } = Astro.props;
+const { nhTitle, nhSubtitle, nhButtons, nhPhoto, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const title = nhTitle || 'Empresa de Grabaciones y Ediciones Musicales';
+const title = nhTitle || tr('home.hero.title');
 const subtitle = nhSubtitle || tr('home.hero.subtitle');
 
 // Map NodeHive button style to Button component variant
@@ -59,10 +61,10 @@ const buttons = nhButtons ?? [
   editLabel="Editar Hero"
   editField="field_title"
 >
-  {/* Imagen de fondo — reemplazar src con data-nodehive-field="field_background" */}
+  {/* Imagen de fondo — foto desde Drupal o placeholder */}
   <div
     class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-    style="background-image: url('/images/hero-bg.jpg')"
+    style={`background-image: url('${nhPhoto?.url ? resolveFileUrl(nhPhoto.url) : '/images/hero-bg.jpg'}')`}
     data-nodehive-field="field_background"
     aria-hidden="true"
   ></div>

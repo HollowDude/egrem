@@ -34,7 +34,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
   const PAGE_UUID = NODEHIVE_CONFIG.pages.home;
 
   const res = await jsonApiFetch(
-    `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo`,
+    `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo,field_components.field_photo.field_media_image`,
     lang,
   );
 

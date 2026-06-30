@@ -17,6 +17,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import LanguageSwitcherReact from '@/components/ui/LanguageSwitcherReact';
+import CurrencySwitcher from '@/components/ui/CurrencySwitcher';
+import SearchModal from '@/components/ui/SearchModal';
+import AccessibilityWidget from '@/components/ui/AccessibilityWidget';
 
 interface NavDropdownItem {
   label: string;
@@ -39,26 +42,27 @@ interface Props {
 
 function getNavItems(tr: (key: string) => string): NavItem[] {
   return [
-    { label: tr('nav.store'), href: '/tienda' },
     {
       label: tr('nav.news'),
       href: '/actualidad',
       dropdown: [
         { label: tr('nav.news.news'),    href: '/actualidad/noticias' },
+        { label: tr('nav.news.articles'),href: '/actualidad/articulos' },
         { label: tr('nav.news.blog'),    href: '/actualidad/blog' },
         { label: tr('nav.news.heritage'),href: '/actualidad/patrimonio' },
-        { label: tr('nav.news.artists'), href: '/actualidad/artistas' },
       ],
     },
     {
       label: tr('nav.catalog'),
       href: '/catalogo',
       dropdown: [
-        { label: tr('nav.catalog.music'),   href: '/catalogo/musica' },
-        { label: tr('nav.catalog.videos'),  href: '/catalogo/videos' },
-        { label: tr('nav.catalog.artists'), href: '/catalogo/artistas' },
+        { label: tr('nav.catalog.artists'),   href: '/catalogo/artistas' },
+        { label: tr('nav.catalog.music'),     href: '/catalogo/musica' },
+        { label: tr('nav.catalog.videos'),    href: '/catalogo/videos' },
+        { label: tr('nav.catalog.editorial'), href: '/catalogo/editorial' },
       ],
     },
+    { label: tr('nav.store'), href: '/tienda' },
     { label: tr('nav.events'), href: '/eventos' },
     { label: tr('nav.about'),  href: '/sobre-nosotros' },
     { label: tr('nav.contact'),href: '/contacto' },
@@ -76,7 +80,13 @@ export default function HeaderNav({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = searchOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [searchOpen]);
 
   /* Sombra al hacer scroll */
   useEffect(() => {
@@ -110,7 +120,7 @@ export default function HeaderNav({
   return (
     <div
       ref={navRef}
-      className={`fixed top-0 inset-x-0 z-50 bg-white transition-shadow duration-200 ${scrolled ? 'shadow-md' : 'shadow-sm'}`}
+      className={`fixed top-0 inset-x-0 z-50 bg-white transition-shadow duration-200 ${scrolled ? 'shadow-md' : 'shadow-none'}`}
     >
       <div className="container-site">
         <div className="flex items-center justify-between h-16 lg:h-[4.5rem]">
@@ -204,12 +214,22 @@ export default function HeaderNav({
               <LanguageSwitcherReact lang={lang} />
             </div>
 
+            {/* Currency switcher desktop */}
+            <div className="hidden sm:flex">
+              <div style={{ width: 1, height: 16, background: '#e0e0e0', margin: '0 6px' }} />
+              <CurrencySwitcher />
+            </div>
+
+            {/* Accesibilidad */}
+            <AccessibilityWidget />
+
             {/* Buscar */}
             <button
               type="button"
               className="action-btn bg-transparent border-none cursor-pointer p-2 rounded-2xl flex items-center justify-center"
               style={{ color: '#1b1b1b' }}
               aria-label={tr('nav.search')}
+              onClick={() => setSearchOpen(true)}
             >
               <span className="icon text-[22px]">search</span>
             </button>
@@ -371,9 +391,11 @@ export default function HeaderNav({
             </div>
           ))}
 
-          {/* Language switcher mobile */}
+          {/* Language switcher + Currency mobile */}
           <div className="border-t px-4 py-3 flex items-center" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
             <LanguageSwitcherReact lang={lang} />
+            <div style={{ width: 1, height: 16, background: '#e0e0e0', margin: '0 6px' }} />
+            <CurrencySwitcher />
           </div>
 
           {/* Auth buttons mobile */}
@@ -407,6 +429,8 @@ export default function HeaderNav({
           </div>
         )}
       </div>
+
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} lang={lang} />
     </div>
   );
 }

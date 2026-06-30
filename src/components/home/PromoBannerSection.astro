@@ -11,15 +11,18 @@
 
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { NhEntityMeta } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
 
 interface Props {
   quote?: string;
   nhEntity?: NhEntityMeta;
-  lang?: string;
+  lang?: Lang;
 }
 
 const { quote, nhEntity, lang = 'es' } = Astro.props;
-const displayQuote = quote || 'La música es el alma de Cuba, y nosotros somos sus guardianes eternos';
+const tr = useTranslations(lang);
+const displayQuote = quote || tr('home.hero.promo_quote');
 ---
 
 <NodeHiveEntity
