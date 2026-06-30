@@ -2,14 +2,16 @@
 /**
  * LanzamientosSection.astro — "NUEVOS LANZAMIENTOS"
  * 4 tarjetas de álbumes en fondo gris claro (#eeeeee).
- * Acento dorado en título. Play overlay al hover.
+ * Play overlay al hover. Cada tarjeta es un paragraph
+ * "homepage_lanzamiento_spotify" con link a Spotify.
  *
- * NodeHive: paragraph bundle "_component_home_lanzamientos"
+ * NodeHive: paragraph bundle "_component_homepage_lanzamientos"
  */
 import SectionHeader from '@/components/ui/SectionHeader.astro';
 import ActionLink from '@/components/ui/ActionLink.astro';
 import PlayOverlay from '@/components/ui/PlayOverlay.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import SpotifyPlayer from '@/components/ui/SpotifyPlayer';
 import type { NhEntityMeta } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
@@ -27,31 +29,35 @@ const tr = useTranslations(lang);
 const lanzamientos: NhAlbum[] = items?.length ? items : [
   {
     id: '1',
-    cover: { url: '/images/placeholder-album-1.jpg', alt: `${tr('home.releases.card_1_title')} — ${tr('home.releases.card_1_artist')}`, filename: 'album-1.jpg' },
-    artist: tr('home.releases.card_1_artist'),
+    cover: { url: '/images/placeholder-album-1.jpg', alt: tr('home.releases.card_1_title'), filename: 'album-1.jpg' },
     title: tr('home.releases.card_1_title'),
-    href: '/catalogo/musica/omara-vida-esperanza',
+    href: '#',
+    spotifyId: null,
+    embedUrl: '',
   },
   {
     id: '2',
-    cover: { url: '/images/placeholder-album-2.jpg', alt: `${tr('home.releases.card_2_title')} — ${tr('home.releases.card_2_artist')}`, filename: 'album-2.jpg' },
-    artist: tr('home.releases.card_2_artist'),
+    cover: { url: '/images/placeholder-album-2.jpg', alt: tr('home.releases.card_2_title'), filename: 'album-2.jpg' },
     title: tr('home.releases.card_2_title'),
-    href: '/catalogo/musica/chucho-ritos-modernos',
+    href: '#',
+    spotifyId: null,
+    embedUrl: '',
   },
   {
     id: '3',
-    cover: { url: '/images/placeholder-album-3.jpg', alt: `${tr('home.releases.card_3_title')} — ${tr('home.releases.card_3_artist')}`, filename: 'album-3.jpg' },
-    artist: tr('home.releases.card_3_artist'),
+    cover: { url: '/images/placeholder-album-3.jpg', alt: tr('home.releases.card_3_title'), filename: 'album-3.jpg' },
     title: tr('home.releases.card_3_title'),
-    href: '/catalogo/musica/alexander-timba-total',
+    href: '#',
+    spotifyId: null,
+    embedUrl: '',
   },
   {
     id: '4',
-    cover: { url: '/images/placeholder-album-4.jpg', alt: `${tr('home.releases.card_4_title')} — ${tr('home.releases.card_4_artist')}`, filename: 'album-4.jpg' },
-    artist: tr('home.releases.card_4_artist'),
+    cover: { url: '/images/placeholder-album-4.jpg', alt: tr('home.releases.card_4_title'), filename: 'album-4.jpg' },
     title: tr('home.releases.card_4_title'),
-    href: '/catalogo/musica/eliades-alma-guajira',
+    href: '#',
+    spotifyId: null,
+    embedUrl: '',
   },
 ];
 ---
@@ -80,18 +86,29 @@ const lanzamientos: NhAlbum[] = items?.length ? items : [
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-5">
       {lanzamientos.map((album) => (
-        <div
-          class="group cursor-pointer"
-          data-nodehive-field="field_lanzamientos"
+        <NodeHiveEntity
+          entityType="paragraph"
+          bundle={album.bundle ?? 'homepage_lanzamiento_spotify'}
+          id={album.id}
+          internalId={album.internalId}
+          parentId={album.parentId}
+          lang={lang}
+          tag="div"
+          editLabel={album.bundle ? 'Editar Álbum' : undefined}
+          editField="field_link"
         >
           {/* Portada cuadrada */}
-          <a href={album.href} class="block no-underline">
+          <a
+            href={album.spotifyId ? '#' : album.href}
+            data-spotify-embed={album.embedUrl || undefined}
+            class="block no-underline"
+          >
             <div class="aspect-square relative overflow-hidden rounded-2xl shadow-sm group-hover:shadow-lg transition-all duration-300 mb-4"
               style="background: #d0d0d0;"
             >
               <img
                 src={album.cover?.url}
-                alt={album.cover?.alt ?? `${album.title} — ${album.artist}`}
+                alt={album.cover?.alt ?? album.title}
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
                 onerror="this.style.display='none'"
@@ -100,18 +117,17 @@ const lanzamientos: NhAlbum[] = items?.length ? items : [
             </div>
           </a>
 
-          {/* Info — artista arriba, título abajo */}
-          <p class="font-display font-bold uppercase tracking-wider m-0 mb-1" style="font-size: 0.72rem; color: var(--color-text-secondary);">
-            {album.artist}
-          </p>
-          <h4 class="font-display font-bold text-egrem-black uppercase m-0" style="font-size: 1.05rem; line-height: 1.2;">
+          {/* Info — título */}
+          <h4 class="font-display font-bold text-egrem-black uppercase m-0 mb-2" style="font-size: 1.05rem; line-height: 1.2;">
             {album.title}
           </h4>
-          <ActionLink href={album.href} class="mt-2">
+          <ActionLink href={album.spotifyId ? '#' : album.href} class="mt-2" data-spotify-embed={album.embedUrl || undefined}>
             {tr('home.section.see_album')}
           </ActionLink>
-        </div>
+        </NodeHiveEntity>
       ))}
     </div>
   </div>
 </NodeHiveEntity>
+
+<SpotifyPlayer client:load />

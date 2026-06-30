@@ -8,7 +8,9 @@
  * devuelven arrays vacíos con un console.warn para no romper el build.
  */
 
-import type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion } from '@/types/drupal';
+import type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink } from '@/types/drupal';
+import { resolveVideoLink } from './youtube';
+import { resolveSpotifyLink } from './spotify';
 
 /* ─── Noticias ─────────────────────────────────────────────────── */
 
@@ -21,11 +23,32 @@ export async function fetchNoticias(_lang = 'es'): Promise<NhNoticia[]> {
 
 /* ─── Lanzamientos (álbumes) ───────────────────────────────────── */
 
-// TODO(nodehive): implementar fetch real cuando exista endpoint
-//   node/album?include=field_cover,field_cover.field_media_image&sort=-created&page[limit]=4
-export async function fetchLanzamientos(_lang = 'es'): Promise<NhAlbum[]> {
-  console.warn('[NodeHive] fetchLanzamientos: pendiente de implementar endpoint');
-  return [];
+export async function fetchLanzamientos(albumLinks: NhAlbumLink[]): Promise<NhAlbum[]> {
+  if (!albumLinks.length) return [];
+
+  const results = await Promise.allSettled(
+    albumLinks.map(async (al) => {
+      const resolved = await resolveSpotifyLink(al.title, al.url);
+      return {
+        id: al.id,
+        title: resolved.title,
+        cover: resolved.cover,
+        href: al.url,
+        spotifyId: resolved.spotifyId,
+        embedUrl: resolved.embedUrl,
+        internalId: al.internalId,
+        parentId: al.parentId,
+        bundle: al.bundle,
+      } satisfies NhAlbum;
+    }),
+  );
+
+  const albums: NhAlbum[] = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled') albums.push(r.value);
+    else console.warn('[NodeHive] Failed to resolve album link:', r.reason);
+  }
+  return albums;
 }
 
 /* ─── Eventos ──────────────────────────────────────────────────── */
@@ -48,9 +71,29 @@ export async function fetchProducciones(_lang = 'es'): Promise<NhProduccion[]> {
 
 /* ─── Videos ───────────────────────────────────────────────────── */
 
-// TODO(nodehive): implementar fetch real cuando exista endpoint
-//   node/video?include=field_thumbnail,field_thumbnail.field_media_image&sort=-created&page[limit]=3
-export async function fetchVideos(_lang = 'es'): Promise<NhVideo[]> {
-  console.warn('[NodeHive] fetchVideos: pendiente de implementar endpoint');
-  return [];
+export async function fetchVideos(videoLinks: NhVideoLink[]): Promise<NhVideo[]> {
+  if (!videoLinks.length) return [];
+
+  const results = await Promise.allSettled(
+    videoLinks.map(async (vl) => {
+      const resolved = await resolveVideoLink(vl.title, vl.url);
+      return {
+        id: vl.id,
+        title: resolved.title,
+        youtubeId: resolved.youtubeId,
+        thumbnail: resolved.thumbnail,
+        href: vl.url,
+        internalId: vl.internalId,
+        parentId: vl.parentId,
+        bundle: vl.bundle,
+      } satisfies NhVideo;
+    }),
+  );
+
+  const videos: NhVideo[] = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled') videos.push(r.value);
+    else console.warn('[NodeHive] Failed to resolve video link:', r.reason);
+  }
+  return videos;
 }

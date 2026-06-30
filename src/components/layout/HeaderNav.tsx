@@ -217,11 +217,11 @@ export default function HeaderNav({
             {/* Currency switcher desktop */}
             <div className="hidden sm:flex">
               <div style={{ width: 1, height: 16, background: '#e0e0e0', margin: '0 6px' }} />
-              <CurrencySwitcher />
+              <CurrencySwitcher lang={lang} />
             </div>
 
             {/* Accesibilidad */}
-            <AccessibilityWidget />
+            <AccessibilityWidget lang={lang} />
 
             {/* Buscar */}
             <button
@@ -395,7 +395,7 @@ export default function HeaderNav({
           <div className="border-t px-4 py-3 flex items-center" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
             <LanguageSwitcherReact lang={lang} />
             <div style={{ width: 1, height: 16, background: '#e0e0e0', margin: '0 6px' }} />
-            <CurrencySwitcher />
+            <CurrencySwitcher lang={lang} />
           </div>
 
           {/* Auth buttons mobile */}

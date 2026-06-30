@@ -40,14 +40,22 @@ try {
   console.error('[NodeHive] Failed to fetch homepage:', e);
 }
 
+// Resolve videos from homepage videoLinks (via YouTube oEmbed)
+if (nhData?.videoLinks.length) {
+  videos = await fetchVideos(nhData.videoLinks);
+}
+
+// Resolve lanzamientos from homepage albumLinks (via Spotify oEmbed)
+if (nhData?.albumLinks.length) {
+  lanzamientos = await fetchLanzamientos(nhData.albumLinks);
+}
+
 // Content fetchers — fallan silenciosamente si el backend no tiene endpoints
 try {
-  [noticias, lanzamientos, eventos, producciones, videos] = await Promise.all([
+  [noticias, eventos, producciones] = await Promise.all([
     fetchNoticias(lang),
-    fetchLanzamientos(lang),
     fetchEventos(lang),
     fetchProducciones(lang),
-    fetchVideos(lang),
   ]);
 } catch (e) {
   console.warn('[NodeHive] Some content fetchers failed (endpoints may not exist yet):', e);

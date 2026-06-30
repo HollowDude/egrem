@@ -17,19 +17,46 @@ export interface NhEvento extends NhBase {
   href: string;
 }
 
+export interface NhAlbumLink {
+  id: string;
+  internalId: number;
+  parentId: string;
+  bundle: string;
+  title: string;
+  url: string;
+}
+
 export interface NhAlbum extends NhBase {
   title: string;
-  artist: string;
+  artist?: string;
   cover: NhMediaImage | null;
   href: string;
+  spotifyId: string | null;
+  embedUrl: string;
   format?: string;
   price?: string;
+  internalId?: number;
+  parentId?: string;
+  bundle?: string;
+}
+
+export interface NhVideoLink {
+  id: string;
+  internalId: number;
+  parentId: string;
+  bundle: string;
+  title: string;
+  url: string;
 }
 
 export interface NhVideo extends NhBase {
   title: string;
   thumbnail: NhMediaImage | null;
   href: string;
+  youtubeId: string | null;
+  internalId?: number;
+  parentId?: string;
+  bundle?: string;
 }
 
 export interface NhProduccion extends NhBase {

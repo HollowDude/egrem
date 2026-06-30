@@ -36,14 +36,15 @@ const logoUrl = nhFooter?.logo?.url ? resolveFileUrl(nhFooter.logo.url) : null;
 const redes = nhFooter?.redes ?? [];
 
 const navExplorar = [
-  { label: tr('nav.store'),   href: '/tienda'         },
-  { label: tr('nav.news'),    href: '/actualidad'     },
-  { label: tr('nav.events'),  href: '/eventos'        },
-  { label: tr('nav.about'),   href: '/sobre-nosotros' },
+  { label: tr('nav.store'),    href: '/tienda'     },
+  { label: tr('nav.news'),     href: '/actualidad' },
+  { label: tr('nav.catalog'),  href: '/catalogo'   },
+  { label: tr('nav.events'),   href: '/eventos'    },
 ];
 
 const navInfo = [
-  { label: tr('footer.privacy'),  href: '/politica-privacidad' },
+  { label: tr('nav.about'),       href: '/sobre-nosotros'        },
+  { label: tr('footer.privacy'),  href: '/politica-privacidad'  },
   { label: tr('footer.terms'),    href: '/terminos-condiciones' },
   { label: tr('footer.faq'),      href: '/preguntas-frecuentes' },
 ];
@@ -74,12 +75,14 @@ const navInfo = [
         <EgremLogo variant="light" width={120} class="self-start" src={logoUrl} />
 
         {/* Tagline en Ravellin dorado */}
-        <p
-          class="font-script text-egrem-gold leading-snug m-0"
-          style="font-size: 1.15rem"
-        >
-          {tagline}
-        </p>
+        <a href="/" class="no-underline">
+          <p
+            class="font-script text-egrem-gold leading-snug m-0"
+            style="font-size: 1.15rem"
+          >
+            {tagline}
+          </p>
+        </a>
 
         {/* Redes sociales */}
         <div class="mt-2">

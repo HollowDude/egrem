@@ -13,8 +13,16 @@ export type { NhHero, NhEslogan, NhSection, NhHomePage } from './pages';
 export { fetchHomePage } from './pages';
 
 // Content fetchers
-export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion } from '@/types/drupal';
+export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink } from '@/types/drupal';
 export { fetchNoticias, fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from './fetchers';
 
 // Utilities
 export { resolveFileUrl } from './parsers';
+
+// YouTube
+export { extractYouTubeId, fetchOEmbed, resolveVideoLink, clearCache as clearYoutubeCache } from './youtube';
+export type { OEmbedResult as YoutubeOEmbedResult, ResolvedVideo } from './youtube';
+
+// Spotify
+export { extractSpotifyId, fetchOEmbed as fetchSpotifyOEmbed, resolveSpotifyLink, clearCache as clearSpotifyCache } from './spotify';
+export type { OEmbedResult as SpotifyOEmbedResult, ResolvedAlbum } from './spotify';

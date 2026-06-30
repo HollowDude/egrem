@@ -1,0 +1,36 @@
+import type { Lang } from './index';
+
+export const accessibility: Record<Lang, Record<string, string>> = {
+  es: {
+    'a11y.font_size': 'Tamaño de texto',
+    'a11y.font_decrease': 'Reducir tamaño de texto',
+    'a11y.font_increase': 'Aumentar tamaño de texto',
+    'a11y.font_reset': 'Restablecer',
+    'a11y.high_contrast': 'Alto contraste',
+    'a11y.color_mode': 'Modo de color',
+    'a11y.color_normal': 'Normal',
+    'a11y.color_protanopia': 'Protanopía (rojo)',
+    'a11y.color_deuteranopia': 'Deuteranopía (verde)',
+    'a11y.color_tritanopia': 'Tritanopía (azul)',
+    'a11y.color_achromatopsia': 'Monocromático',
+    'a11y.reset_all': 'Restablecer todo',
+    'a11y.close': 'Cerrar controles de accesibilidad',
+    'a11y.open': 'Abrir controles de accesibilidad',
+  },
+  en: {
+    'a11y.font_size': 'Text Size',
+    'a11y.font_decrease': 'Decrease text size',
+    'a11y.font_increase': 'Increase text size',
+    'a11y.font_reset': 'Reset',
+    'a11y.high_contrast': 'High Contrast',
+    'a11y.color_mode': 'Color Mode',
+    'a11y.color_normal': 'Normal',
+    'a11y.color_protanopia': 'Protanopia (red)',
+    'a11y.color_deuteranopia': 'Deuteranopia (green)',
+    'a11y.color_tritanopia': 'Tritanopia (blue)',
+    'a11y.color_achromatopsia': 'Monochrome',
+    'a11y.reset_all': 'Reset all',
+    'a11y.close': 'Close accessibility controls',
+    'a11y.open': 'Open accessibility controls',
+  },
+};

@@ -1,19 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from '@/i18n/translations';
+import type { Lang } from '@/i18n';
 
 const STORAGE_KEY = 'egrem-currency';
 
 interface Props {
   defaultCurrency?: 'USD' | 'CUP';
+  lang?: Lang;
 }
 
 type Currency = 'USD' | 'CUP';
 
-const CURRENCIES: { code: Currency; label: string }[] = [
-  { code: 'USD', label: 'Dólar estadounidense' },
-  { code: 'CUP', label: 'Peso cubano' },
-];
-
-export default function CurrencySwitcher({ defaultCurrency = 'USD' }: Props) {
+export default function CurrencySwitcher({ defaultCurrency = 'USD', lang = 'es' }: Props) {
+  const tr = useTranslations(lang);
+  const currencies: { code: Currency; labelKey: string }[] = [
+    { code: 'USD', labelKey: 'nav.currency.usd' },
+    { code: 'CUP', labelKey: 'nav.currency.cup' },
+  ];
   const [currency, setCurrencyState] = useState<Currency>(defaultCurrency);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -69,7 +72,7 @@ export default function CurrencySwitcher({ defaultCurrency = 'USD' }: Props) {
           (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)';
           (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,0,0,0.10)';
         }}
-        aria-label="Seleccionar moneda"
+        aria-label={tr('nav.currency.select')}
         aria-expanded={open}
       >
         <span className="icon" style={{ fontSize: 16 }}>payments</span>
@@ -98,7 +101,7 @@ export default function CurrencySwitcher({ defaultCurrency = 'USD' }: Props) {
             overflow: 'hidden',
           }}
         >
-          {CURRENCIES.map(c => (
+          {currencies.map(c => (
             <button
               key={c.code}
               type="button"
@@ -117,7 +120,7 @@ export default function CurrencySwitcher({ defaultCurrency = 'USD' }: Props) {
                   {c.code}
                 </span>
                 <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#808080', marginLeft: 6 }}>
-                  — {c.label}
+                  — {tr(c.labelKey)}
                 </span>
               </span>
               {currency === c.code && (

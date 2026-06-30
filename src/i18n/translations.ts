@@ -15,10 +15,11 @@ import type { Lang } from './index';
 import { nav } from './nav';
 import { footer } from './footer';
 import { home } from './home';
+import { accessibility } from './accessibility';
 
 export const t: Record<Lang, Record<string, string>> = {
-  es: { ...nav.es, ...footer.es, ...home.es },
-  en: { ...nav.en, ...footer.en, ...home.en },
+  es: { ...nav.es, ...footer.es, ...home.es, ...accessibility.es },
+  en: { ...nav.en, ...footer.en, ...home.en, ...accessibility.en },
 };
 
 export function useTranslations(lang: Lang) {

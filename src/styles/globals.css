@@ -425,4 +425,18 @@
   html.high-contrast {
     filter: contrast(1.5) grayscale(0.2);
   }
+
+  /* ─── Color blindness simulation modes ────────────────────────────── */
+  html.colorblind-protanopia {
+    filter: url(#cb-protanopia);
+  }
+  html.colorblind-deuteranopia {
+    filter: url(#cb-deuteranopia);
+  }
+  html.colorblind-tritanopia {
+    filter: url(#cb-tritanopia);
+  }
+  html.colorblind-achromatopsia {
+    filter: url(#cb-achromatopsia);
+  }
 }
