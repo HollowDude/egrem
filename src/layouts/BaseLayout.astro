@@ -45,11 +45,13 @@ const {
   description = 'Empresa de Grabaciones y Ediciones Musicales de Cuba. Descubre la música cubana auténtica.',
   canonical,
   ogImage = '/og-default.jpg',
-  isAuthenticated = false,
+  isAuthenticated,
   cartCount = 0,
 } = Astro.props;
 
 const lang = Astro.locals.lang;
+const user = Astro.locals.user;
+const effectiveAuth = isAuthenticated ?? !!user;
 
 const pageTitle = title === 'EGREM' ? 'EGREM — Empresa de Grabaciones y Ediciones Musicales' : `${title} | EGREM`;
 const canonicalUrl = canonical ?? Astro.url.href;
@@ -98,7 +100,7 @@ try { nhFooter = await fetchFooterFragment(lang); } catch (e) {
 
   <body class="min-h-screen flex flex-col">
 
-    <Header isAuthenticated={isAuthenticated} cartCount={cartCount} nhHeader={nhHeader} lang={lang} />
+    <Header isAuthenticated={effectiveAuth} cartCount={cartCount} nhHeader={nhHeader} lang={lang} />
 
     <div class="flex-1">
       <slot />

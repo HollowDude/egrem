@@ -1,0 +1,78 @@
+---
+interface Props {
+  type?: 'text' | 'email' | 'password' | 'tel';
+  name: string;
+  label: string;
+  icon?: string;
+  placeholder?: string;
+  value?: string;
+  required?: boolean;
+  error?: string;
+  autocomplete?: string;
+}
+
+const {
+  type = 'text',
+  name,
+  label,
+  icon,
+  placeholder,
+  required = false,
+  error,
+  autocomplete,
+} = Astro.props;
+
+const inputId = `input-${name}`;
+const errorId = `${inputId}-error`;
+---
+
+<div class="space-y-1.5">
+  <label
+    for={inputId}
+    class="block font-display font-bold text-[11px] uppercase tracking-wider"
+    style="color: var(--color-text-secondary);"
+  >
+    {label}
+  </label>
+  <div class="relative">
+    {icon && (
+      <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none" style="color: var(--color-text-secondary);">
+        <span class="icon text-[20px]">{icon}</span>
+      </span>
+    )}
+    <input
+      {type}
+      {name}
+      id={inputId}
+      value={Astro.props.value}
+      placeholder={placeholder}
+      {required}
+      autocomplete={autocomplete}
+      aria-invalid={error ? "true" : undefined}
+      aria-describedby={error ? errorId : undefined}
+      class="w-full bg-white rounded-xl border outline-none transition-colors font-sans text-sm"
+      style={`
+        padding: ${icon ? '0.625rem 0.75rem 0.625rem 2.5rem' : '0.625rem 0.75rem'};
+        border-color: ${error ? 'var(--color-form-error)' : 'var(--color-form-border)'};
+        color: var(--color-egrem-black);
+      `}
+    />
+  </div>
+  {error && (
+    <p id={errorId} class="font-sans text-xs mt-1" style="color: var(--color-form-error);">
+      {error}
+    </p>
+  )}
+</div>
+
+<style>
+  input:focus {
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 1px var(--color-brand-primary);
+  }
+
+  input::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+  }
+</style>

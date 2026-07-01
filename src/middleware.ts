@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { isValidLang, DEFAULT_LANG, LANG_COOKIE, LANG_COOKIE_MAX_AGE } from '@/i18n';
 import type { Lang } from '@/i18n';
+import { deserializeUser } from '@/lib/auth/drupal-auth';
 
 const NODEHIVE_BASE_URL = import.meta.env.NODEHIVE_BASE_URL as string | undefined;
 
@@ -43,6 +44,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const cookieLang = context.cookies.get(LANG_COOKIE)?.value ?? '';
   const lang: Lang = isValidLang(cookieLang) ? cookieLang : DEFAULT_LANG;
   context.locals.lang = lang;
+
+  // Leer sesión de usuario desde cookie httpOnly
+  const sessionData = context.cookies.get('egrem_session')?.value;
+  context.locals.user = sessionData ? deserializeUser(sessionData) as DrupalUser : null;
 
   const response = await next();
 

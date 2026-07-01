@@ -3,7 +3,17 @@
 declare namespace App {
   interface Locals {
     lang: import('@/i18n').Lang;
+    user?: DrupalUser | null;
   }
+}
+
+interface DrupalUser {
+  uid: string;
+  name: string;
+  mail?: string;
+  roles: string[];
+  session_name?: string;
+  session_id?: string;
 }
 
 interface ImportMetaEnv {

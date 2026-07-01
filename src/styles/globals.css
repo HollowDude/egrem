@@ -92,6 +92,12 @@
   /* Rojo institucional (para nav, links de acción) */
   --color-brand-primary:    #bc0100;
 
+  /* Tokens de formulario (M3-derivados del rojo institucional) */
+  --color-form-border:        #ebbbb4;
+  --color-form-border-hover:  #956d67;
+  --color-form-error:         #ba1a1a;
+  --color-form-error-bg:      #ffdad6;
+
   /* Tipografías */
   --font-script:  'Ravellin', cursive;
   --font-display: 'Myriad Pro Cond', 'Arial Narrow', Arial, sans-serif;
@@ -419,6 +425,32 @@
   .action-btn:hover {
     color: #bc0100;
     background-color: rgba(188, 1, 0, 0.06);
+  }
+
+  /* Botón primario (para submit de formularios — Button.astro y LoginForm.tsx) */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background: var(--color-brand-primary);
+    color: #ffffff;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-decoration: none;
+  }
+
+  .btn-primary:hover {
+    background: #950100;
   }
 
   /* ─── High contrast mode ──────────────────────────────────────────── */
