@@ -1,23 +1,20 @@
 import { defineMiddleware } from 'astro:middleware';
 import { isValidLang, DEFAULT_LANG, LANG_COOKIE, LANG_COOKIE_MAX_AGE } from '@/i18n';
 import type { Lang } from '@/i18n';
-import { deserializeUser } from '@/lib/auth/drupal-auth';
+import { verifySessionCookie } from '@/lib/auth/session';
 
 const NODEHIVE_BASE_URL = import.meta.env.NODEHIVE_BASE_URL as string | undefined;
 
-/**
- * Deriva el dominio permitido para frame-ancestors desde
- * NODEHIVE_BASE_URL, o usa '*' si no está configurado.
- */
-function getFrameAncestors(): string {
-  if (!NODEHIVE_BASE_URL) return '*';
+const DRUPAL_ORIGIN: string | null = (() => {
+  if (!NODEHIVE_BASE_URL) return null;
   try {
-    const origin = new URL(NODEHIVE_BASE_URL).origin;
-    return origin;
+    return new URL(NODEHIVE_BASE_URL).origin;
   } catch {
-    return '*';
+    return null;
   }
-}
+})();
+
+const FRAME_ANCESTORS = DRUPAL_ORIGIN ?? "'none'";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -45,17 +42,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const lang: Lang = isValidLang(cookieLang) ? cookieLang : DEFAULT_LANG;
   context.locals.lang = lang;
 
-  // Leer sesión de usuario desde cookie httpOnly
-  const sessionData = context.cookies.get('egrem_session')?.value;
-  context.locals.user = sessionData ? deserializeUser(sessionData) as DrupalUser : null;
+  // Verify and deserialize user from signed session cookie
+  const sessionCookie = context.cookies.get('egrem_session')?.value;
+  context.locals.user = sessionCookie ? verifySessionCookie(sessionCookie) : null;
 
   const response = await next();
 
-  // Cabeceras de seguridad para iframe de Drupal (middleware aplica siempre,
-  // a diferencia de vite.server.headers que solo funciona en dev server)
-  const frameAncestors = getFrameAncestors();
+  // Allow Drupal admin to embed any page in an iframe for Live Preview
   response.headers.set('X-Frame-Options', 'ALLOWALL');
-  response.headers.set('Content-Security-Policy', `frame-ancestors ${frameAncestors};`);
+  response.headers.set('Content-Security-Policy', `frame-ancestors ${FRAME_ANCESTORS};`);
   response.headers.set('Cross-Origin-Opener-Policy', 'unsafe-none');
   response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none');
 

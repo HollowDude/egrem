@@ -20,6 +20,7 @@ import LanguageSwitcherReact from '@/components/ui/LanguageSwitcherReact';
 import CurrencySwitcher from '@/components/ui/CurrencySwitcher';
 import SearchModal from '@/components/ui/SearchModal';
 import AccessibilityWidget from '@/components/ui/AccessibilityWidget';
+import { buttonClasses } from '@/lib/ui/buttonClasses';
 
 interface NavDropdownItem {
   label: string;
@@ -81,6 +82,7 @@ export default function HeaderNav({
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -100,6 +102,7 @@ export default function HeaderNav({
     const handler = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
         setActiveDropdown(null);
+        setAccountOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -116,6 +119,12 @@ export default function HeaderNav({
   const toggleDropdown = (label: string) => {
     setActiveDropdown(prev => prev === label ? null : label);
   };
+
+  async function handleLogout() {
+    setAccountOpen(false);
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/';
+  }
 
   return (
     <div
@@ -261,27 +270,56 @@ export default function HeaderNav({
                   )}
                 </a>
                 {/* Perfil */}
-                <a
-                  href="/mi-cuenta"
-                  className="action-btn relative no-underline p-2 rounded-2xl flex items-center justify-center hidden lg:flex"
-                  style={{ color: '#1b1b1b' }}
-                  aria-label={tr('nav.account')}
-                >
-                  <span className="icon text-[22px]">account_circle</span>
-                </a>
+                <div className="relative hidden lg:block">
+                  <button
+                    type="button"
+                    className="action-btn relative p-2 rounded-2xl flex items-center justify-center bg-transparent border-none cursor-pointer"
+                    style={{ color: '#1b1b1b' }}
+                    aria-label={tr('nav.account')}
+                    aria-haspopup="menu"
+                    aria-expanded={accountOpen}
+                    onClick={() => setAccountOpen(prev => !prev)}
+                  >
+                    <span className="icon text-[22px]">account_circle</span>
+                  </button>
+
+                  {accountOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-2 min-w-[200px] rounded-2xl bg-white shadow-2xl border border-black/5 overflow-hidden"
+                      role="menu"
+                    >
+                      <a
+                        href="/mi-cuenta"
+                        className="block px-4 py-3 no-underline text-sm font-display font-bold text-egrem-black hover:bg-egrem-red/5 hover:text-egrem-red"
+                        role="menuitem"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        {tr('nav.account')}
+                      </a>
+                      <button
+                        type="button"
+                        className="block w-full text-left px-4 py-3 bg-transparent border-0 text-sm font-display font-bold text-egrem-black hover:bg-egrem-red/5 hover:text-egrem-red cursor-pointer"
+                        role="menuitem"
+                        onClick={() => void handleLogout()}
+                      >
+                        {tr('nav.logout')}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               /* ── Estado invitado ── */
               <div className="hidden sm:flex items-center gap-2">
                 <a
                   href="/login"
-                  className="px-4 py-2 font-display font-bold text-[0.75rem] uppercase tracking-wide text-egrem-black border border-black/20 rounded hover:border-egrem-red hover:text-egrem-red transition-colors no-underline"
+                  className={buttonClasses('outline-red', 'sm')}
                 >
                   {tr('nav.login')}
                 </a>
                 <a
                   href="/registro"
-                  className="px-4 py-2 font-display font-bold text-[0.75rem] uppercase tracking-wide text-white bg-egrem-red rounded hover:bg-egrem-red-dark transition-colors no-underline"
+                  className={buttonClasses('primary', 'sm')}
                 >
                   {tr('nav.register')}
                 </a>
@@ -403,13 +441,13 @@ export default function HeaderNav({
             <div className="border-t px-4 py-4 flex items-center gap-3" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
               <a
                 href="/login"
-                className="flex-1 text-center py-2.5 font-display font-bold text-xs uppercase tracking-wide text-egrem-black border border-black/20 rounded hover:border-egrem-red hover:text-egrem-red transition-colors no-underline"
+                className={buttonClasses('outline-red', 'md', 'flex-1')}
               >
                 {tr('nav.login')}
               </a>
               <a
                 href="/registro"
-                className="flex-1 text-center py-2.5 font-display font-bold text-xs uppercase tracking-wide text-white bg-egrem-red rounded hover:bg-egrem-red-dark transition-colors no-underline"
+                className={buttonClasses('primary', 'md', 'flex-1')}
               >
                 {tr('nav.register')}
               </a>
@@ -426,6 +464,13 @@ export default function HeaderNav({
               </div>
               <span>{tr('nav.profile')}</span>
             </a>
+            <button
+              type="button"
+              className={buttonClasses('outline-red', 'sm', 'mt-4 w-full')}
+              onClick={() => void handleLogout()}
+            >
+              {tr('nav.logout')}
+            </button>
           </div>
         )}
       </div>

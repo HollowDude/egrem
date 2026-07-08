@@ -2,29 +2,35 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import AuthLayout from '@/components/ui/AuthLayout.astro';
 import LoginForm from '@/components/auth/LoginForm';
+import LoginRightPanel from '@/components/auth/LoginRightPanel.astro';
+import { fetchLoginPage } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
+let loginPage = null;
+
+try {
+  loginPage = await fetchLoginPage(lang);
+} catch (e) {
+  console.error('[NodeHive] Failed to fetch login page:', e);
+}
 
 if (Astro.locals.user) {
-  return Astro.redirect('/mi-cuenta');
+  return Astro.redirect('/');
 }
 ---
 
 <BaseLayout
   title={tr('auth.login.heading')}
-  isAuthenticated={false}
 >
   <AuthLayout
     eyebrow={tr('auth.login.eyebrow')}
     title={tr('auth.login.heading')}
     subtitle={tr('auth.login.subtitle')}
     heroImage="/images/auth/login-hero.jpg"
-    heroEyebrow={tr('auth.hero.eyebrow')}
-    heroTitle={tr('auth.hero.title')}
-    heroSlogan={tr('auth.hero.slogan')}
   >
     <LoginForm client:load lang={lang} />
+    <LoginRightPanel slot="right" right={loginPage?.right} lang={lang} />
   </AuthLayout>
 </BaseLayout>

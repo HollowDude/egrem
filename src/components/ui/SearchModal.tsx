@@ -8,14 +8,22 @@ interface Props {
   lang?: Lang;
 }
 
+interface SearchResult {
+  thumb?: string;
+  name: string;
+  artist: string;
+  price: string;
+}
+
 const POPULAR_TAGS = ['Son cubano', 'Buena Vista', 'Trova', 'Salsa', 'Timba', 'Jazz cubano'];
 
-const MOCK_RESULTS = [
-  { type: 'music_note', title: 'Buena Vista Social Club', subtitle: 'Álbum' },
-  { type: 'music_note', title: 'Los Zafiros', subtitle: 'Artista' },
-  { type: 'article', title: 'Historia de la Trova Cubana', subtitle: 'Artículo' },
-  { type: 'event', title: 'Festival de Jazz 2025', subtitle: 'Evento' },
-] as const;
+const MOCK_RESULTS: SearchResult[] = [
+  { name: 'Chan Chan (Remastered)', artist: 'Buena Vista Social Club', price: '$12.99' },
+  { name: 'El Carretero', artist: 'Guillermo Portabales', price: '$9.99' },
+  { name: 'Dos Gardenias', artist: 'Trío Matamoros', price: '$8.50' },
+  { name: 'Son de Cuba — LP', artist: 'Varios Artistas', price: '$29.99' },
+  { name: 'Alma Guajira', artist: 'Celia Cruz', price: '$11.00' },
+];
 
 export default function SearchModal({ open, onClose, lang = 'es' }: Props) {
   const tr = useTranslations(lang);
@@ -166,30 +174,21 @@ export default function SearchModal({ open, onClose, lang = 'es' }: Props) {
 
         {hasQuery && (
           <div>
-            {/* TODO: conectar con API de búsqueda */}
             {MOCK_RESULTS.map((item, i) => (
-              <div
+              <a
                 key={i}
-                style={{
-                  display: 'flex', gap: 12, padding: '10px 20px',
-                  alignItems: 'center', cursor: 'pointer',
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F5F5F5'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ''; }}
+                href="#"
+                className="search-result-item no-underline"
               >
-                <span className="icon" style={{ fontSize: '1.2rem', color: '#808080' }}>
-                  {item.type}
-                </span>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#000000' }}>
-                    {item.title}
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 12, color: '#808080' }}>
-                    {item.subtitle}
-                  </div>
+                <div className="search-result-thumb search-result-thumb--placeholder">
+                  <span className="icon">music_note</span>
                 </div>
-              </div>
+                <div className="search-result-info">
+                  <div className="search-result-name">{item.name}</div>
+                  <div className="search-result-sub">{item.artist}</div>
+                </div>
+                <div className="search-result-price">{item.price}</div>
+              </a>
             ))}
           </div>
         )}

@@ -8,16 +8,16 @@ interface Props {
 
 export default function LoginForm({ lang = 'es' }: Props) {
   const tr = useTranslations(lang as Lang);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
 
   function validate(): boolean {
-    const errs: { email?: string; password?: string } = {};
-    if (!email.trim()) {
-      errs.email = tr('auth.error.email_required');
+    const errs: { username?: string; password?: string } = {};
+    if (!username.trim()) {
+      errs.username = tr('auth.error.email_required');
     }
     if (!password) {
       errs.password = tr('auth.error.password_required');
@@ -36,7 +36,7 @@ export default function LoginForm({ lang = 'es' }: Props) {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
 
       const data = await res.json();
@@ -46,7 +46,7 @@ export default function LoginForm({ lang = 'es' }: Props) {
         return;
       }
 
-      window.location.href = '/mi-cuenta';
+      window.location.href = '/';
     } catch {
       setError(tr('auth.error.generic'));
     } finally {
@@ -86,17 +86,17 @@ export default function LoginForm({ lang = 'es' }: Props) {
             <span className="icon text-[20px]">person</span>
           </span>
           <input
-            id="login-email"
+            id="login-username"
             type="text"
-            value={email}
-            onChange={e => setEmail(e.currentTarget.value)}
-            placeholder="tu_usuario"
+            value={username}
+            onChange={e => setUsername(e.currentTarget.value)}
+            placeholder="Username"
             autoComplete="username"
-            aria-invalid={fieldErrors.email ? 'true' : undefined}
-            aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
+            aria-invalid={fieldErrors.username ? 'true' : undefined}
+            aria-describedby={fieldErrors.username ? 'login-username-error' : undefined}
             className="w-full pl-10 pr-3 py-2.5 bg-white rounded-xl border outline-none transition-colors font-sans text-sm"
             style={{
-              borderColor: fieldErrors.email
+              borderColor: fieldErrors.username
                 ? 'var(--color-form-error)'
                 : 'var(--color-form-border)',
               color: 'var(--color-egrem-black)',
@@ -106,16 +106,16 @@ export default function LoginForm({ lang = 'es' }: Props) {
               e.currentTarget.style.boxShadow = '0 0 0 1px var(--color-brand-primary)';
             }}
             onBlur={e => {
-              if (!fieldErrors.email) {
+              if (!fieldErrors.username) {
                 e.currentTarget.style.borderColor = 'var(--color-form-border)';
                 e.currentTarget.style.boxShadow = 'none';
               }
             }}
           />
         </div>
-        {fieldErrors.email && (
-          <p id="login-email-error" className="font-sans text-xs mt-1" style={{ color: 'var(--color-form-error)' }}>
-            {fieldErrors.email}
+        {fieldErrors.username && (
+          <p id="login-username-error" className="font-sans text-xs mt-1" style={{ color: 'var(--color-form-error)' }}>
+            {fieldErrors.username}
           </p>
         )}
       </div>

@@ -4,7 +4,7 @@ import { parseButton, parseMediaImage } from './parsers';
 import type { NhButton, NhMediaImage, NhEntityMeta } from './parsers';
 import type { JsonApiResource } from './client';
 import { NODEHIVE_CONFIG } from './config';
-import type { NhVideoLink, NhAlbumLink } from '@/types/drupal';
+import type { NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight } from '@/types/drupal';
 
 export interface NhHero extends NhEntityMeta {
   title: string;
@@ -164,5 +164,57 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
     sections,
     videoLinks,
     albumLinks,
+  };
+}
+
+export async function fetchLoginPage(lang = 'es'): Promise<NhLoginPage | null> {
+  const query = new URLSearchParams();
+  query.set('include', 'field_components,field_components.field_photo,field_components.field_photo.field_media_image');
+
+  const res = await jsonApiFetch(`node/astro_page?${query.toString()}`, lang);
+  const pages = Array.isArray(res.data) ? res.data : [res.data];
+  const page = pages.find((candidate) => {
+    const refs = resolveRelIds(candidate.relationships?.field_components);
+    return refs.some((ref) => ref.type === 'paragraph--_component_login_right');
+  });
+  if (!page) return null;
+
+  const pageAttrs = page.attributes as Record<string, unknown>;
+  const componentRefs = resolveRelIds(page.relationships?.field_components);
+  const loginComponentRef = componentRefs.find((ref) => ref.type === 'paragraph--_component_login_right');
+
+  let right: NhLoginRight | null = null;
+  if (loginComponentRef) {
+    const comp = findIncluded(res.included, loginComponentRef.type, loginComponentRef.id);
+    if (comp) {
+      const attrs = comp.attributes as Record<string, unknown>;
+      const internalId = (attrs.drupal_internal__id as number) ?? 0;
+      const parentId = (attrs.parent_id as string) ?? '';
+
+      let photo: NhMediaImage | null = null;
+      const photoRefs = resolveRelIds(comp.relationships?.field_photo);
+      if (photoRefs.length) {
+        const mediaRes = findIncluded(res.included, photoRefs[0].type, photoRefs[0].id);
+        if (mediaRes) photo = parseMediaImage(mediaRes, res.included);
+      }
+
+      right = {
+        id: comp.id,
+        internalId,
+        parentId,
+        bundle: '_component_login_right',
+        title: (attrs.field_title as string) ?? '',
+        subtitle: (attrs.field_subtitle as string) ?? '',
+        phrase: (attrs.field_frase as string) ?? '',
+        photo,
+      };
+    }
+  }
+
+  return {
+    id: page.id,
+    nodeId: (pageAttrs.drupal_internal__nid as number) ?? 0,
+    title: (pageAttrs.title as string) ?? 'Inicio de Sesión',
+    right,
   };
 }

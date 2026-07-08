@@ -4,9 +4,6 @@ interface Props {
   title: string;
   subtitle: string;
   heroImage: string;
-  heroEyebrow?: string;
-  heroTitle?: string;
-  heroSlogan?: string;
 }
 
 const {
@@ -14,10 +11,9 @@ const {
   title,
   subtitle,
   heroImage,
-  heroEyebrow = 'EGREM · Desde 1964',
-  heroTitle = 'La casa de la<br>música cubana',
-  heroSlogan = 'al mundo entero.',
 } = Astro.props;
+
+const hasRightSlot = Astro.slots.has('right');
 ---
 
 <section class="w-full flex min-h-[calc(100vh-4rem)]">
@@ -50,28 +46,13 @@ const {
   </div>
 
   <div class="hidden lg:flex w-1/2 relative overflow-hidden flex-col justify-end">
-    <div
-      class="absolute inset-0 bg-cover bg-center"
-      style={`background-image: url('${heroImage}');`}
-    />
-    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-    <div class="relative z-10 p-10 pb-12">
-      <p
-        class="font-display font-bold text-[11px] uppercase tracking-[0.15em] text-white/60 mb-2"
-      >
-        {heroEyebrow}
-      </p>
-      <h2
-        class="font-display font-bold text-[clamp(24px,3vw,34px)] uppercase leading-tight text-white m-0"
-        set:html={heroTitle}
-      >
-      </h2>
-      <p
-        class="font-script text-[22px] mt-1"
-        style="color: var(--color-egrem-gold);"
-      >
-        {heroSlogan}
-      </p>
-    </div>
+    {hasRightSlot ? (
+      <slot name="right" />
+    ) : (
+      <div
+        class="absolute inset-0 bg-cover bg-center"
+        style={`background-image: url('${heroImage}');`}
+      />
+    )}
   </div>
 </section>

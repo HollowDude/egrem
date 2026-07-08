@@ -10,10 +10,10 @@ export { fetchHeaderFragment, fetchFooterFragment } from './fragments';
 
 // Pages
 export type { NhHero, NhEslogan, NhSection, NhHomePage } from './pages';
-export { fetchHomePage } from './pages';
+export { fetchHomePage, fetchLoginPage } from './pages';
 
 // Content fetchers
-export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink } from '@/types/drupal';
+export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight } from '@/types/drupal';
 export { fetchNoticias, fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from './fetchers';
 
 // Utilities

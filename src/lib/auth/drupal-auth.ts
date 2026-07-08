@@ -1,23 +1,4 @@
-export interface DrupalLoginResponse {
-  current_user: {
-    uid: string;
-    name: string;
-    mail?: string;
-    roles?: string[];
-  };
-  csrf_token: string;
-  logout_token: string;
-  access_token?: string;
-}
-
-export interface DrupalUserSession {
-  uid: string;
-  name: string;
-  mail?: string;
-  roles: string[];
-  session_name: string;
-  session_id: string;
-}
+import type { DrupalLoginResponse, DrupalUserSession } from '@/types/drupal';
 
 function getBaseUrl(): string {
   const url = import.meta.env.NODEHIVE_BASE_URL;
@@ -40,9 +21,8 @@ export async function loginWithDrupal(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const msg = (body?.message || '').toLowerCase();
-    if (res.status === 400 || res.status === 403 || msg.includes('unrecognized') || msg.includes('credenciales')) {
+    // Only rely on HTTP status code, not error message text (which may be localized)
+    if (res.status === 400 || res.status === 403) {
       throw new Error('INVALID_CREDENTIALS');
     }
     throw new Error(`DRUPAL_LOGIN_FAILED: ${res.status}`);
@@ -65,27 +45,4 @@ export async function loginWithDrupal(
   };
 
   return { user, raw };
-}
-
-export function serializeUser(user: DrupalUserSession): string {
-  return JSON.stringify({
-    uid: user.uid,
-    name: user.name,
-    mail: user.mail,
-    roles: user.roles,
-    session_name: user.session_name,
-    session_id: user.session_id,
-  });
-}
-
-export function deserializeUser(data: string): DrupalUserSession | null {
-  try {
-    const parsed = JSON.parse(data);
-    if (parsed && parsed.uid && parsed.name) {
-      return parsed as DrupalUserSession;
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
