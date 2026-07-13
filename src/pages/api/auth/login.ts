@@ -1,13 +1,6 @@
 import type { APIRoute } from 'astro';
 import { loginWithDrupal } from '@/lib/auth/drupal-auth';
-import { createSessionCookie } from '@/lib/auth/session';
-
-const SESSION_COOKIE = 'egrem_session';
-const SESSION_MAX_AGE = 60 * 60 * 24; // 1 day
-
-function isSecureRequest(request: Request): boolean {
-  return request.headers.get('x-forwarded-proto') === 'https' || new URL(request.url).protocol === 'https:';
-}
+import { setSession } from '@/lib/auth/session';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -23,19 +16,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { user } = await loginWithDrupal(username, password);
 
-    // Create a signed session cookie (no roles included for security)
-    const sessionValue = createSessionCookie(
-      { uid: user.uid, name: user.name, mail: user.mail, roles: [] },
-      SESSION_MAX_AGE,
-    );
-
-    cookies.set(SESSION_COOKIE, sessionValue, {
-      path: '/',
-      maxAge: SESSION_MAX_AGE,
-      httpOnly: true,
-      secure: isSecureRequest(request),
-      sameSite: 'lax',
-    });
+    await setSession(cookies, user);
 
     return new Response(
       JSON.stringify({ success: true, user: { uid: user.uid, name: user.name, mail: user.mail } }),
@@ -45,7 +26,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const msg = e instanceof Error ? e.message : '';
     if (msg === 'INVALID_CREDENTIALS') {
       return new Response(
-        JSON.stringify({ error: 'Correo o contraseña incorrectos.' }),
+        JSON.stringify({ error: 'Usuario o contraseña incorrectos.' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } },
       );
     }

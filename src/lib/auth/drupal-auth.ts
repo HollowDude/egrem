@@ -1,4 +1,4 @@
-import type { DrupalLoginResponse, DrupalUserSession } from '@/types/drupal';
+import type { SessionUser } from '@/types/drupal';
 
 function getBaseUrl(): string {
   const url = import.meta.env.NODEHIVE_BASE_URL;
@@ -9,7 +9,7 @@ function getBaseUrl(): string {
 export async function loginWithDrupal(
   username: string,
   password: string,
-): Promise<{ user: DrupalUserSession; raw: DrupalLoginResponse }> {
+): Promise<{ user: SessionUser; setCookie: string }> {
   const url = `${getBaseUrl()}/user/login?_format=json`;
   const res = await fetch(url, {
     method: 'POST',
@@ -21,28 +21,53 @@ export async function loginWithDrupal(
   });
 
   if (!res.ok) {
-    // Only rely on HTTP status code, not error message text (which may be localized)
     if (res.status === 400 || res.status === 403) {
       throw new Error('INVALID_CREDENTIALS');
     }
     throw new Error(`DRUPAL_LOGIN_FAILED: ${res.status}`);
   }
 
-  const raw: DrupalLoginResponse = await res.json();
+  const json: Record<string, unknown> = await res.json();
 
-  const setCookie = res.headers.get('set-cookie') || '';
-  const sessionMatch = setCookie.match(/(SESS\w+)=([^;]+)/);
-  const sessionName = sessionMatch ? sessionMatch[1] : '';
-  const sessionId = sessionMatch ? sessionMatch[2] : '';
+  const currentUser = json.current_user as Record<string, unknown> | undefined;
 
-  const user: DrupalUserSession = {
-    uid: raw.current_user.uid,
-    name: raw.current_user.name,
-    mail: raw.current_user.mail,
-    roles: raw.current_user.roles ?? ['authenticated'],
-    session_name: sessionName,
-    session_id: sessionId,
+  let mail = '';
+  const accessToken: string = (json.access_token as string) ?? '';
+  const uid = String(currentUser?.uid ?? '');
+  if (accessToken && uid) {
+    try {
+      const mailRes = await fetch(`${getBaseUrl()}/user/${uid}?_format=json`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      });
+      if (mailRes.ok) {
+        const userData = (await mailRes.json()) as Record<string, unknown>;
+        const mailField = userData?.mail as Array<{ value: string }> | undefined;
+        mail = mailField?.[0]?.value ?? '';
+      }
+    } catch {}
+  }
+
+  const user: SessionUser = {
+    uid,
+    name: (currentUser?.name as string) ?? username,
+    mail,
+    roles: (currentUser?.roles as string[]) ?? ['authenticated'],
+    csrfToken: (json.csrf_token as string) ?? '',
+    logoutToken: (json.logout_token as string) ?? '',
+    accessToken,
   };
 
-  return { user, raw };
+  return { user, setCookie: res.headers.get('set-cookie') ?? '' };
+}
+
+export async function logoutFromDrupal(logoutToken: string): Promise<void> {
+  try {
+    await fetch(`${getBaseUrl()}/user/logout?_format=json&token=${logoutToken}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+  } catch {}
 }

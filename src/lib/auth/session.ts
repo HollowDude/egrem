@@ -1,86 +1,87 @@
-/**
- * Server-side session management with HMAC signature.
- * Ensures session integrity and prevents client-side tampering.
- */
+import type { AstroCookies } from 'astro';
+import type { SessionUser } from '@/types/drupal';
+import { EncryptJWT, jwtDecrypt, type JWTPayload } from 'jose';
 
-import { createHmac } from 'crypto';
-import type { DrupalUser } from '@/types/drupal';
-import { validateEnvVars } from '@/lib/env';
+const COOKIE_NAME = 'egrem_session';
+const SESSION_MAX_AGE = Number(import.meta.env.SESSION_MAX_AGE ?? 86400);
 
-// Validate environment at module load time
-validateEnvVars();
+const _secret = import.meta.env.SESSION_SECRET as string | undefined;
+if (!_secret || _secret.length < 32) {
+  throw new Error(
+    '[Session] SESSION_SECRET must be at least 32 characters.\n' +
+    'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+  );
+}
+const ENC_KEY = new TextEncoder().encode(_secret).slice(0, 32);
 
-const SESSION_SECRET = import.meta.env.SESSION_SECRET || '';
-
-const ALGORITHM = 'sha256';
-const SEPARATOR = '.';
-
-/**
- * Sign a session object and return serialized, signed cookie value.
- * Format: base64(JSON) + . + base64(HMAC signature)
- */
-export function createSessionCookie(user: DrupalUser, maxAgeSeconds: number): string {
-  const now = Date.now();
-  const exp = now + maxAgeSeconds * 1000;
-
-  // Store minimal data: uid, name, exp. Roles are NOT stored in the client cookie.
-  const payload = {
+export async function setSession(cookies: AstroCookies, user: SessionUser): Promise<void> {
+  const payload: JWTPayload = {
     uid: user.uid,
     name: user.name,
-    exp,
+    mail: user.mail,
+    roles: user.roles,
+    csrfToken: user.csrfToken,
+    logoutToken: user.logoutToken,
+    accessToken: user.accessToken,
   };
 
-  const jsonString = JSON.stringify(payload);
-  const encoded = Buffer.from(jsonString).toString('base64');
+  const token = await new EncryptJWT(payload)
+    .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+    .setIssuedAt()
+    .setExpirationTime(`${SESSION_MAX_AGE}s`)
+    .encrypt(ENC_KEY);
 
-  const signature = createHmac(ALGORITHM, SESSION_SECRET)
-    .update(encoded)
-    .digest('base64');
-
-  return `${encoded}${SEPARATOR}${signature}`;
+  cookies.set(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    maxAge: SESSION_MAX_AGE,
+    path: '/',
+  });
 }
 
-/**
- * Verify and deserialize a session cookie. Returns null if invalid or expired.
- * Note: roles are NOT restored from the cookie for security. In the future,
- * if role-based access control is needed, fetch roles from Drupal on-demand.
- */
-export function verifySessionCookie(cookie: string): DrupalUser | null {
+function isJwtExpired(token: string): boolean {
   try {
-    const parts = cookie.split(SEPARATOR);
-    if (parts.length !== 2) return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload?.exp as number | undefined;
+    if (typeof exp !== 'number') return false;
+    return Date.now() >= exp * 1000;
+  } catch {
+    return false;
+  }
+}
 
-    const [encoded, signature] = parts;
+export async function getSession(cookies: AstroCookies): Promise<SessionUser | null> {
+  const raw = cookies.get(COOKIE_NAME)?.value;
+  if (!raw) return null;
 
-    // Verify signature
-    const expectedSignature = createHmac(ALGORITHM, SESSION_SECRET)
-      .update(encoded)
-      .digest('base64');
-
-    if (signature !== expectedSignature) {
-      return null;
-    }
-
-    // Decode and parse
-    const jsonString = Buffer.from(encoded, 'base64').toString('utf-8');
-    const payload = JSON.parse(jsonString);
-
-    // Check expiration
-    if (payload.exp && payload.exp < Date.now()) {
-      return null;
-    }
-
-    // Validate minimal required fields
-    if (!payload.uid || !payload.name) {
-      return null;
-    }
+  try {
+    const { payload } = await jwtDecrypt(raw, ENC_KEY);
+    const accessToken = payload['accessToken'] as string | undefined;
+    if (!accessToken || isJwtExpired(accessToken)) return null;
 
     return {
-      uid: payload.uid,
-      name: payload.name,
-      roles: [], // Empty by design; roles should be fetched server-side if needed
+      uid: payload['uid'] as string,
+      name: payload['name'] as string,
+      mail: payload['mail'] as string,
+      roles: payload['roles'] as string[],
+      csrfToken: payload['csrfToken'] as string,
+      logoutToken: payload['logoutToken'] as string,
+      accessToken,
     };
   } catch {
     return null;
   }
+}
+
+export function destroySession(cookies: AstroCookies): void {
+  cookies.set(COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/',
+  });
 }

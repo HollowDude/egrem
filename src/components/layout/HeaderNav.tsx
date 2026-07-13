@@ -194,7 +194,7 @@ export default function HeaderNav({
                             style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}
                             role="menuitem"
                             onClick={() => setActiveDropdown(null)}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(188,1,0,0.06)'; e.currentTarget.style.color = '#bc0100'; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(204,0,0,0.06)'; e.currentTarget.style.color = '#CC0000'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#1b1b1b'; }}
                           >
                             {sub.label}
@@ -260,7 +260,7 @@ export default function HeaderNav({
                       style={{
                         top: '-5px', right: '-5px',
                         minWidth: '17px', height: '17px',
-                        background: '#bc0100', color: 'white',
+                        background: '#CC0000', color: 'white',
                         fontSize: '10px', fontWeight: 700,
                         borderRadius: '9px', padding: '0 3px',
                       }}
@@ -459,8 +459,8 @@ export default function HeaderNav({
         {isAuthenticated && (
           <div className="border-t px-4 py-4" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
             <a href="/mi-cuenta" className="flex items-center gap-3 no-underline transition-colors" style={{ color: '#1b1b1b', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700 }}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(188,1,0,0.1)' }}>
-                <span className="icon" style={{ color: '#bc0100', fontSize: '20px' }}>account_circle</span>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(204,0,0,0.1)' }}>
+                <span className="icon" style={{ color: '#CC0000', fontSize: '20px' }}>account_circle</span>
               </div>
               <span>{tr('nav.profile')}</span>
             </a>

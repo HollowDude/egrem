@@ -17,7 +17,7 @@ export default function LanguageSwitcherReact({ lang }: Props) {
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
           fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 700,
-          letterSpacing: '0.08em', color: lang === 'es' ? '#bc0100' : '#808080',
+          letterSpacing: '0.08em', color: lang === 'es' ? '#CC0000' : '#808080',
           padding: '2px 4px',
         }}
         aria-pressed={lang === 'es'}
@@ -28,7 +28,7 @@ export default function LanguageSwitcherReact({ lang }: Props) {
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
           fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 700,
-          letterSpacing: '0.08em', color: lang === 'en' ? '#bc0100' : '#808080',
+          letterSpacing: '0.08em', color: lang === 'en' ? '#CC0000' : '#808080',
           padding: '2px 4px',
         }}
         aria-pressed={lang === 'en'}

@@ -73,7 +73,7 @@
   --color-footer-bg:        #1b1b1b;
   --color-footer-border:    rgba(255, 255, 255, 0.08);
   --color-footer-text:      #c2b0ae;
-  --color-footer-heading:   #bc0100;
+  --color-footer-heading:   #CC0000;
   --color-social-border:    #603e39;
 
   /* Sección neutra (alternativa al blanco puro) */
@@ -84,7 +84,7 @@
   --color-text-secondary:   #603e39;
 
   /* Rojo institucional (para nav, links de acción) */
-  --color-brand-primary:    #bc0100;
+  --color-brand-primary:    #CC0000;
 
   /* Tokens de formulario (M3-derivados del rojo institucional) */
   --color-form-border:        #ebbbb4;
@@ -185,6 +185,37 @@
 /* ─── Componentes reutilizables ──────────────────────────────────────────── */
 
 @layer components {
+  /* ── Typography utilities ──────────────────────────────── */
+  .text-h1, .text-h2, .text-h3, .text-h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--color-egrem-black);
+  }
+  .text-h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+  .text-h2 { font-size: clamp(1.5rem, 3.5vw, 2.5rem); }
+  .text-h3 { font-size: clamp(1.25rem, 2.5vw, 1.75rem); }
+  .text-h4 { font-size: clamp(1rem, 2vw, 1.375rem); }
+  .text-body {
+    font-family: var(--font-display);
+    font-weight: 300;
+    line-height: 1.65;
+  }
+  .text-small {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .text-caption {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--color-egrem-gray);
+  }
+
   /* Contenedor principal del sitio */
   .container-site {
     width: 100%;
@@ -195,6 +226,42 @@
     @media (min-width: 640px)  { padding-inline: 1.5rem; }
     @media (min-width: 1024px) { padding-inline: 2rem; }
   }
+
+  /* Sistema de rejilla 12 columnas */
+  .grid-egrem {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 640px)  { .grid-egrem { gap: 1.5rem; } }
+  @media (min-width: 1024px) { .grid-egrem { gap: 2rem; } }
+
+  .col-span-1  { grid-column: span 1 / span 1; }
+  .col-span-2  { grid-column: span 2 / span 2; }
+  .col-span-3  { grid-column: span 3 / span 3; }
+  .col-span-4  { grid-column: span 4 / span 4; }
+  .col-span-5  { grid-column: span 5 / span 5; }
+  .col-span-6  { grid-column: span 6 / span 6; }
+  .col-span-7  { grid-column: span 7 / span 7; }
+  .col-span-8  { grid-column: span 8 / span 8; }
+  .col-span-9  { grid-column: span 9 / span 9; }
+  .col-span-10 { grid-column: span 10 / span 10; }
+  .col-span-11 { grid-column: span 11 / span 11; }
+  .col-span-12 { grid-column: span 12 / span 12; }
+
+  .col-start-1  { grid-column-start: 1; }
+  .col-start-2  { grid-column-start: 2; }
+  .col-start-3  { grid-column-start: 3; }
+  .col-start-4  { grid-column-start: 4; }
+  .col-start-5  { grid-column-start: 5; }
+  .col-start-6  { grid-column-start: 6; }
+  .col-start-7  { grid-column-start: 7; }
+  .col-start-8  { grid-column-start: 8; }
+  .col-start-9  { grid-column-start: 9; }
+  .col-start-10 { grid-column-start: 10; }
+  .col-start-11 { grid-column-start: 11; }
+  .col-start-12 { grid-column-start: 12; }
 
   /* Espaciado vertical de sección */
   .section-py {
@@ -251,9 +318,27 @@
   }
 
   .badge--red {
-    background: rgba(188, 1, 0, 0.1);
+    background: rgba(204, 0, 0, 0.1);
     color: var(--color-brand-primary);
-    border-color: rgba(188, 1, 0, 0.3);
+    border-color: rgba(204, 0, 0, 0.3);
+  }
+
+  .badge--green {
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
+    border-color: rgba(22, 163, 74, 0.3);
+  }
+
+  .badge--white {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .badge--outline {
+    background: transparent;
+    color: var(--color-egrem-gold);
+    border-color: var(--color-egrem-gold);
   }
 
   /* Action link — "Leer más →", "Ver álbum →" etc. */
@@ -294,6 +379,11 @@
 
   .card:hover {
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.10);
+    transform: scale(1.02);
+  }
+
+  .card--no-zoom:hover {
+    transform: none;
   }
 
   .card--hover-red:hover {
@@ -303,6 +393,23 @@
   /* Tarjeta oscura base */
   .card--dark {
     background-color: var(--color-egrem-dark-card);
+  }
+
+  /* Contenido interno con padding estándar */
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  /* Variante horizontal — imagen a la izquierda */
+  .card--horizontal {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+  }
+
+  @media (max-width: 639px) {
+    .card--horizontal {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* Eyebrow — etiqueta gold en Licorice sobre títulos de sección */
@@ -401,7 +508,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: #bc0100;
+    background: #CC0000;
     transform: scaleX(0);
     transition: transform 0.2s ease;
   }
@@ -478,8 +585,8 @@
   }
 
   .action-btn:hover {
-    color: #bc0100;
-    background-color: rgba(188, 1, 0, 0.06);
+    color: #CC0000;
+    background-color: rgba(204, 0, 0, 0.06);
   }
 
   /* Botón primario (para submit de formularios — Button.astro y LoginForm.tsx) */

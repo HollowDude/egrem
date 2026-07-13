@@ -177,7 +177,7 @@ export default function AccessibilityWidget({ lang = 'es' }: Props) {
             style={{
               position: 'absolute', top: 6, right: 6,
               width: 6, height: 6, borderRadius: '50%',
-              background: '#bc0100',
+              background: '#CC0000',
             }}
           />
         )}
@@ -232,7 +232,7 @@ export default function AccessibilityWidget({ lang = 'es' }: Props) {
               style={{
                 width: 52, textAlign: 'center',
                 fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
-                color: '#bc0100',
+                color: '#CC0000',
               }}
             >
               {pct}%
@@ -290,7 +290,7 @@ export default function AccessibilityWidget({ lang = 'es' }: Props) {
               style={{
                 width: 36, height: 20,
                 borderRadius: 10, border: 'none', cursor: colorMode === 'normal' ? 'pointer' : 'default',
-                background: contrast ? '#bc0100' : '#e0e0e0',
+                background: contrast ? '#CC0000' : '#e0e0e0',
                 position: 'relative', transition: 'background 0.2s ease',
                 padding: 0, flexShrink: 0, opacity: colorMode === 'normal' ? 1 : 0.4,
               }}
@@ -333,8 +333,8 @@ export default function AccessibilityWidget({ lang = 'es' }: Props) {
                   cursor: 'pointer',
                   fontFamily: 'var(--font-display)', fontSize: 12,
                   fontWeight: colorMode === m.value ? 700 : 400,
-                  background: colorMode === m.value ? 'rgba(188,1,0,0.08)' : 'transparent',
-                  color: colorMode === m.value ? '#bc0100' : '#1b1b1b',
+                  background: colorMode === m.value ? 'rgba(204,0,0,0.08)' : 'transparent',
+                  color: colorMode === m.value ? '#CC0000' : '#1b1b1b',
                   transition: 'background 0.15s',
                 }}
                 onMouseEnter={e => {

@@ -1,11 +1,15 @@
 import type { APIRoute } from 'astro';
-
-const SESSION_COOKIE = 'egrem_session';
+import { getSession, destroySession } from '@/lib/auth/session';
+import { logoutFromDrupal } from '@/lib/auth/drupal-auth';
 
 export const POST: APIRoute = async ({ cookies }) => {
-  cookies.delete(SESSION_COOKIE, {
-    path: '/',
-  });
+  const session = await getSession(cookies);
+
+  if (session?.logoutToken) {
+    await logoutFromDrupal(session.logoutToken);
+  }
+
+  destroySession(cookies);
 
   return new Response(
     JSON.stringify({ success: true }),

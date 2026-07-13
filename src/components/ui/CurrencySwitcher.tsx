@@ -124,7 +124,7 @@ export default function CurrencySwitcher({ defaultCurrency = 'USD', lang = 'es' 
                 </span>
               </span>
               {currency === c.code && (
-                <span className="icon" style={{ fontSize: 14, color: '#bc0100' }}>check</span>
+                <span className="icon" style={{ fontSize: 14, color: '#CC0000' }}>check</span>
               )}
             </button>
           ))}

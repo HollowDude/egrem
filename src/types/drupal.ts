@@ -23,6 +23,20 @@ export interface DrupalUserSession extends DrupalUser {
 }
 
 /**
+ * Session user stored in the encrypted JWT cookie.
+ * Includes tokens needed for authenticated Drupal API calls.
+ */
+export interface SessionUser {
+  uid: string;
+  name: string;
+  mail: string;
+  roles: string[];
+  csrfToken: string;
+  logoutToken: string;
+  accessToken: string;
+}
+
+/**
  * Response structure from Drupal /user/login endpoint.
  */
 export interface DrupalLoginResponse {

@@ -1,0 +1,81 @@
+---
+import { useTranslations } from '@/i18n/translations';
+import type { Lang } from '@/i18n';
+
+interface Props {
+  lang: Lang;
+  userName: string;
+}
+
+const { lang, userName } = Astro.props;
+const tr = useTranslations(lang);
+---
+
+<aside class="w-full md:w-64 shrink-0">
+  <div class="pb-6 mb-6 border-b" style="border-color: var(--color-form-border);">
+    <h2 class="text-h2 m-0">
+      {tr('auth.dashboard.title')}
+    </h2>
+    <p class="text-small mt-1" style="color: var(--color-text-secondary);">
+      {tr('auth.dashboard.welcome').replace('{name}', userName)}
+    </p>
+  </div>
+
+  <nav class="flex flex-col gap-2">
+    <a
+      href="/mi-cuenta"
+      class="flex items-center gap-3 px-3 py-3 rounded-r-lg transition-all text-h4 no-underline"
+      style="background: var(--color-surface-container); color: var(--color-brand-primary); border-left: 4px solid var(--color-brand-primary);"
+    >
+      <span class="icon text-[20px]" style="font-variation-settings: 'FILL' 1;">person</span>
+      {tr('auth.dashboard.profile')}
+    </a>
+
+    <a
+      href="#"
+      class="flex items-center gap-3 px-3 py-3 rounded-r-lg transition-all text-h4 no-underline"
+      style="color: var(--color-text-secondary); border-left: 4px solid transparent;"
+      onmouseover="this.style.background='var(--color-surface-container)'; this.style.color='var(--color-brand-primary)'; this.style.borderLeftColor='var(--color-egrem-gold)';"
+      onmouseout="this.style.background=''; this.style.color=''; this.style.borderLeftColor='transparent';"
+    >
+      <span class="icon text-[20px]">inventory_2</span>
+      {tr('auth.dashboard.orders')}
+    </a>
+
+    <a
+      href="#"
+      class="flex items-center gap-3 px-3 py-3 rounded-r-lg transition-all text-h4 no-underline"
+      style="color: var(--color-text-secondary); border-left: 4px solid transparent;"
+      onmouseover="this.style.background='var(--color-surface-container)'; this.style.color='var(--color-brand-primary)'; this.style.borderLeftColor='var(--color-egrem-gold)';"
+      onmouseout="this.style.background=''; this.style.color=''; this.style.borderLeftColor='transparent';"
+    >
+      <span class="icon text-[20px]">local_activity</span>
+      {tr('auth.dashboard.tickets')}
+    </a>
+  </nav>
+
+  <div class="mt-auto pt-8">
+    <button
+      id="dashboard-logout-btn"
+      class="flex items-center gap-3 px-3 py-3 w-full text-h4 font-bold uppercase no-underline bg-transparent border-none cursor-pointer"
+      style="color: var(--color-brand-primary); border-radius: 1rem; transition: all 0.2s ease;"
+      onmouseover="this.style.background='rgba(204,0,0,0.06)';"
+      onmouseout="this.style.background='transparent';"
+    >
+      <span class="icon text-[20px]">logout</span>
+      {tr('auth.dashboard.logout')}
+    </button>
+  </div>
+</aside>
+
+<script>
+  document.getElementById('dashboard-logout-btn')?.addEventListener('click', async () => {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    window.location.href = '/login';
+  });
+</script>
