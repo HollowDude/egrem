@@ -10,10 +10,9 @@ import SectionHeader from '@/components/ui/SectionHeader.astro';
 import Button from '@/components/ui/Button.astro';
 import ActionLink from '@/components/ui/ActionLink.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
-import type { NhEntityMeta } from '@/lib/nodehive';
+import type { NhEntityMeta, NhEvento } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
-import type { NhEvento } from '@/types/drupal';
 
 function formatDay(dateStr: string): string { return new Date(dateStr).getDate().toString(); }
 function formatMonth(dateStr: string): string {

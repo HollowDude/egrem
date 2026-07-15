@@ -12,10 +12,9 @@ import ActionLink from '@/components/ui/ActionLink.astro';
 import PlayOverlay from '@/components/ui/PlayOverlay.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import SpotifyPlayer from '@/components/ui/SpotifyPlayer';
-import type { NhEntityMeta } from '@/lib/nodehive';
+import type { NhEntityMeta, NhAlbum } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
-import type { NhAlbum } from '@/types/drupal';
 
 interface Props {
   items?: NhAlbum[];

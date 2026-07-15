@@ -1,0 +1,36 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import AuthLayout from '@/components/ui/AuthLayout.astro';
+import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
+import LoginRightPanel from '@/components/auth/LoginRightPanel.astro';
+import { fetchLoginPage } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+let loginPage = null;
+
+try {
+  loginPage = await fetchLoginPage(lang);
+} catch (e) {
+  console.error('[NodeHive] Failed to fetch login page:', e);
+}
+
+if (Astro.locals.user) {
+  return Astro.redirect('/');
+}
+---
+
+<BaseLayout
+  title={tr('auth.forgotPassword.heading')}
+>
+  <AuthLayout
+    eyebrow={tr('auth.forgotPassword.eyebrow')}
+    title={tr('auth.forgotPassword.heading')}
+    subtitle={tr('auth.forgotPassword.subtitle')}
+    heroImage="/images/auth/login-hero.jpg"
+  >
+    <ForgotPasswordForm client:load lang={lang} />
+    <LoginRightPanel slot="right" right={loginPage?.right} lang={lang} />
+  </AuthLayout>
+</BaseLayout>

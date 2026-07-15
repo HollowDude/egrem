@@ -1,5 +1,5 @@
 import type { AstroCookies } from 'astro';
-import type { SessionUser } from '@/types/drupal';
+import type { SessionUser } from '@/types/auth';
 import { EncryptJWT, jwtDecrypt, type JWTPayload } from 'jose';
 
 const COOKIE_NAME = 'egrem_session';
@@ -33,7 +33,7 @@ export async function setSession(cookies: AstroCookies, user: SessionUser): Prom
 
   cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: false,
+    secure: import.meta.env.PROD,
     sameSite: 'lax',
     maxAge: SESSION_MAX_AGE,
     path: '/',
@@ -79,7 +79,7 @@ export async function getSession(cookies: AstroCookies): Promise<SessionUser | n
 export function destroySession(cookies: AstroCookies): void {
   cookies.set(COOKIE_NAME, '', {
     httpOnly: true,
-    secure: false,
+    secure: import.meta.env.PROD,
     sameSite: 'lax',
     maxAge: 0,
     path: '/',

@@ -3,7 +3,7 @@ import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
 import { resolveFileUrl } from '@/lib/nodehive';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
-import type { NhLoginRight } from '@/types/drupal';
+import type { NhLoginRight } from '@/lib/nodehive';
 
 interface Props {
   right?: NhLoginRight | null;

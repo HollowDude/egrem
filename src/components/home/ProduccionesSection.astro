@@ -13,10 +13,9 @@
 import SectionHeader from '@/components/ui/SectionHeader.astro';
 import Button from '@/components/ui/Button.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
-import type { NhEntityMeta } from '@/lib/nodehive';
+import type { NhEntityMeta, NhProduccion } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
-import type { NhProduccion } from '@/types/drupal';
 
 interface Props {
   items?: NhProduccion[];

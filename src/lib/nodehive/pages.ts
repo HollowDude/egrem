@@ -4,7 +4,7 @@ import { parseButton, parseMediaImage } from './parsers';
 import type { NhButton, NhMediaImage, NhEntityMeta } from './parsers';
 import type { JsonApiResource } from './client';
 import { NODEHIVE_CONFIG } from './config';
-import type { NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight } from '@/types/drupal';
+import type { NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight } from './entities';
 
 export interface NhHero extends NhEntityMeta {
   title: string;

@@ -140,7 +140,6 @@ export default function RegisterForm({ lang = 'es' }: Props) {
           color: 'var(--color-text-secondary)',
         }}
       >
-        <span className="icon text-xl shrink-0">mail</span>
         <span>{tr('auth.register.passwordless_note')}</span>
       </div>
 

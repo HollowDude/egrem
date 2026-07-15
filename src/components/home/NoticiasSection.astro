@@ -12,10 +12,9 @@ import SectionHeader from '@/components/ui/SectionHeader.astro';
 import Badge from '@/components/ui/Badge.astro';
 import ActionLink from '@/components/ui/ActionLink.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
-import type { NhEntityMeta } from '@/lib/nodehive';
+import type { NhEntityMeta, NhNoticia } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
-import type { NhNoticia } from '@/types/drupal';
 
 interface Props {
   noticias?: NhNoticia[];

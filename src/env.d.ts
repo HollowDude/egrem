@@ -24,7 +24,7 @@ declare global {
   namespace App {
     interface Locals {
       lang: import('@/i18n').Lang;
-      user?: import('@/types/drupal').DrupalUser | null;
+      user?: import('@/types/auth').SessionUser | null;
     }
   }
 }

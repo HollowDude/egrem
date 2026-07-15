@@ -1,4 +1,4 @@
-import type { SessionUser } from '@/types/drupal';
+import type { SessionUser } from '@/types/auth';
 
 function getBaseUrl(): string {
   const url = import.meta.env.NODEHIVE_BASE_URL;
