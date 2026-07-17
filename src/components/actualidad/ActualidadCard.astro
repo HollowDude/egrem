@@ -1,0 +1,121 @@
+---
+interface Props {
+  title: string;
+  bundle: string;
+  date: string;
+  summary: string;
+  image?: { url: string; alt: string } | null;
+  path?: string;
+  featured?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  bundle,
+  date,
+  summary,
+  image,
+  path = '#',
+  featured = false,
+} = Astro.props;
+
+const href = path || `/actualidad/${bundle}/${title.toLowerCase().replace(/\s+/g, '-')}`;
+
+function formatDate(d: string): string {
+  if (!d) return '';
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return d;
+  return dateObj.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+const bundleLabels: Record<string, string> = {
+  noticia: 'Noticia',
+  article: 'Artículo',
+  blog: 'Blog',
+  boletin_archivo: 'Boletín',
+};
+---
+
+{
+  featured ? (
+    <article
+      class="md:row-span-3 relative min-h-[400px] md:min-h-[520px] rounded-2xl group overflow-hidden cursor-pointer border border-egrem-gray/20 hover:border-egrem-red transition-all duration-300"
+    >
+      {
+        image?.url ? (
+          <img
+            src={image.url}
+            alt={image.alt}
+            class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div class="absolute inset-0 bg-egrem-gray-light" />
+        )
+      }
+      <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+      <div class="absolute bottom-0 left-0 p-6 w-full">
+        <span class="badge mb-3 inline-block">{bundleLabels[bundle] || bundle}</span>
+        <h2 class="text-h2 text-white mb-2 group-hover:text-egrem-gold transition-colors">
+          {title}
+        </h2>
+        <p class="text-body text-white/80 hidden md:block max-w-3xl line-clamp-2">
+          {summary}
+        </p>
+        <div class="flex items-center gap-2 mt-4 text-white/60 text-small">
+          <span class="text-[16px]" style="font-family: 'Material Symbols Outlined';">calendar_today</span>
+          <span>{formatDate(date)}</span>
+        </div>
+      </div>
+    </article>
+  ) : (
+    <article
+      class="card card--hover-red card--no-zoom group flex flex-col"
+    >
+      <a href={href} class="block overflow-hidden no-underline shrink-0 relative" style="height: 12rem;">
+        {
+          image?.url ? (
+            <img
+              src={image.url}
+              alt={image.alt}
+              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div class="w-full h-full bg-egrem-gray-light" />
+          )
+        }
+        <span class="absolute top-3 right-3 badge z-10">{bundleLabels[bundle] || bundle}</span>
+      </a>
+
+      <div class="card-body flex flex-col flex-1">
+        <h3
+          class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors"
+        >
+          <a href={href} class="text-inherit no-underline">
+            {title}
+          </a>
+        </h3>
+
+        <p
+          class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1"
+          style="color: var(--color-text-secondary);"
+        >
+          {summary}
+        </p>
+
+        <div class="flex items-center gap-2 mt-4 text-egrem-gray text-small">
+          <span class="text-[16px]" style="font-family: 'Material Symbols Outlined';">schedule</span>
+          <span>{formatDate(date)}</span>
+        </div>
+      </div>
+    </article>
+  )
+}

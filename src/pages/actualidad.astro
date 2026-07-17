@@ -1,0 +1,431 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ActualidadCard from '@/components/actualidad/ActualidadCard.astro';
+import Badge from '@/components/ui/Badge.astro';
+import ActionLink from '@/components/ui/ActionLink.astro';
+import PlayOverlay from '@/components/ui/PlayOverlay.astro';
+import YouTubePlayer from '@/components/ui/YouTubePlayer';
+import { fetchActualidadItems, fetchPatrimonioSection, extractYouTubeId } from '@/lib/nodehive';
+import type { NhActualidadItem, NhPatrimonioSection } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+let items: NhActualidadItem[] = [];
+let error: string | null = null;
+
+try {
+  items = await fetchActualidadItems(lang);
+} catch (e) {
+  console.error('[Actualidad] Failed to fetch:', e);
+  error = tr('actualidad.error');
+}
+
+let patrimonioSection: NhPatrimonioSection | null = null;
+try {
+  patrimonioSection = await fetchPatrimonioSection(lang);
+} catch (e) {
+  console.error('[Actualidad] Failed to fetch patrimonio section:', e);
+}
+
+const noticias = items.filter((i) => i.bundle === 'noticia').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const articulos = items.filter((i) => i.bundle === 'article').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const blogs = items.filter((i) => i.bundle === 'blog').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const patrimonioItems = items.filter((i) => i.patrimonio).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+function paginate<T>(items: T[], page: number, perPage: number): { items: T[]; total: number; totalPages: number; currentPage: number } {
+  const safePage = Math.max(1, page);
+  const start = (safePage - 1) * perPage;
+  return {
+    items: items.slice(start, start + perPage),
+    total: items.length,
+    totalPages: Math.max(1, Math.ceil(items.length / perPage)),
+    currentPage: safePage,
+  };
+}
+
+function pageUrl(section: string, page: number, currentUrl: URL): string {
+  const params = new URLSearchParams(currentUrl.search);
+  if (page <= 1) {
+    params.delete(section);
+  } else {
+    params.set(section, String(page));
+  }
+  const qs = params.toString();
+  return `${qs ? '?' + qs : ''}#${section}`;
+}
+
+function formatDate(d: string): string {
+  if (!d) return '';
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return d;
+  return dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function readingTime(body: string): string {
+  const words = body?.split(/\s+/).length ?? 0;
+  const min = Math.max(1, Math.ceil(words / 200));
+  return `${min} min read`;
+}
+
+function authorInitials(name: string): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const perPage = { noticias: 4, articulos: 6, blogs: 6 };
+const np = parseInt(Astro.url.searchParams.get('noticias') ?? '1');
+const ap = parseInt(Astro.url.searchParams.get('articulos') ?? '1');
+const bp = parseInt(Astro.url.searchParams.get('blogs') ?? '1');
+const noticiasP = paginate(noticias, isNaN(np) ? 1 : np, perPage.noticias);
+const articulosP = paginate(articulos, isNaN(ap) ? 1 : ap, perPage.articulos);
+const blogsP = paginate(blogs, isNaN(bp) ? 1 : bp, perPage.blogs);
+
+const authorBgColors = ['bg-egrem-red', 'bg-egrem-gold', 'bg-egrem-black', 'bg-egrem-red-dark'];
+function authorColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return authorBgColors[Math.abs(hash) % authorBgColors.length];
+}
+---
+
+<BaseLayout
+  title={tr('actualidad.page_title')}
+  description={tr('actualidad.page_description')}
+>
+  <main id="main-content">
+    <section class="bg-egrem-dark section-py border-b border-egrem-gray/20 text-center">
+      <div class="container-site">
+        <h1 class="text-h1 text-white uppercase mb-3">
+          {tr('actualidad.hero.title')}
+        </h1>
+        <p class="text-body text-egrem-gray max-w-2xl mx-auto">
+          {tr('actualidad.hero.subtitle')}
+        </p>
+      </div>
+    </section>
+
+    {error ? (
+      <section class="section-py bg-white">
+        <div class="container-site text-center">
+          <p class="text-egrem-red text-body">{error}</p>
+        </div>
+      </section>
+    ) : null}
+
+    <!-- ─── NOTICIAS ─────────────────────────────────────────────── -->
+    <section id="noticias" class="section-py bg-white border-b border-egrem-gray/20">
+      <div class="container-site">
+        <h2 class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black">
+          {tr('nav.news.news')}
+        </h2>
+
+        {noticiasP.items.length === 0 ? (
+          <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+        ) : noticiasP.currentPage === 1 ? (
+        <div class="grid grid-cols-1 md:[grid-template-columns:3fr_2fr] gap-5 mb-4">
+          <ActualidadCard
+            title={noticiasP.items[0].title}
+            bundle={noticiasP.items[0].bundle}
+            date={noticiasP.items[0].date}
+            summary={noticiasP.items[0].summary}
+            image={noticiasP.items[0].image ? { url: noticiasP.items[0].image.url, alt: noticiasP.items[0].image.alt } : undefined}
+            path={noticiasP.items[0].path}
+            featured={true}
+            lang={lang}
+          />
+          {noticiasP.items.slice(1, 4).map((item) => (
+            <ActualidadCard
+              title={item.title}
+              bundle={item.bundle}
+              date={item.date}
+              summary={item.summary}
+              image={item.image ? { url: item.image.url, alt: item.image.alt } : undefined}
+              path={item.path}
+              lang={lang}
+            />
+          ))}
+        </div>
+        ) : (
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-4">
+          {noticiasP.items.map((item) => (
+            <ActualidadCard
+              title={item.title}
+              bundle={item.bundle}
+              date={item.date}
+              summary={item.summary}
+              image={item.image ? { url: item.image.url, alt: item.image.alt } : undefined}
+              path={item.path}
+              lang={lang}
+            />
+          ))}
+        </div>
+        )}
+
+        {noticiasP.totalPages > 1 && (
+          <div class="flex justify-center border-t border-egrem-gray/20 pt-6">
+            <nav class="flex items-center gap-2">
+              {noticiasP.currentPage > 1 && (
+                <a href={pageUrl('noticias', noticiasP.currentPage - 1, Astro.url)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"><span style="font-family:'Material Symbols Outlined';">chevron_left</span></a>
+              )}
+              {Array.from({ length: noticiasP.totalPages }, (_, i) => i + 1).map((p) => (
+                <a href={pageUrl('noticias', p, Astro.url)} class:list={['w-10 h-10 flex items-center justify-center rounded-xl no-underline', p === noticiasP.currentPage ? 'border-b-2 border-egrem-red text-egrem-red font-bold' : 'border border-transparent hover:bg-egrem-gray-light text-egrem-black font-bold']}>{p}</a>
+              ))}
+              {noticiasP.currentPage < noticiasP.totalPages && (
+                <a href={pageUrl('noticias', noticiasP.currentPage + 1, Astro.url)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"><span style="font-family:'Material Symbols Outlined';">chevron_right</span></a>
+              )}
+            </nav>
+          </div>
+        )}
+
+
+      </div>
+    </section>
+
+    <!-- ─── ARTÍCULOS ────────────────────────────────────────────── -->
+    <section id="articulos" class="section-py bg-white border-b border-egrem-gray/20">
+      <div class="container-site">
+        <h2 class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black">
+          {tr('nav.news.articles')}
+        </h2>
+
+        {articulosP.items.length === 0 ? (
+          <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+        ) : (
+        <div class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 scroll-smooth" style="scrollbar-width:thin;">
+          {articulosP.items.map((item) => (
+            <article class="min-w-[300px] md:min-w-[calc(33.333%-16px)] snap-start card card--hover-red card--no-zoom group flex flex-col shrink-0">
+              <a href={item.path || '#'} class="block overflow-hidden no-underline shrink-0 relative" style="height: 12rem;">
+                {item.image?.url ? (
+                  <img src={item.image.url} alt={item.image.alt} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light" loading="lazy" decoding="async" />
+                ) : (
+                  <div class="w-full h-full bg-egrem-gray-light" />
+                )}
+                <Badge variant="gold" class="absolute top-3 left-3 z-10">{tr(`actualidad.badge.${item.bundle}`)}</Badge>
+              </a>
+              <div class="card-body flex flex-col flex-1">
+                <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
+                  <a href={item.path || '#'} class="text-inherit no-underline">{item.title}</a>
+                </h3>
+                <p class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1" style="color:var(--color-text-secondary);">
+                  {item.summary}
+                </p>
+                <div class="flex items-center justify-between mt-4">
+                  <span class="text-egrem-gray text-small">{formatDate(item.date)}</span>
+                  <ActionLink href={item.path || '#'}>{tr('actualidad.read_more')}</ActionLink>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+        )}
+
+        {articulosP.totalPages > 1 && (
+          <div class="flex justify-center border-t border-egrem-gray/20 pt-6 mt-4">
+            <nav class="flex items-center gap-2">
+              {articulosP.currentPage > 1 && (
+                <a href={pageUrl('articulos', articulosP.currentPage - 1, Astro.url)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"><span style="font-family:'Material Symbols Outlined';">chevron_left</span></a>
+              )}
+              {Array.from({ length: articulosP.totalPages }, (_, i) => i + 1).map((p) => (
+                <a href={pageUrl('articulos', p, Astro.url)} class:list={['w-10 h-10 flex items-center justify-center rounded-xl no-underline', p === articulosP.currentPage ? 'border-b-2 border-egrem-red text-egrem-red font-bold' : 'border border-transparent hover:bg-egrem-gray-light text-egrem-black font-bold']}>{p}</a>
+              ))}
+              {articulosP.currentPage < articulosP.totalPages && (
+                <a href={pageUrl('articulos', articulosP.currentPage + 1, Astro.url)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"><span style="font-family:'Material Symbols Outlined';">chevron_right</span></a>
+              )}
+            </nav>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- ─── BLOG ─────────────────────────────────────────────────── -->
+    <section id="blogs" class="section-py bg-white border-b border-egrem-gray/20">
+      <div class="container-site">
+        <h2 class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black">
+          {tr('nav.news.blog')}
+        </h2>
+
+        {blogsP.items.length === 0 ? (
+          <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+        ) : (
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {blogsP.items.map((item) => (
+            <article class="card card--hover-red card--no-zoom group flex flex-col p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class:list={['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs', authorColor(item.author)]}>
+                  {authorInitials(item.author)}
+                </div>
+                <div class="text-sm">
+                  <p class="font-display font-bold text-egrem-black m-0 leading-tight">{item.author || 'EGREM'}</p>
+                  <p class="text-egrem-gray text-caption m-0">
+                    {tr(`actualidad.badge.${item.bundle}`)} &middot; {readingTime(item.body)}
+                  </p>
+                </div>
+              </div>
+              <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2">
+                <a href={item.path || '#'} class="text-inherit no-underline">{item.title}</a>
+              </h3>
+              <p class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1 mb-4" style="color:var(--color-text-secondary);">
+                {item.summary}
+              </p>
+              <a
+                href={item.path || '#'}
+                class="inline-flex items-center gap-2 text-small font-bold text-egrem-black hover:text-egrem-red transition-colors uppercase tracking-widest no-underline w-fit group/link pb-1 mt-auto"
+                style="border-bottom: 2px solid transparent;"
+              >
+                {tr('actualidad.read_more')}
+                <span class="text-[18px] group-hover/link:translate-x-1 transition-transform" style="font-family:'Material Symbols Outlined';">arrow_forward</span>
+              </a>
+            </article>
+          ))}
+        </div>
+        )}
+
+        {blogsP.totalPages > 1 && (
+          <div class="flex justify-center border-t border-egrem-gray/20 pt-6 mt-6">
+            <nav class="flex items-center gap-2">
+              {blogsP.currentPage > 1 && (
+                <a href={pageUrl('blogs', blogsP.currentPage - 1, Astro.url)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"><span style="font-family:'Material Symbols Outlined';">chevron_left</span></a>
+              )}
+              {Array.from({ length: blogsP.totalPages }, (_, i) => i + 1).map((p) => (
+                <a href={pageUrl('blogs', p, Astro.url)} class:list={['w-10 h-10 flex items-center justify-center rounded-xl no-underline', p === blogsP.currentPage ? 'border-b-2 border-egrem-red text-egrem-red font-bold' : 'border border-transparent hover:bg-egrem-gray-light text-egrem-black font-bold']}>{p}</a>
+              ))}
+              {blogsP.currentPage < blogsP.totalPages && (
+                <a href={pageUrl('blogs', blogsP.currentPage + 1, Astro.url)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"><span style="font-family:'Material Symbols Outlined';">chevron_right</span></a>
+              )}
+            </nav>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- ─── PATRIMONIO CULTURAL ──────────────────────────────────── -->
+    <section id="patrimonio" class="section-py" style="background-color: #faf5eb; border-top: 1px solid rgba(0,0,0,0.08);">
+      <div class="container-site">
+        <div class="mb-8">
+          <h2 class="section-title border-b-4 border-egrem-gold pb-2 m-0 mb-2 inline-block text-egrem-black">
+            {tr('nav.news.heritage')}
+          </h2>
+          <p class="text-body" style="color:var(--color-text-secondary); max-width:42rem;">
+            Preservando el legado y la memoria viva de nuestra herencia musical.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left Column: featured video -->
+          <div class="lg:col-span-8 flex flex-col gap-6">
+            {patrimonioSection?.videoUrl ? (
+              <article class="card card--no-zoom p-2 group cursor-pointer hover:border-egrem-red transition-all duration-300">
+                <a
+                  href="#"
+                  data-youtube-id={extractYouTubeId(patrimonioSection.videoUrl)}
+                  class="relative block h-[300px] md:h-[400px] overflow-hidden rounded-lg bg-egrem-gray-light group"
+                >
+                  <img
+                    src={patrimonioSection.videoThumbnail ?? `https://img.youtube.com/vi/${extractYouTubeId(patrimonioSection.videoUrl)}/maxresdefault.jpg`}
+                    alt={patrimonioSection.videoTitle ?? 'Video destacado'}
+                    class="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <PlayOverlay mode="always" />
+                </a>
+                <div class="mt-3 px-1">
+                  <span class="text-egrem-gold text-small font-bold uppercase tracking-wider">{patrimonioSection.videoAuthor ?? 'Documental'}</span>
+                  <h3 class="font-display font-bold text-xl text-egrem-black mt-1">{patrimonioSection.videoTitle ?? 'Video Patrimonial'}</h3>
+                </div>
+              </article>
+            ) : patrimonioItems.filter(i => i.bundle !== 'boletin_archivo').length > 0 ? (
+              <article class="card card--no-zoom p-2 group cursor-pointer hover:border-egrem-red transition-all duration-300">
+                <div class="relative h-[300px] md:h-[400px] overflow-hidden rounded-lg bg-egrem-gray-light">
+                  {patrimonioItems.filter(i => i.bundle !== 'boletin_archivo')[0]?.image?.url ? (
+                    <img src={patrimonioItems.filter(i => i.bundle !== 'boletin_archivo')[0].image!.url} alt="" class="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105" loading="lazy" decoding="async" />
+                  ) : (
+                    <div class="w-full h-full bg-egrem-gray-light" />
+                  )}
+                </div>
+                <div class="mt-3 px-1">
+                  <span class="text-egrem-gold text-small font-bold uppercase tracking-wider">{tr(`actualidad.badge.${patrimonioItems.filter(i => i.bundle !== 'boletin_archivo')[0].bundle}`)}</span>
+                  <h3 class="font-display font-bold text-xl text-egrem-black mt-1">{patrimonioItems.filter(i => i.bundle !== 'boletin_archivo')[0].title}</h3>
+                </div>
+              </article>
+            ) : null}
+
+            {patrimonioItems.length === 0 && patrimonioSection?.boletines.length === 0 ? (
+              <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+            ) : null}
+          </div>
+
+          <!-- Right Column: boletines destacados -->
+          <div class="lg:col-span-4 flex flex-col gap-6">
+            {(patrimonioSection?.boletines.length ?? 0) > 0 && (
+              <div class="card card--no-zoom p-6">
+                <h3 class="font-display font-bold text-xl text-egrem-black mb-4 flex items-center gap-2 border-b border-egrem-gray/20 pb-3">
+                  <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-red);">description</span>
+                  Boletines Destacados
+                </h3>
+                <ul class="flex flex-col">
+                  {patrimonioSection!.boletines.slice(0, 5).map((item) => (
+                    <li class="py-3 border-b border-egrem-gray/20 last:border-0 group flex items-start gap-3 justify-between hover:bg-egrem-gray-light/50 cursor-pointer px-2 -mx-2 rounded-md transition-colors">
+                      <div class="flex items-start gap-3">
+                        <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-gold); margin-top:2px;">picture_as_pdf</span>
+                        <div>
+                          <p class="font-display font-bold text-sm tracking-wide text-egrem-black group-hover:text-egrem-red transition-colors">{item.title}</p>
+                          <p class="text-xs text-egrem-gray">PDF &middot; {formatDate(item.date)}</p>
+                        </div>
+                      </div>
+                      <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-gray);" class="group-hover:text-egrem-red">download</span>
+                    </li>
+                  ))}
+                </ul>
+                <a href="/actualidad?tipo=boletin_archivo" class="mt-4 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link">
+                  Ver todos
+                  <span class="text-[18px] group-hover/link:translate-x-1 transition-transform" style="font-family:'Material Symbols Outlined';">arrow_forward</span>
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <!-- Full patrimonio listing -->
+        {patrimonioItems.length > 0 && (
+          <div class="mt-10 border-t border-egrem-gold/20 pt-8">
+            <h3 class="font-display font-bold text-xl text-egrem-black mb-6 uppercase tracking-wider">Archivo Patrimonial</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {patrimonioItems.map((item) => (
+                <article class="card card--hover-red card--no-zoom group flex flex-col">
+                  <a href={item.path || '#'} class="block overflow-hidden no-underline shrink-0" style="height: 11rem;">
+                    {item.image?.url ? (
+                      <img src={item.image.url} alt={item.image.alt} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light" loading="lazy" decoding="async" />
+                    ) : (
+                      <div class="w-full h-full bg-egrem-gray-light" />
+                    )}
+                  </a>
+                  <div class="card-body flex flex-col flex-1">
+                    <span class="badge mb-2 self-start">{tr(`actualidad.badge.${item.bundle}`)}</span>
+                    <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
+                      <a href={item.path || '#'} class="text-inherit no-underline">{item.title}</a>
+                    </h3>
+                    <p class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1" style="color:var(--color-text-secondary);">
+                      {item.summary}
+                    </p>
+                    <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
+                      <span class="text-[14px]" style="font-family:'Material Symbols Outlined';">calendar_today</span>
+                      <span>{formatDate(item.date)}</span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+    <YouTubePlayer client:load />
+  </main>
+</BaseLayout>

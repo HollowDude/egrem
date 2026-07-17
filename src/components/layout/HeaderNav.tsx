@@ -47,10 +47,10 @@ function getNavItems(tr: (key: string) => string): NavItem[] {
       label: tr('nav.news'),
       href: '/actualidad',
       dropdown: [
-        { label: tr('nav.news.news'),    href: '/actualidad/noticias' },
-        { label: tr('nav.news.articles'),href: '/actualidad/articulos' },
-        { label: tr('nav.news.blog'),    href: '/actualidad/blog' },
-        { label: tr('nav.news.heritage'),href: '/actualidad/patrimonio' },
+        { label: tr('nav.news.news'),    href: '/actualidad#noticias' },
+        { label: tr('nav.news.articles'),href: '/actualidad#articulos' },
+        { label: tr('nav.news.blog'),    href: '/actualidad#blogs' },
+        { label: tr('nav.news.heritage'),href: '/actualidad#patrimonio' },
       ],
     },
     {

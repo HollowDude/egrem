@@ -17,10 +17,11 @@ import { footer } from './footer';
 import { home } from './home';
 import { accessibility } from './accessibility';
 import { auth } from './auth';
+import { actualidad } from './actualidad';
 
 export const t: Record<Lang, Record<string, string>> = {
-  es: { ...nav.es, ...footer.es, ...home.es, ...accessibility.es, ...auth.es },
-  en: { ...nav.en, ...footer.en, ...home.en, ...accessibility.en, ...auth.en },
+  es: { ...nav.es, ...footer.es, ...home.es, ...accessibility.es, ...auth.es, ...actualidad.es },
+  en: { ...nav.en, ...footer.en, ...home.en, ...accessibility.en, ...auth.en, ...actualidad.en },
 };
 
 export function useTranslations(lang: Lang) {

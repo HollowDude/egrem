@@ -13,8 +13,10 @@ export type { NhHero, NhEslogan, NhSection, NhHomePage } from './pages';
 export { fetchHomePage, fetchLoginPage } from './pages';
 
 // Content fetchers
-export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight } from './entities';
+export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight, NhActualidadItem, NhActualidadBundle } from './entities';
 export { fetchNoticias, fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from './fetchers';
+export type { NhPatrimonioSection } from './actualidad';
+export { fetchActualidadItems, fetchPatrimonioSection } from './actualidad';
 
 // Utilities
 export { resolveFileUrl } from './parsers';

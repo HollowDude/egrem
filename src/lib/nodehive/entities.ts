@@ -81,3 +81,19 @@ export interface NhProduccion extends NhBase {
   audioHref?: string;
   buyHref: string;
 }
+
+export type NhActualidadBundle = 'noticia' | 'article' | 'blog' | 'boletin_archivo';
+
+export interface NhActualidadItem extends NhBase {
+  nid: number;
+  title: string;
+  bundle: NhActualidadBundle;
+  date: string;
+  created: string;
+  body: string;
+  summary: string;
+  author: string;
+  patrimonio: boolean;
+  image: NhMediaImage | null;
+  path: string;
+}
