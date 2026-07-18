@@ -1,17 +1,20 @@
-import type { JsonApiResource, JsonApiResponse } from './client';
+import type { JsonApiResource, JsonApiResponse, JsonApiRelationship } from './client';
 import { jsonApiFetch } from './client';
-import { findIncluded, resolveRelIds } from './helpers';
+import { findIncluded, resolveRelIds, slugify } from './helpers';
 import { parseMediaImage, resolveFileUrl } from './parsers';
-import type { NhMediaImage } from './parsers';
-import type { NhActualidadItem, NhActualidadBundle } from './entities';
-import { fetchOEmbed } from './youtube';
+import type { NhMediaImage, NhEntityMeta } from './parsers';
+import type { NhActualidadItem, NhActualidadBundle, NhActualidadTag, NhActualidadHero } from './entities';
+import { fetchOEmbed, extractYouTubeId } from './youtube';
+import { NODEHIVE_CONFIG } from './config';
 
-export interface NhPatrimonioSection {
+export interface NhPatrimonioSection extends NhEntityMeta {
   videoUrl: string | null;
   videoTitle: string | null;
   videoThumbnail: string | null;
   videoAuthor: string | null;
+  videoAvailable: boolean;
   boletines: NhActualidadItem[];
+  articuloDestacado: NhActualidadItem | null;
 }
 
 interface RawNodeAttrs {
@@ -25,6 +28,23 @@ interface RawNodeAttrs {
   field_patrimonio?: boolean;
   field_fecha_original?: string;
   path: { alias: string | null };
+}
+
+function parseTags(
+  resource: { relationships?: Record<string, JsonApiRelationship> },
+  included: JsonApiResource[] | undefined,
+): NhActualidadTag[] {
+  const tagsRel = resource.relationships?.field_tags;
+  const tagIds = resolveRelIds(tagsRel);
+  return tagIds
+    .map((ref) => {
+      const term = findIncluded(included, 'taxonomy_term--tags', ref.id);
+      if (!term) return null;
+      const name = (term.attributes as Record<string, unknown>).name as string;
+      if (!name) return null;
+      return { slug: slugify(name), label: name };
+    })
+    .filter((t): t is NhActualidadTag => t !== null);
 }
 
 function parseItem(
@@ -73,39 +93,87 @@ function parseItem(
     patrimonio: a.field_patrimonio ?? false,
     image,
     path: a.path?.alias ?? '',
+    tags: parseTags(resource, included),
   };
+}
+
+export async function fetchActualidadHero(lang = 'es'): Promise<NhActualidadHero | null> {
+  try {
+    const PAGE_UUID = NODEHIVE_CONFIG.pages.actualidad;
+    if (!PAGE_UUID) return null;
+
+    const res = await jsonApiFetch(
+      `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_photo,field_components.field_photo.field_media_image`,
+      lang,
+    );
+
+    const data = res.data as JsonApiResource;
+    const included = res.included;
+    const componentRefs = resolveRelIds(data.relationships?.field_components);
+    const heroRef = componentRefs.find((r) => r.type === 'paragraph--component_actualidad_hero');
+    if (!heroRef) return null;
+
+    const heroComp = findIncluded(included, 'paragraph--component_actualidad_hero', heroRef.id);
+    if (!heroComp) return null;
+
+    const attrs = heroComp.attributes as Record<string, unknown>;
+    const photoRefs = resolveRelIds(heroComp.relationships?.field_photo);
+    let photo: NhMediaImage | null = null;
+    if (photoRefs.length) {
+      const mediaRes = findIncluded(included, 'media--image', photoRefs[0].id);
+      if (mediaRes) {
+        photo = parseMediaImage(mediaRes, included);
+        if (photo?.url) photo.url = resolveFileUrl(photo.url);
+      }
+    }
+
+    return {
+      id: heroComp.id,
+      internalId: (attrs.drupal_internal__id as number) ?? 0,
+      parentId: (attrs.parent_id as string) ?? '',
+      bundle: 'component_actualidad_hero',
+      title: (attrs.field_titulo as string) ?? '',
+      subtitle: (attrs.field_subtitle as string) ?? '',
+      photo,
+    };
+  } catch (e) {
+    console.warn('[NodeHive] Failed to fetch actualidad hero:', e);
+    return null;
+  }
 }
 
 export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioSection | null> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `paragraph/component_patrimonio_section?include=field_video_destacado,field_boletines_destacados&page[limit]=1`,
+      `paragraph/component_patrimonio_section?include=field_video_destacado,field_boletines_destacados,field_articulo_destacado,field_articulo_destacado.field_imagen_o_multimedia,field_articulo_destacado.field_imagen_o_multimedia.field_media_image,field_articulo_destacado.field_tags&page[limit]=1`,
       lang,
     );
     const items = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
     if (!items.length) return null;
 
+    const primera = items[0];
     const included = res.included ?? [];
-    const rels = items[0].relationships ?? {};
+    const rels = primera.relationships ?? {};
+    const entityAttrs = primera.attributes as Record<string, unknown>;
 
     let videoUrl: string | null = null;
     let videoTitle: string | null = null;
     let videoThumbnail: string | null = null;
     let videoAuthor: string | null = null;
+    let videoAvailable = false;
     const videoRel = rels.field_video_destacado;
     if (videoRel?.data && !Array.isArray(videoRel.data)) {
       const videoRes = findIncluded(included, 'paragraph--videos_artista', videoRel.data.id);
       if (videoRes) {
         const urlAttr = (videoRes.attributes as Record<string, unknown>).field_url_video as { uri?: string; title?: string } | undefined;
         videoUrl = urlAttr?.uri ?? null;
-        if (videoUrl) {
-          const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
-          if (videoId) {
-            const oembed = await fetchOEmbed(videoId);
-            videoTitle = oembed?.title ?? urlAttr?.title ?? null;
-            videoThumbnail = oembed?.thumbnailUrl ?? null;
-            videoAuthor = oembed?.authorName ?? null;
-          }
+        const videoId = videoUrl ? extractYouTubeId(videoUrl) : null;
+        videoAvailable = Boolean(videoId);
+        if (videoId) {
+          const oembed = await fetchOEmbed(videoId);
+          videoTitle = oembed?.title ?? urlAttr?.title ?? null;
+          videoThumbnail = oembed?.thumbnailUrl ?? null;
+          videoAuthor = oembed?.authorName ?? null;
         }
       }
     }
@@ -117,24 +185,40 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
       const boletinRes = findIncluded(included, 'node--boletin_archivo', id.id);
       if (boletinRes) {
         const a = boletinRes.attributes as Record<string, unknown>;
-        boletines.push({
-          id: boletinRes.id,
-          nid: (a.drupal_internal__nid as number) ?? 0,
-          title: (a.title as string) ?? '',
-          bundle: 'boletin_archivo',
-          date: (a.field_fecha_original as string) ?? (a.created as string) ?? '',
-          created: (a.created as string) ?? '',
-          body: '',
-          summary: '',
-          author: '',
-          patrimonio: (a.field_patrimonio as boolean) ?? false,
-          image: null,
-          path: '',
-        });
+          boletines.push({
+            id: boletinRes.id,
+            nid: (a.drupal_internal__nid as number) ?? 0,
+            title: (a.title as string) ?? '',
+            bundle: 'boletin_archivo',
+            date: (a.field_fecha_original as string) ?? (a.created as string) ?? '',
+            created: (a.created as string) ?? '',
+            body: '',
+            summary: '',
+            author: '',
+            patrimonio: (a.field_patrimonio as boolean) ?? false,
+            image: null,
+            path: '',
+            tags: [],
+          });
       }
     }
 
-    return { videoUrl, videoTitle, videoThumbnail, videoAuthor, boletines };
+    let articuloDestacado: NhActualidadItem | null = null;
+    const articuloRel = rels.field_articulo_destacado;
+    if (articuloRel?.data && !Array.isArray(articuloRel.data)) {
+      const articuloRes = findIncluded(included, 'node--article', articuloRel.data.id);
+      if (articuloRes) {
+        articuloDestacado = parseItem(articuloRes as unknown as JsonApiResource<RawNodeAttrs>, included);
+      }
+    }
+
+    return {
+      id: primera.id,
+      internalId: (entityAttrs.drupal_internal__id as number) ?? 0,
+      parentId: (entityAttrs.parent_id as string) ?? '',
+      bundle: 'component_patrimonio_section',
+      videoUrl, videoTitle, videoThumbnail, videoAuthor, videoAvailable, boletines, articuloDestacado,
+    };
   } catch (e) {
     console.warn('[NodeHive] Failed to fetch patrimonio section:', e);
     return null;
@@ -142,15 +226,21 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
 }
 
 export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadItem[]> {
-  const bundles = ['noticia', 'article', 'blog', 'boletin_archivo'];
+  const bundleIncludes: Record<string, string> = {
+    noticia: 'field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags',
+    article: 'field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags',
+    blog: 'field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags',
+    boletin_archivo: '',
+  };
 
   const results = await Promise.allSettled(
-    bundles.map((bundle) =>
-      jsonApiFetch<RawNodeAttrs>(
-        `node/${bundle}?include=field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image&sort=-created&page[limit]=50`,
+    Object.entries(bundleIncludes).map(([bundle, include]) => {
+      const includeParam = include ? `&include=${include}` : '';
+      return jsonApiFetch<RawNodeAttrs>(
+        `node/${bundle}?sort=-created&page[limit]=50${includeParam}`,
         lang,
-      ).then((res: JsonApiResponse<RawNodeAttrs>) => ({ bundle, res })),
-    ),
+      ).then((res: JsonApiResponse<RawNodeAttrs>) => ({ bundle, res }));
+    }),
   );
 
   const items: NhActualidadItem[] = [];

@@ -1,0 +1,35 @@
+---
+interface Props {
+  tags: { slug: string; label: string }[];
+  activeTag: string;
+}
+
+const { tags, activeTag } = Astro.props;
+---
+
+<nav class="flex flex-wrap gap-2 justify-center" aria-label="Filter by tag">
+  <a
+    href="?"
+    class:list={[
+      'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
+      activeTag === 'todos'
+        ? 'bg-egrem-red text-white border-egrem-red'
+        : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+    ]}
+  >
+    Todas
+  </a>
+  {tags.map((tag) => (
+    <a
+      href={`?tag=${tag.slug}`}
+      class:list={[
+        'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
+        activeTag === tag.slug
+          ? 'bg-egrem-red text-white border-egrem-red'
+          : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+      ]}
+    >
+      {tag.label}
+    </a>
+  ))}
+</nav>

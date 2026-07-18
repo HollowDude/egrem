@@ -1,0 +1,47 @@
+---
+import PlayOverlay from '@/components/ui/PlayOverlay.astro';
+
+interface Props {
+  videoUrl: string | null;
+  videoAvailable: boolean;
+  videoTitle: string | null;
+  videoThumbnail: string | null;
+  videoAuthor: string | null;
+  youtubeId: string | null;
+}
+const { videoUrl, videoAvailable, videoTitle, videoThumbnail, videoAuthor, youtubeId } = Astro.props;
+---
+
+{videoAvailable && youtubeId ? (
+  <article class="card card--no-zoom p-2 group cursor-pointer hover:border-egrem-red transition-all duration-300">
+    <a
+      href={videoUrl || '#'}
+      data-youtube-id={youtubeId}
+      class="relative block h-[300px] md:h-[400px] overflow-hidden rounded-lg bg-egrem-gray-light group"
+    >
+      <img
+        src={videoThumbnail ?? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`}
+        alt={videoTitle ?? 'Video destacado'}
+        class="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
+        loading="lazy"
+        decoding="async"
+      />
+      <PlayOverlay mode="always" />
+    </a>
+    <div class="mt-3 px-1">
+      {videoAuthor && (
+        <span class="text-egrem-gold text-small font-bold uppercase tracking-wider">{videoAuthor}</span>
+      )}
+      <h3 class="font-display font-bold text-xl text-egrem-black mt-1">{videoTitle ?? 'Video Patrimonial'}</h3>
+    </div>
+  </article>
+) : (
+  <article class="card card--no-zoom p-2">
+    <div class="h-[300px] md:h-[400px] overflow-hidden rounded-lg bg-egrem-gray-light flex items-center justify-center">
+      <div class="text-center">
+        <span class="text-5xl block mb-2" style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-gray);">videocam_off</span>
+        <p class="text-egrem-gray text-body font-display">Video no disponible</p>
+      </div>
+    </div>
+  </article>
+)}

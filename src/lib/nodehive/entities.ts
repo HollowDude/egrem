@@ -84,6 +84,11 @@ export interface NhProduccion extends NhBase {
 
 export type NhActualidadBundle = 'noticia' | 'article' | 'blog' | 'boletin_archivo';
 
+export interface NhActualidadTag {
+  slug: string;
+  label: string;
+}
+
 export interface NhActualidadItem extends NhBase {
   nid: number;
   title: string;
@@ -96,4 +101,11 @@ export interface NhActualidadItem extends NhBase {
   patrimonio: boolean;
   image: NhMediaImage | null;
   path: string;
+  tags: NhActualidadTag[];
+}
+
+export interface NhActualidadHero extends NhEntityMeta {
+  title: string;
+  subtitle: string;
+  photo: NhMediaImage | null;
 }

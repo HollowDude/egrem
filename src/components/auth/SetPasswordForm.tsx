@@ -23,6 +23,8 @@ export default function SetPasswordForm({ lang = 'es', uid, timestamp, hash }: P
   const [error, setError] = useState('');
   const [strength, setStrength] = useState<PasswordStrength>('weak');
   const [requiresLogin, setRequiresLogin] = useState(false);
+  const [touched, setTouched] = useState(false);
+  const mismatch = touched && confirm.length > 0 && password !== confirm;
 
   useEffect(() => {
     async function validate() {
@@ -212,18 +214,24 @@ export default function SetPasswordForm({ lang = 'es', uid, timestamp, hash }: P
             id="sp-confirm"
             type="password"
             value={confirm}
-            onChange={e => setConfirm(e.currentTarget.value)}
+            onChange={e => { setConfirm(e.currentTarget.value); setTouched(true); }}
             placeholder={tr('auth.setPassword.confirm_placeholder')}
             autoComplete="new-password"
             className="w-full pl-10 pr-3 py-2.5 bg-white rounded-xl border outline-none transition-colors font-sans text-sm"
             style={{
-              borderColor: error ? 'var(--color-form-error)' : 'var(--color-form-border)',
+              borderColor: mismatch ? 'var(--color-form-error)' : error ? 'var(--color-form-error)' : 'var(--color-form-border)',
               color: 'var(--color-egrem-black)',
             }}
             onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-brand-primary)'; e.currentTarget.style.boxShadow = '0 0 0 1px var(--color-brand-primary)'; }}
-            onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-form-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+            onBlur={e => { if (!mismatch) { e.currentTarget.style.borderColor = 'var(--color-form-border)'; e.currentTarget.style.boxShadow = 'none'; } }}
           />
         </div>
+        {mismatch && (
+          <p className="font-sans text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--color-form-error)' }}>
+            <span className="icon text-[16px]">error</span>
+            {tr('auth.setPassword.error_mismatch')}
+          </p>
+        )}
       </div>
 
       <button

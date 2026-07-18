@@ -1,0 +1,49 @@
+---
+import type { NhActualidadHero } from '@/lib/nodehive';
+import type { NhEntityMeta } from '@/lib/nodehive';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import FilterBar from './FilterBar.astro';
+
+interface Props {
+  hero: NhActualidadHero | null;
+  tags: { slug: string; label: string }[];
+  activeTag: string;
+  title: string;
+  subtitle: string;
+  nhEntity?: NhEntityMeta;
+}
+
+const { hero, tags, activeTag, title, subtitle, nhEntity } = Astro.props;
+const heroTitle = hero?.title || title;
+const heroSubtitle = hero?.subtitle || subtitle;
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? 'component_actualidad_hero'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={Astro.locals.lang}
+  tag="section"
+  class="bg-egrem-dark section-py border-b border-egrem-gray/20 text-center relative overflow-hidden"
+  editLabel="Editar Hero"
+  editField="field_titulo"
+>
+  {hero?.photo?.url && (
+    <div class="absolute inset-0 opacity-20">
+      <img src={hero.photo.url} alt="" class="w-full h-full object-cover" loading="lazy" decoding="async" />
+    </div>
+  )}
+  <div class="container-site relative z-10">
+    <h1 class="text-h1 text-white uppercase mb-3" data-nodehive-field="field_titulo">
+      {heroTitle}
+    </h1>
+    {heroSubtitle && (
+      <p class="text-body text-egrem-gray max-w-2xl mx-auto mb-6" data-nodehive-field="field_subtitle">
+        {heroSubtitle}
+      </p>
+    )}
+    {tags.length > 0 && <FilterBar tags={tags} activeTag={activeTag} />}
+  </div>
+</NodeHiveEntity>

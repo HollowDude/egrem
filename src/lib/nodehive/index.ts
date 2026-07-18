@@ -13,13 +13,14 @@ export type { NhHero, NhEslogan, NhSection, NhHomePage } from './pages';
 export { fetchHomePage, fetchLoginPage } from './pages';
 
 // Content fetchers
-export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight, NhActualidadItem, NhActualidadBundle } from './entities';
+export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight, NhActualidadItem, NhActualidadBundle, NhActualidadTag, NhActualidadHero } from './entities';
 export { fetchNoticias, fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from './fetchers';
 export type { NhPatrimonioSection } from './actualidad';
-export { fetchActualidadItems, fetchPatrimonioSection } from './actualidad';
+export { fetchActualidadItems, fetchPatrimonioSection, fetchActualidadHero } from './actualidad';
 
 // Utilities
 export { resolveFileUrl } from './parsers';
+export { slugify } from './helpers';
 
 // YouTube
 export { extractYouTubeId, fetchOEmbed, resolveVideoLink, clearCache as clearYoutubeCache } from './youtube';

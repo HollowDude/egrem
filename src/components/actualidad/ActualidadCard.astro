@@ -8,6 +8,7 @@ interface Props {
   path?: string;
   featured?: boolean;
   lang?: string;
+  ctaLabel?: string;
 }
 
 const {
@@ -18,7 +19,10 @@ const {
   image,
   path = '#',
   featured = false,
+  ctaLabel,
 } = Astro.props;
+
+const ctaText = ctaLabel ?? (bundle === 'noticia' ? 'Ver más' : 'Leer más');
 
 const href = path || `/actualidad/${bundle}/${title.toLowerCase().replace(/\s+/g, '-')}`;
 
@@ -45,6 +49,8 @@ const bundleLabels: Record<string, string> = {
   featured ? (
     <article
       class="md:row-span-3 relative min-h-[400px] md:min-h-[520px] rounded-2xl group overflow-hidden cursor-pointer border border-egrem-gray/20 hover:border-egrem-red transition-all duration-300"
+      data-actualidad-card
+      data-bundle={bundle}
     >
       {
         image?.url ? (
@@ -68,15 +74,25 @@ const bundleLabels: Record<string, string> = {
         <p class="text-body text-white/80 hidden md:block max-w-3xl line-clamp-2">
           {summary}
         </p>
-        <div class="flex items-center gap-2 mt-4 text-white/60 text-small">
-          <span class="text-[16px]" style="font-family: 'Material Symbols Outlined';">calendar_today</span>
-          <span>{formatDate(date)}</span>
+        <div class="flex items-center justify-between mt-4">
+          <div class="flex items-center gap-2 text-white/60 text-small">
+            <span class="text-[16px]" style="font-family: 'Material Symbols Outlined';">calendar_today</span>
+            <span>{formatDate(date)}</span>
+          </div>
+          {ctaText && (
+            <a href={href} class="inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-white transition-colors group/link">
+              {ctaText}
+              <span class="text-[18px] group-hover/link:translate-x-1 transition-transform" style="font-family:'Material Symbols Outlined';">arrow_forward</span>
+            </a>
+          )}
         </div>
       </div>
     </article>
   ) : (
     <article
       class="card card--hover-red card--no-zoom group flex flex-col"
+      data-actualidad-card
+      data-bundle={bundle}
     >
       <a href={href} class="block overflow-hidden no-underline shrink-0 relative" style="height: 12rem;">
         {
@@ -111,9 +127,17 @@ const bundleLabels: Record<string, string> = {
           {summary}
         </p>
 
-        <div class="flex items-center gap-2 mt-4 text-egrem-gray text-small">
-          <span class="text-[16px]" style="font-family: 'Material Symbols Outlined';">schedule</span>
-          <span>{formatDate(date)}</span>
+        <div class="flex items-center justify-between mt-4">
+          <div class="flex items-center gap-2 text-egrem-gray text-small">
+            <span class="text-[16px]" style="font-family: 'Material Symbols Outlined';">schedule</span>
+            <span>{formatDate(date)}</span>
+          </div>
+          {ctaText && (
+            <a href={href} class="inline-flex items-center gap-1 text-small font-bold text-egrem-red uppercase tracking-widest no-underline hover:text-egrem-red-dark transition-colors group/link">
+              {ctaText}
+              <span class="text-[18px] group-hover/link:translate-x-1 transition-transform" style="font-family:'Material Symbols Outlined';">arrow_forward</span>
+            </a>
+          )}
         </div>
       </div>
     </article>
