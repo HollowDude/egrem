@@ -44,8 +44,18 @@ const variantMap: Record<string, 'primary' | 'secondary'> = {
 
 // Use NodeHive buttons or placeholder
 const buttons = nhButtons ?? [
-  { id: '1', title: tr('home.hero.explore_catalog'), style: 'primary' as const, link: { uri: '/catalogo', title: '' } },
-  { id: '2', title: tr('home.hero.view_artists'), style: 'secondary' as const, link: { uri: '/catalogo/artistas', title: '' } },
+  {
+    id: '1',
+    title: tr('home.hero.explore_catalog'),
+    style: 'primary' as const,
+    link: { uri: '/catalogo', title: '' },
+  },
+  {
+    id: '2',
+    title: tr('home.hero.view_artists'),
+    style: 'secondary' as const,
+    link: { uri: '/catalogo/artistas', title: '' },
+  },
 ];
 ---
 
@@ -67,25 +77,27 @@ const buttons = nhButtons ?? [
     style={`background-image: url('${nhPhoto?.url ? resolveFileUrl(nhPhoto.url) : '/images/hero-bg.jpg'}')`}
     data-nodehive-field="field_background"
     aria-hidden="true"
-  ></div>
+  >
+  </div>
 
   {/* Gradiente superpuesto: oscurece la imagen para legibilidad */}
   <div
     class="absolute inset-0"
     style="background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.72) 60%, rgba(0,0,0,0.88) 100%)"
     aria-hidden="true"
-  ></div>
+  >
+  </div>
 
   {/* Gradiente lateral de marca (toque rojo sutil) */}
   <div
     class="absolute inset-0 pointer-events-none"
     style="background: radial-gradient(ellipse at 10% 50%, rgba(255,0,0,0.08) 0%, transparent 60%)"
     aria-hidden="true"
-  ></div>
+  >
+  </div>
 
   {/* Contenido centrado */}
   <div class="container-site relative z-10 py-24 text-center">
-
     {/* Eslógan en Ravellin */}
     <p
       class="slogan text-egrem-gold text-3xl sm:text-4xl mb-6 leading-tight"
@@ -106,18 +118,20 @@ const buttons = nhButtons ?? [
 
     {/* CTAs — dinámicos desde NodeHive */}
     <div class="flex flex-col md:flex-row items-center justify-center gap-6">
-      {buttons.map((btn) => (
-        <Button
-          variant={variantMap[btn.style] || 'primary'}
-          size="xl"
-          href={btn.link?.uri || '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-nodehive-field="field_buttons"
-        >
-          {btn.title}
-        </Button>
-      ))}
+      {
+        buttons.map((btn) => (
+          <Button
+            variant={variantMap[btn.style] || 'primary'}
+            size="xl"
+            href={btn.link?.uri || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-nodehive-field="field_buttons"
+          >
+            {btn.title}
+          </Button>
+        ))
+      }
     </div>
   </div>
 

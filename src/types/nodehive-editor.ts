@@ -85,8 +85,23 @@ export interface NodeHiveEditButtonProps {
 export type MessageToEditor =
   | { type: 'frontend:ready'; url: string; lang: string; token: string | null }
   | { type: 'field'; field: string; id: string; pathname: string; lang: string }
-  | { type: 'paragraph'; uuid: string; id: string; parent_id: string; pathname: string; langcode: string }
-  | { type: 'fragment'; uuid: string; id: string; parent_id: string; field: string; pathname: string; langcode: string };
+  | {
+      type: 'paragraph';
+      uuid: string;
+      id: string;
+      parent_id: string;
+      pathname: string;
+      langcode: string;
+    }
+  | {
+      type: 'fragment';
+      uuid: string;
+      id: string;
+      parent_id: string;
+      field: string;
+      pathname: string;
+      langcode: string;
+    };
 
 /**
  * Mensajes postMessage que NodeHiveConnector recibe de Drupal (parent frame)

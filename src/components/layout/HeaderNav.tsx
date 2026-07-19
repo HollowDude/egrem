@@ -39,6 +39,8 @@ interface Props {
   lang?: Lang;
   /** URL absoluta del logo desde NodeHive (null = usar SVG fallback) */
   logoUrl?: string | null;
+  /** URL alternativa para cambio de idioma (ej. detalle de noticia en otro idioma) */
+  alternateHref?: string;
 }
 
 function getNavItems(tr: (key: string) => string): NavItem[] {

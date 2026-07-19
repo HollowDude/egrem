@@ -34,15 +34,16 @@ const {
 } = Astro.props;
 
 const base = buttonClasses(variant, size, className);
-
 ---
 
-{href ? (
-  <a href={href} class={base} {...rest}>
-    <slot />
-  </a>
-) : (
-  <button type={type} class={base} disabled={disabled} {...rest}>
-    <slot />
-  </button>
-)}
+{
+  href ? (
+    <a href={href} class={base} {...rest}>
+      <slot />
+    </a>
+  ) : (
+    <button type={type} class={base} disabled={disabled} {...rest}>
+      <slot />
+    </button>
+  )
+}

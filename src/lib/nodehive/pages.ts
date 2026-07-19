@@ -169,7 +169,10 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
 
 export async function fetchLoginPage(lang = 'es'): Promise<NhLoginPage | null> {
   const query = new URLSearchParams();
-  query.set('include', 'field_components,field_components.field_photo,field_components.field_photo.field_media_image');
+  query.set(
+    'include',
+    'field_components,field_components.field_photo,field_components.field_photo.field_media_image',
+  );
 
   const res = await jsonApiFetch(`node/astro_page?${query.toString()}`, lang);
   const pages = Array.isArray(res.data) ? res.data : [res.data];
@@ -181,7 +184,9 @@ export async function fetchLoginPage(lang = 'es'): Promise<NhLoginPage | null> {
 
   const pageAttrs = page.attributes as Record<string, unknown>;
   const componentRefs = resolveRelIds(page.relationships?.field_components);
-  const loginComponentRef = componentRefs.find((ref) => ref.type === 'paragraph--_component_login_right');
+  const loginComponentRef = componentRefs.find(
+    (ref) => ref.type === 'paragraph--_component_login_right',
+  );
 
   let right: NhLoginRight | null = null;
   if (loginComponentRef) {

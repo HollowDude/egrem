@@ -1,0 +1,90 @@
+---
+import type { NhActualidadItem } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import Breadcrumb from '@/components/ui/Breadcrumb.astro';
+import ActualidadDetailHero from '@/components/actualidad/ActualidadDetailHero.astro';
+import ActualidadBody from '@/components/actualidad/ActualidadBody.astro';
+import ActualidadShareBar from '@/components/actualidad/ActualidadShareBar.astro';
+import ActualidadRelatedList from '@/components/actualidad/ActualidadRelatedList.astro';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  item: NhActualidadItem;
+  related: NhActualidadItem[];
+  lang: Lang;
+}
+
+const { item, related, lang } = Astro.props;
+const tr = useTranslations(lang);
+
+function bundleLabel(bundle: string): string {
+  const labels: Record<string, string> = {
+    noticia: tr('nav.news.news'),
+    article: tr('nav.news.articles'),
+    blog: tr('nav.news.blog'),
+  };
+  return labels[bundle] ?? bundle;
+}
+---
+
+<div class="container-site py-8 md:py-12">
+  <Breadcrumb
+    items={[
+      { label: 'EGREM', href: '/' },
+      { label: tr('nav.news'), href: '/actualidad' },
+      {
+        label: bundleLabel(item.bundle),
+        href: `/actualidad#${item.bundle === 'article' ? 'articulos' : 'noticias'}`,
+      },
+      { label: item.title },
+    ]}
+  />
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
+    <article class="lg:col-span-8">
+      <ActualidadDetailHero
+        title={item.title}
+        bundle={item.bundle}
+        date={item.date}
+        author={item.author}
+        lang={lang}
+      />
+
+      {
+        item.image?.url && (
+          <div class="card card--no-zoom overflow-hidden mb-8">
+            <img
+              src={item.image.url}
+              alt={item.image.alt}
+              class="w-full aspect-[16/9] object-cover"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        )
+      }
+
+      <NodeHiveEntity
+        entityType="node"
+        bundle={item.bundle}
+        id={item.id}
+        internalId={item.nid}
+        lang={lang}
+        tag="div"
+        editLabel="Editar contenido"
+        editField="body"
+      >
+        <ActualidadBody body={item.body} tags={item.tags} />
+      </NodeHiveEntity>
+
+      <div class="mt-10 pt-6 border-t border-black/10">
+        <ActualidadShareBar url={Astro.url.href} title={item.title} lang={lang} />
+      </div>
+    </article>
+
+    <aside class="lg:col-span-4">
+      <ActualidadRelatedList items={related} lang={lang} />
+    </aside>
+  </div>
+</div>

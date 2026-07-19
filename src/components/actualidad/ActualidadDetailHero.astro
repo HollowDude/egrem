@@ -1,0 +1,53 @@
+---
+import Badge from '@/components/ui/Badge.astro';
+import { useTranslations } from '@/i18n/translations';
+import type { Lang } from '@/i18n';
+
+interface Props {
+  title: string;
+  bundle: string;
+  date: string;
+  author: string;
+  lang?: Lang;
+}
+
+const { title, bundle, date, author, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+
+function formatDate(d: string): string {
+  if (!d) return '';
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return d;
+  return dateObj.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+---
+
+<section class="mb-8 border-b border-black/10 pb-6">
+  <Badge variant="gold" class="mb-4 inline-block">{tr(`actualidad.badge.${bundle}`)}</Badge>
+  <h1 class="text-h1 text-egrem-black mb-4 leading-tight">{title}</h1>
+  <div
+    class="flex flex-wrap items-center gap-4 text-small"
+    style="color: var(--color-text-secondary);"
+  >
+    <span class="flex items-center gap-1">
+      <span class="text-[16px]" style="font-family:'Material Symbols Outlined';"
+        >calendar_today</span
+      >
+      <span>{formatDate(date)}</span>
+    </span>
+    {
+      author && (
+        <span class="flex items-center gap-1">
+          <span class="text-[16px]" style="font-family:'Material Symbols Outlined';">
+            person
+          </span>
+          <span>{tr('actualidad.by_author').replace('{author}', author)}</span>
+        </span>
+      )
+    }
+  </div>
+</section>

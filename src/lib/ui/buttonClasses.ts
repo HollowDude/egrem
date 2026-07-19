@@ -9,14 +9,22 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-egrem-red text-white border border-transparent hover:bg-egrem-red-dark shadow-lg hover:scale-105 active:scale-[0.97]',
-  secondary: 'bg-white border-2 border-egrem-gold text-egrem-gold hover:bg-egrem-gold hover:text-white shadow-lg hover:scale-105 active:scale-[0.97]',
-  ghost: 'bg-transparent text-egrem-black border border-egrem-black hover:bg-egrem-black hover:text-white',
+  primary:
+    'bg-egrem-red text-white border border-transparent hover:bg-egrem-red-dark shadow-lg hover:scale-105 active:scale-[0.97]',
+  secondary:
+    'bg-white border-2 border-egrem-gold text-egrem-gold hover:bg-egrem-gold hover:text-white shadow-lg hover:scale-105 active:scale-[0.97]',
+  ghost:
+    'bg-transparent text-egrem-black border border-egrem-black hover:bg-egrem-black hover:text-white',
   gold: 'bg-egrem-gold text-white border border-transparent hover:opacity-90 hover:scale-105 shadow-lg active:scale-[0.97]',
-  'outline-red': 'bg-transparent text-egrem-red border border-egrem-red hover:bg-egrem-red hover:text-white active:scale-[0.97]',
+  'outline-red':
+    'bg-transparent text-egrem-red border border-egrem-red hover:bg-egrem-red hover:text-white active:scale-[0.97]',
 };
 
-export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSize = 'md', extra = ''): string {
+export function buttonClasses(
+  variant: ButtonVariant = 'primary',
+  size: ButtonSize = 'md',
+  extra = '',
+): string {
   return [
     'inline-flex items-center justify-center gap-2',
     'font-display font-bold tracking-wide uppercase',
@@ -26,5 +34,7 @@ export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSi
     sizeClasses[size],
     variantClasses[variant],
     extra,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 }

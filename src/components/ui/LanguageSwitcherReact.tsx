@@ -1,10 +1,15 @@
 interface Props {
   lang: 'es' | 'en';
+  alternateHref?: string;
 }
 
-export default function LanguageSwitcherReact({ lang }: Props) {
+export default function LanguageSwitcherReact({ lang, alternateHref }: Props) {
   const switchLang = (newLang: 'es' | 'en') => {
     if (newLang === lang) return;
+    if (alternateHref) {
+      window.location.href = alternateHref;
+      return;
+    }
     const current = window.location.pathname;
     const next = '/' + newLang + '/' + current.replace(/^\/(es|en)?\/?/, '');
     window.location.href = next;

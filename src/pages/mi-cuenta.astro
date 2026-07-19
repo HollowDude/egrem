@@ -13,10 +13,10 @@ if (!user) {
 }
 ---
 
-<BaseLayout
-  title={tr('auth.dashboard.title')}
->
-  <div class="w-full max-w-[1280px] mx-auto px-5 md:px-8 flex flex-col md:flex-row min-h-[calc(100vh-4rem)] py-8 gap-8">
+<BaseLayout title={tr('auth.dashboard.title')}>
+  <div
+    class="w-full max-w-[1280px] mx-auto px-5 md:px-8 flex flex-col md:flex-row min-h-[calc(100vh-4rem)] py-8 gap-8"
+  >
     <DashboardSidebar lang={lang} userName={user.name} />
     <div class="flex-1">
       <EditProfileForm client:load lang={lang} />

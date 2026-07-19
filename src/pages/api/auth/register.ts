@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { registerUser } from '@/lib/nodehive/register';
 import { isValidLang, DEFAULT_LANG } from '@/i18n';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -10,13 +11,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (!body) {
       return json({ error: 'El cuerpo de la petición debe ser JSON.' }, 400);
     }
-    const { username, email } = body as Record<string, string>;
+    const { username, email, phone } = body as Record<string, string>;
 
     if (!username?.trim() || username.trim().length < 3) {
       return json({ error: 'El nombre de usuario debe tener al menos 3 caracteres.' }, 400);
     }
     if (!email?.trim() || !EMAIL_RE.test(email.trim())) {
       return json({ error: 'El correo electrónico no es válido.' }, 400);
+    }
+    if (phone && !isValidPhoneNumber(phone)) {
+      return json({ error: 'El número de teléfono no es válido.' }, 400);
     }
 
     const lang = isValidLang(locals.lang) ? locals.lang : DEFAULT_LANG;
@@ -25,10 +29,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
       name: username.trim(),
       mail: email.trim(),
       lang,
+      phone: phone || undefined,
     });
 
     if (!result.ok) {
-      return json({ error: result.error || 'No se pudo crear la cuenta.' }, result.statusCode ?? 500);
+      return json(
+        { error: result.error || 'No se pudo crear la cuenta.' },
+        result.statusCode ?? 500,
+      );
     }
 
     return json({ success: true }, 200);
@@ -39,5 +47,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 };
 
 function json(data: unknown, status: number): Response {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }

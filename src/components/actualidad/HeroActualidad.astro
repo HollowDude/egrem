@@ -30,20 +30,33 @@ const heroSubtitle = hero?.subtitle || subtitle;
   editLabel="Editar Hero"
   editField="field_titulo"
 >
-  {hero?.photo?.url && (
-    <div class="absolute inset-0 opacity-20">
-      <img src={hero.photo.url} alt="" class="w-full h-full object-cover" loading="lazy" decoding="async" />
-    </div>
-  )}
+  {
+    hero?.photo?.url && (
+      <div class="absolute inset-0 opacity-20">
+        <img
+          src={hero.photo.url}
+          alt=""
+          class="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    )
+  }
   <div class="container-site relative z-10">
     <h1 class="text-h1 text-white uppercase mb-3" data-nodehive-field="field_titulo">
       {heroTitle}
     </h1>
-    {heroSubtitle && (
-      <p class="text-body text-egrem-gray max-w-2xl mx-auto mb-6" data-nodehive-field="field_subtitle">
-        {heroSubtitle}
-      </p>
-    )}
+    {
+      heroSubtitle && (
+        <p
+          class="text-body text-egrem-gray max-w-2xl mx-auto mb-6"
+          data-nodehive-field="field_subtitle"
+        >
+          {heroSubtitle}
+        </p>
+      )
+    }
     {tags.length > 0 && <FilterBar tags={tags} activeTag={activeTag} />}
   </div>
 </NodeHiveEntity>

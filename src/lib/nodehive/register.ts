@@ -10,6 +10,7 @@ export interface RegisterData {
   name: string;
   mail: string;
   lang?: Lang;
+  phone?: string;
 }
 
 export interface RegisterResult {
@@ -27,6 +28,7 @@ export async function registerUser(data: RegisterData): Promise<RegisterResult> 
         name: data.name,
         mail: data.mail,
         langcode: data.lang ?? 'es',
+        field_telefono: data.phone ?? '',
       }),
     });
 

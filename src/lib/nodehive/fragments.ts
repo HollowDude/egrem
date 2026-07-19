@@ -68,10 +68,7 @@ export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment
       `nodehive_fragment/footer/${FOOTER_UUID}?include=field_logo,field_logo.field_media_image`,
       lang,
     ),
-    jsonApiFetch(
-      `nodehive_fragment/footer/${FOOTER_UUID}?include=field_redes`,
-      lang,
-    ),
+    jsonApiFetch(`nodehive_fragment/footer/${FOOTER_UUID}?include=field_redes`, lang),
     jsonApiFetch(
       `nodehive_fragment/footer/${FOOTER_UUID}?include=field_contacto,field_contacto.field_button`,
       lang,
@@ -99,7 +96,10 @@ export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment
   }
 
   let contacto: NhContacto | null = null;
-  const contactoItems = findAllIncluded(resContacto.included, 'paragraph--_component_footer_contacto');
+  const contactoItems = findAllIncluded(
+    resContacto.included,
+    'paragraph--_component_footer_contacto',
+  );
   if (contactoItems.length) {
     const ca = contactoItems[0].attributes as Record<string, unknown>;
     const botonItems = findAllIncluded(resContacto.included, 'paragraph--button');

@@ -21,8 +21,11 @@ export function resolveRelIds(rel: JsonApiRelationship | undefined): JsonApiReso
 }
 
 export function slugify(name: string): string {
-  return name.trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '');
 }

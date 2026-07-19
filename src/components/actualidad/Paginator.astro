@@ -16,38 +16,42 @@ function pageHref(section: string, page: number, tag?: string): string {
 const { totalPages, currentPage, section, activeTag } = Astro.props;
 ---
 
-{totalPages > 1 && (
-  <div class="flex justify-center border-t border-egrem-gray/20 pt-6">
-    <nav class="flex items-center gap-2">
-      {currentPage > 1 && (
-        <a
-          href={pageHref(section, currentPage - 1, activeTag)}
-          class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
-          aria-label="Previous page"
-        >
-          <span style="font-family:'Material Symbols Outlined';">chevron_left</span>
-        </a>
-      )}
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-        <a
-          href={pageHref(section, p, activeTag)}
-          class:list={[
-            'w-10 h-10 flex items-center justify-center rounded-xl no-underline',
-            p === currentPage
-              ? 'border-b-2 border-egrem-red text-egrem-red font-bold'
-              : 'border border-transparent hover:bg-egrem-gray-light text-egrem-black font-bold',
-          ]}
-        >{p}</a>
-      ))}
-      {currentPage < totalPages && (
-        <a
-          href={pageHref(section, currentPage + 1, activeTag)}
-          class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
-          aria-label="Next page"
-        >
-          <span style="font-family:'Material Symbols Outlined';">chevron_right</span>
-        </a>
-      )}
-    </nav>
-  </div>
-)}
+{
+  totalPages > 1 && (
+    <div class="flex justify-center border-t border-egrem-gray/20 pt-6">
+      <nav class="flex items-center gap-2">
+        {currentPage > 1 && (
+          <a
+            href={pageHref(section, currentPage - 1, activeTag)}
+            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            aria-label="Previous page"
+          >
+            <span style="font-family:'Material Symbols Outlined';">chevron_left</span>
+          </a>
+        )}
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <a
+            href={pageHref(section, p, activeTag)}
+            class:list={[
+              'w-10 h-10 flex items-center justify-center rounded-xl no-underline',
+              p === currentPage
+                ? 'border-b-2 border-egrem-red text-egrem-red font-bold'
+                : 'border border-transparent hover:bg-egrem-gray-light text-egrem-black font-bold',
+            ]}
+          >
+            {p}
+          </a>
+        ))}
+        {currentPage < totalPages && (
+          <a
+            href={pageHref(section, currentPage + 1, activeTag)}
+            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            aria-label="Next page"
+          >
+            <span style="font-family:'Material Symbols Outlined';">chevron_right</span>
+          </a>
+        )}
+      </nav>
+    </div>
+  )
+}

@@ -25,40 +25,58 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const lanzamientos: NhAlbum[] = items?.length ? items : [
-  {
-    id: '1',
-    cover: { url: '/images/placeholder-album-1.jpg', alt: tr('home.releases.card_1_title'), filename: 'album-1.jpg' },
-    title: tr('home.releases.card_1_title'),
-    href: '#',
-    spotifyId: null,
-    embedUrl: '',
-  },
-  {
-    id: '2',
-    cover: { url: '/images/placeholder-album-2.jpg', alt: tr('home.releases.card_2_title'), filename: 'album-2.jpg' },
-    title: tr('home.releases.card_2_title'),
-    href: '#',
-    spotifyId: null,
-    embedUrl: '',
-  },
-  {
-    id: '3',
-    cover: { url: '/images/placeholder-album-3.jpg', alt: tr('home.releases.card_3_title'), filename: 'album-3.jpg' },
-    title: tr('home.releases.card_3_title'),
-    href: '#',
-    spotifyId: null,
-    embedUrl: '',
-  },
-  {
-    id: '4',
-    cover: { url: '/images/placeholder-album-4.jpg', alt: tr('home.releases.card_4_title'), filename: 'album-4.jpg' },
-    title: tr('home.releases.card_4_title'),
-    href: '#',
-    spotifyId: null,
-    embedUrl: '',
-  },
-];
+const lanzamientos: NhAlbum[] = items?.length
+  ? items
+  : [
+      {
+        id: '1',
+        cover: {
+          url: '/images/placeholder-album-1.jpg',
+          alt: tr('home.releases.card_1_title'),
+          filename: 'album-1.jpg',
+        },
+        title: tr('home.releases.card_1_title'),
+        href: '#',
+        spotifyId: null,
+        embedUrl: '',
+      },
+      {
+        id: '2',
+        cover: {
+          url: '/images/placeholder-album-2.jpg',
+          alt: tr('home.releases.card_2_title'),
+          filename: 'album-2.jpg',
+        },
+        title: tr('home.releases.card_2_title'),
+        href: '#',
+        spotifyId: null,
+        embedUrl: '',
+      },
+      {
+        id: '3',
+        cover: {
+          url: '/images/placeholder-album-3.jpg',
+          alt: tr('home.releases.card_3_title'),
+          filename: 'album-3.jpg',
+        },
+        title: tr('home.releases.card_3_title'),
+        href: '#',
+        spotifyId: null,
+        embedUrl: '',
+      },
+      {
+        id: '4',
+        cover: {
+          url: '/images/placeholder-album-4.jpg',
+          alt: tr('home.releases.card_4_title'),
+          filename: 'album-4.jpg',
+        },
+        title: tr('home.releases.card_4_title'),
+        href: '#',
+        spotifyId: null,
+        embedUrl: '',
+      },
+    ];
 ---
 
 <NodeHiveEntity
@@ -84,47 +102,57 @@ const lanzamientos: NhAlbum[] = items?.length ? items : [
     />
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-5">
-      {lanzamientos.map((album) => (
-        <NodeHiveEntity
-          entityType="paragraph"
-          bundle={album.bundle ?? 'homepage_lanzamiento_spotify'}
-          id={album.id}
-          internalId={album.internalId}
-          parentId={album.parentId}
-          lang={lang}
-          tag="div"
-          editLabel={album.bundle ? 'Editar Álbum' : undefined}
-          editField="field_link"
-        >
-          {/* Portada cuadrada */}
-          <a
-            href={album.spotifyId ? '#' : album.href}
-            data-spotify-embed={album.embedUrl || undefined}
-            class="block no-underline"
+      {
+        lanzamientos.map((album) => (
+          <NodeHiveEntity
+            entityType="paragraph"
+            bundle={album.bundle ?? 'homepage_lanzamiento_spotify'}
+            id={album.id}
+            internalId={album.internalId}
+            parentId={album.parentId}
+            lang={lang}
+            tag="div"
+            editLabel={album.bundle ? 'Editar Álbum' : undefined}
+            editField="field_link"
           >
-            <div class="aspect-square relative overflow-hidden rounded-2xl shadow-sm group-hover:shadow-lg transition-all duration-300 mb-4"
-              style="background: #d0d0d0;"
+            {/* Portada cuadrada */}
+            <a
+              href={album.spotifyId ? '#' : album.href}
+              data-spotify-embed={album.embedUrl || undefined}
+              class="block no-underline"
             >
-              <img
-                src={album.cover?.url}
-                alt={album.cover?.alt ?? album.title}
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-                onerror="this.style.display='none'"
-              />
-              <PlayOverlay mode="hover" icon="play_circle" />
-            </div>
-          </a>
+              <div
+                class="aspect-square relative overflow-hidden rounded-2xl shadow-sm group-hover:shadow-lg transition-all duration-300 mb-4"
+                style="background: #d0d0d0;"
+              >
+                <img
+                  src={album.cover?.url}
+                  alt={album.cover?.alt ?? album.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  onerror="this.style.display='none'"
+                />
+                <PlayOverlay mode="hover" icon="play_circle" />
+              </div>
+            </a>
 
-          {/* Info — título */}
-          <h4 class="font-display font-bold text-egrem-black uppercase m-0 mb-2" style="font-size: 1.05rem; line-height: 1.2;">
-            {album.title}
-          </h4>
-          <ActionLink href={album.spotifyId ? '#' : album.href} class="mt-2" data-spotify-embed={album.embedUrl || undefined}>
-            {tr('home.section.see_album')}
-          </ActionLink>
-        </NodeHiveEntity>
-      ))}
+            {/* Info — título */}
+            <h4
+              class="font-display font-bold text-egrem-black uppercase m-0 mb-2"
+              style="font-size: 1.05rem; line-height: 1.2;"
+            >
+              {album.title}
+            </h4>
+            <ActionLink
+              href={album.spotifyId ? '#' : album.href}
+              class="mt-2"
+              data-spotify-embed={album.embedUrl || undefined}
+            >
+              {tr('home.section.see_album')}
+            </ActionLink>
+          </NodeHiveEntity>
+        ))
+      }
     </div>
   </div>
 </NodeHiveEntity>

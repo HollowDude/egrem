@@ -23,7 +23,9 @@ describe('extractSpotifyId', () => {
   });
 
   it('handles URLs with locale prefix', () => {
-    const result = extractSpotifyId('https://open.spotify.com/intl-es/album/7vI4iTxDmgEN63liQHPEX1');
+    const result = extractSpotifyId(
+      'https://open.spotify.com/intl-es/album/7vI4iTxDmgEN63liQHPEX1',
+    );
     expect(result).toEqual({ type: 'album', id: '7vI4iTxDmgEN63liQHPEX1' });
   });
 
@@ -44,7 +46,8 @@ describe('fetchOEmbed', () => {
   it('returns oembed data on success', async () => {
     const mockData = {
       title: 'The Romantic',
-      thumbnail_url: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e023eb8dc748f7efb1470f74395',
+      thumbnail_url:
+        'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e023eb8dc748f7efb1470f74395',
       html: '<iframe src="https://open.spotify.com/embed/album/7vI4iTxDmgEN63liQHPEX1"></iframe>',
       iframe_url: 'https://open.spotify.com/embed/album/7vI4iTxDmgEN63liQHPEX1?utm_source=oembed',
     };
@@ -57,7 +60,8 @@ describe('fetchOEmbed', () => {
     const result = await fetchOEmbed('https://open.spotify.com/album/7vI4iTxDmgEN63liQHPEX1');
     expect(result).toEqual({
       title: 'The Romantic',
-      thumbnailUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e023eb8dc748f7efb1470f74395',
+      thumbnailUrl:
+        'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e023eb8dc748f7efb1470f74395',
       html: '<iframe src="https://open.spotify.com/embed/album/7vI4iTxDmgEN63liQHPEX1"></iframe>',
       iframeUrl: 'https://open.spotify.com/embed/album/7vI4iTxDmgEN63liQHPEX1?utm_source=oembed',
     });
@@ -127,7 +131,10 @@ describe('resolveSpotifyLink', () => {
 
   it('falls back to original title when oEmbed fails', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
-    const result = await resolveSpotifyLink('Fallback Title', 'https://open.spotify.com/album/test');
+    const result = await resolveSpotifyLink(
+      'Fallback Title',
+      'https://open.spotify.com/album/test',
+    );
     expect(result.title).toBe('Fallback Title');
     expect(result.spotifyId).toBe('test');
     expect(result.cover).toBeNull();

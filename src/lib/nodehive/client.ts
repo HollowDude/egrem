@@ -36,7 +36,7 @@ export async function jsonApiFetch<A = Record<string, unknown>>(
   path: string,
   lang = 'es',
 ): Promise<JsonApiResponse<A>> {
-  const url = encodeURI(`${getBaseUrl()}/${lang}/jsonapi/${path}`);
+  const url = `${getBaseUrl()}/${lang}/jsonapi/${path}`.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
   const res = await fetch(url, {
     headers: {
       Accept: 'application/vnd.api+json',

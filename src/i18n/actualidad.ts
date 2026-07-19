@@ -3,7 +3,8 @@ import type { Lang } from './index';
 export const actualidad: Record<Lang, Record<string, string>> = {
   es: {
     'actualidad.page_title': 'Actualidad | EGREM',
-    'actualidad.page_description': 'Mantente al día con las últimas noticias, artículos, blogs y boletines de EGREM, la casa de la música cubana.',
+    'actualidad.page_description':
+      'Mantente al día con las últimas noticias, artículos, blogs y boletines de EGREM, la casa de la música cubana.',
     'actualidad.hero.title': 'Actualidad',
     'actualidad.hero.subtitle': 'Noticias, artículos y novedades de la casa de la música cubana.',
     'actualidad.filter.all': 'Todo',
@@ -22,10 +23,18 @@ export const actualidad: Record<Lang, Record<string, string>> = {
     'actualidad.loading': 'Cargando...',
     'actualidad.error': 'No pudimos cargar el contenido. Inténtalo de nuevo más tarde.',
     'actualidad.by_author': 'Por {author}',
+    'actualidad.detail.related_title': 'Contenido Relacionado',
+    'actualidad.detail.share': 'Compartir',
+    'actualidad.detail.copy_link': 'Copiar enlace',
+    'actualidad.detail.link_copied': '¡Enlace copiado!',
+    'actualidad.detail.back': 'Volver a Actualidad',
+    'actualidad.detail.not_found_title': 'Contenido no encontrado',
+    'actualidad.detail.reading_time': '{min} min de lectura',
   },
   en: {
     'actualidad.page_title': 'News | EGREM',
-    'actualidad.page_description': 'Stay up to date with the latest news, articles, blogs and newsletters from EGREM, the home of Cuban music.',
+    'actualidad.page_description':
+      'Stay up to date with the latest news, articles, blogs and newsletters from EGREM, the home of Cuban music.',
     'actualidad.hero.title': 'News',
     'actualidad.hero.subtitle': 'News, articles and updates from the home of Cuban music.',
     'actualidad.filter.all': 'All',
@@ -44,5 +53,12 @@ export const actualidad: Record<Lang, Record<string, string>> = {
     'actualidad.loading': 'Loading...',
     'actualidad.error': 'Could not load content. Please try again later.',
     'actualidad.by_author': 'By {author}',
+    'actualidad.detail.related_title': 'Related Content',
+    'actualidad.detail.share': 'Share',
+    'actualidad.detail.copy_link': 'Copy link',
+    'actualidad.detail.link_copied': 'Link copied!',
+    'actualidad.detail.back': 'Back to News',
+    'actualidad.detail.not_found_title': 'Content not found',
+    'actualidad.detail.reading_time': '{min} min read',
   },
 };

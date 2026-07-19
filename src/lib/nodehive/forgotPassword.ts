@@ -26,7 +26,7 @@ export async function checkEmailExists(mail: string): Promise<CheckEmailResult> 
       headers: { Accept: 'application/json' },
     });
 
-    const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (res.ok) {
       return {
         exists: Boolean(data?.exists),
@@ -45,7 +45,10 @@ export async function checkEmailExists(mail: string): Promise<CheckEmailResult> 
   }
 }
 
-export async function requestPasswordReset(mail: string, lang: Lang): Promise<ForgotPasswordResult> {
+export async function requestPasswordReset(
+  mail: string,
+  lang: Lang,
+): Promise<ForgotPasswordResult> {
   try {
     const res = await fetch(`${getBaseUrl()}/api/user/password-lang?_format=json`, {
       method: 'POST',
@@ -57,7 +60,7 @@ export async function requestPasswordReset(mail: string, lang: Lang): Promise<Fo
       return { ok: true };
     }
 
-    const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     return {
       ok: false,
       statusCode: res.status,

@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import Alert from '@/components/ui/Alert';
+import PhoneInputField from '@/components/ui/PhoneInputField';
+
+const PHONE_RE = /^\+[1-9]\d{6,14}$/;
 
 interface Props {
   lang?: Lang;
@@ -11,6 +14,7 @@ export default function RegisterForm({ lang = 'es' }: Props) {
   const tr = useTranslations(lang as Lang);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -23,6 +27,9 @@ export default function RegisterForm({ lang = 'es' }: Props) {
       errs.email = tr('auth.register.error.email_required');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errs.email = tr('auth.register.error.email_invalid');
+    }
+    if (phone && !PHONE_RE.test(phone)) {
+      errs.phone = tr('auth.register.error.phone_invalid');
     }
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
@@ -42,6 +49,7 @@ export default function RegisterForm({ lang = 'es' }: Props) {
         body: JSON.stringify({
           username: username.trim(),
           email: email.trim(),
+          phone: phone || undefined,
         }),
       });
 
@@ -132,6 +140,15 @@ export default function RegisterForm({ lang = 'es' }: Props) {
           <p className="font-sans text-xs mt-1" style={{ color: 'var(--color-form-error)' }}>{fieldErrors.email}</p>
         )}
       </div>
+
+      <PhoneInputField
+        id="reg-phone"
+        label={tr('auth.register.phone')}
+        placeholder={tr('auth.register.phone_placeholder')}
+        value={phone}
+        onChange={v => setPhone(v ?? '')}
+        error={fieldErrors.phone}
+      />
 
       <div
         className="rounded-xl px-4 py-3 font-sans text-sm flex items-center gap-2"

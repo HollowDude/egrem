@@ -8,7 +8,15 @@
  * devuelven arrays vacíos con un console.warn para no romper el build.
  */
 
-import type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink } from './entities';
+import type {
+  NhNoticia,
+  NhAlbum,
+  NhEvento,
+  NhVideo,
+  NhProduccion,
+  NhVideoLink,
+  NhAlbumLink,
+} from './entities';
 import { resolveVideoLink } from './youtube';
 import { resolveSpotifyLink } from './spotify';
 

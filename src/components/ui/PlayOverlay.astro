@@ -17,9 +17,10 @@ interface Props {
 
 const { mode = 'always', icon = 'play_arrow', class: className } = Astro.props;
 
-const containerClass = mode === 'hover'
-  ? 'absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200'
-  : 'absolute inset-0 flex items-center justify-center';
+const containerClass =
+  mode === 'hover'
+    ? 'absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200'
+    : 'absolute inset-0 flex items-center justify-center';
 
 const bgStyle = mode === 'hover' ? 'background: rgba(0,0,0,0.4);' : '';
 ---

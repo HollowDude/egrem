@@ -9,9 +9,18 @@ const token = Astro.url.searchParams.get('token') ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NodeHive Editor — Login</title>
     <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
       body {
-        font-family: system-ui, -apple-system, sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
         background: #fdeff1;
         display: flex;
         align-items: center;
@@ -23,7 +32,7 @@ const token = Astro.url.searchParams.get('token') ?? '';
         background: white;
         border-radius: 1rem;
         padding: 2rem 2.5rem;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
         text-align: center;
         max-width: 320px;
         width: 100%;
@@ -39,8 +48,12 @@ const token = Astro.url.searchParams.get('token') ?? '';
         color: #89656b;
         margin-top: 0.75rem;
       }
-      .status.success { color: #16a34a; }
-      .status.error   { color: #eb4763; }
+      .status.success {
+        color: #16a34a;
+      }
+      .status.error {
+        color: #eb4763;
+      }
       .spinner {
         width: 2rem;
         height: 2rem;
@@ -50,7 +63,11 @@ const token = Astro.url.searchParams.get('token') ?? '';
         animation: spin 0.7s linear infinite;
         margin: 1rem auto 0;
       }
-      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
@@ -61,12 +78,12 @@ const token = Astro.url.searchParams.get('token') ?? '';
     </div>
 
     <script is:inline define:vars={{ token }}>
-      var statusEl  = document.getElementById('status');
+      var statusEl = document.getElementById('status');
       var spinnerEl = document.getElementById('spinner');
 
       function setStatus(msg, type) {
-        statusEl.textContent  = msg;
-        statusEl.className    = 'status ' + (type || '');
+        statusEl.textContent = msg;
+        statusEl.className = 'status ' + (type || '');
         spinnerEl.style.display = type === 'error' ? 'none' : '';
       }
 
@@ -78,8 +95,11 @@ const token = Astro.url.searchParams.get('token') ?? '';
           setStatus('¡Listo! Cerrando…', 'success');
           spinnerEl.style.display = 'none';
           setTimeout(function () {
-            try { window.close(); } catch (_) {}
-            document.body.innerHTML = '<div style="font-family:system-ui;text-align:center;padding:2rem;color:#89656b">Autenticación completada. Puedes cerrar esta ventana.</div>';
+            try {
+              window.close();
+            } catch (_) {}
+            document.body.innerHTML =
+              '<div style="font-family:system-ui;text-align:center;padding:2rem;color:#89656b">Autenticación completada. Puedes cerrar esta ventana.</div>';
           }, 800);
         } catch (err) {
           setStatus('Error al guardar token: ' + err.message, 'error');

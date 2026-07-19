@@ -14,7 +14,9 @@ import type { NhEntityMeta, NhEvento } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
 
-function formatDay(dateStr: string): string { return new Date(dateStr).getDate().toString(); }
+function formatDay(dateStr: string): string {
+  return new Date(dateStr).getDate().toString();
+}
 function formatMonth(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('es', { month: 'short' }).replace('.', '');
 }
@@ -29,32 +31,34 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const eventos: NhEvento[] = items?.length ? items : [
-  {
-    id: '1',
-    title: tr('home.events.card_1_title'),
-    venue: tr('home.events.card_1_venue'),
-    date: '2026-10-15',
-    time: tr('home.events.card_1_time'),
-    href: '/eventos/buena-vista-tribute',
-  },
-  {
-    id: '2',
-    title: tr('home.events.card_2_title'),
-    venue: tr('home.events.card_2_venue'),
-    date: '2026-10-22',
-    time: tr('home.events.card_2_time'),
-    href: '/eventos/haila-mompie-concierto',
-  },
-  {
-    id: '3',
-    title: tr('home.events.card_3_title'),
-    venue: tr('home.events.card_3_venue'),
-    date: '2026-11-05',
-    time: tr('home.events.card_3_time'),
-    href: '/eventos/festival-jazz-egrem',
-  },
-];
+const eventos: NhEvento[] = items?.length
+  ? items
+  : [
+      {
+        id: '1',
+        title: tr('home.events.card_1_title'),
+        venue: tr('home.events.card_1_venue'),
+        date: '2026-10-15',
+        time: tr('home.events.card_1_time'),
+        href: '/eventos/buena-vista-tribute',
+      },
+      {
+        id: '2',
+        title: tr('home.events.card_2_title'),
+        venue: tr('home.events.card_2_venue'),
+        date: '2026-10-22',
+        time: tr('home.events.card_2_time'),
+        href: '/eventos/haila-mompie-concierto',
+      },
+      {
+        id: '3',
+        title: tr('home.events.card_3_title'),
+        venue: tr('home.events.card_3_venue'),
+        date: '2026-11-05',
+        time: tr('home.events.card_3_time'),
+        href: '/eventos/festival-jazz-egrem',
+      },
+    ];
 ---
 
 <NodeHiveEntity
@@ -80,48 +84,65 @@ const eventos: NhEvento[] = items?.length ? items : [
     />
 
     <div class="flex flex-col gap-4">
-      {eventos.map((evento) => (
-        <div
-          class="flex flex-wrap items-center justify-between p-6 bg-white border-l-4 border-egrem-gold shadow-sm hover:shadow-md transition-all rounded-2xl"
-          data-nodehive-field="field_eventos"
-        >
-          {/* Fecha + Título + Lugar */}
-          <div class="flex items-center gap-8 sm:gap-10">
-            {/* Fecha */}
-            <div class="text-center w-20 shrink-0">
-              <p class="font-display font-bold text-egrem-red m-0 leading-none" style="font-size: 2.5rem;">
-                {formatDay(evento.date)}
-              </p>
-              <p class="font-display font-bold uppercase m-0" style="font-size: 12px; letter-spacing: 0.05em; color: var(--color-text-secondary);">
-                {formatMonth(evento.date)}
-              </p>
+      {
+        eventos.map((evento) => (
+          <div
+            class="flex flex-wrap items-center justify-between p-6 bg-white border-l-4 border-egrem-gold shadow-sm hover:shadow-md transition-all rounded-2xl"
+            data-nodehive-field="field_eventos"
+          >
+            {/* Fecha + Título + Lugar */}
+            <div class="flex items-center gap-8 sm:gap-10">
+              {/* Fecha */}
+              <div class="text-center w-20 shrink-0">
+                <p
+                  class="font-display font-bold text-egrem-red m-0 leading-none"
+                  style="font-size: 2.5rem;"
+                >
+                  {formatDay(evento.date)}
+                </p>
+                <p
+                  class="font-display font-bold uppercase m-0"
+                  style="font-size: 12px; letter-spacing: 0.05em; color: var(--color-text-secondary);"
+                >
+                  {formatMonth(evento.date)}
+                </p>
+              </div>
+
+              {/* Info */}
+              <div>
+                <h3
+                  class="font-display font-bold text-egrem-black uppercase m-0"
+                  style="font-size: 1.2rem;"
+                >
+                  {evento.title}
+                </h3>
+                <p
+                  class="font-display uppercase tracking-widest m-0 mt-1"
+                  style="font-size: 0.78rem; color: var(--color-text-secondary);"
+                >
+                  {evento.venue}
+                </p>
+                <ActionLink href={evento.href} class="mt-2">
+                  {tr('home.section.see_details')}
+                </ActionLink>
+              </div>
             </div>
 
-            {/* Info */}
-            <div>
-              <h3 class="font-display font-bold text-egrem-black uppercase m-0" style="font-size: 1.2rem;">
-                {evento.title}
-              </h3>
-              <p class="font-display uppercase tracking-widest m-0 mt-1" style="font-size: 0.78rem; color: var(--color-text-secondary);">
-                {evento.venue}
-              </p>
-              <ActionLink href={evento.href} class="mt-2">
-                {tr('home.section.see_details')}
-              </ActionLink>
+            {/* Hora + Botón */}
+            <div class="flex items-center gap-8 sm:gap-12 mt-4 sm:mt-0">
+              <span
+                class="font-display font-bold"
+                style="font-size: 12px; letter-spacing: 0.05em; color: var(--color-text-secondary);"
+              >
+                {evento.time}
+              </span>
+              <Button variant="primary" size="lg" href={evento.href}>
+                {tr('home.section.tickets')}
+              </Button>
             </div>
           </div>
-
-          {/* Hora + Botón */}
-          <div class="flex items-center gap-8 sm:gap-12 mt-4 sm:mt-0">
-            <span class="font-display font-bold" style="font-size: 12px; letter-spacing: 0.05em; color: var(--color-text-secondary);">
-              {evento.time}
-            </span>
-            <Button variant="primary" size="lg" href={evento.href}>
-              {tr('home.section.tickets')}
-            </Button>
-          </div>
-        </div>
-      ))}
+        ))
+      }
     </div>
   </div>
 </NodeHiveEntity>

@@ -19,17 +19,19 @@ const { tags, activeTag } = Astro.props;
   >
     Todas
   </a>
-  {tags.map((tag) => (
-    <a
-      href={`?tag=${tag.slug}`}
-      class:list={[
-        'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
-        activeTag === tag.slug
-          ? 'bg-egrem-red text-white border-egrem-red'
-          : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
-      ]}
-    >
-      {tag.label}
-    </a>
-  ))}
+  {
+    tags.map((tag) => (
+      <a
+        href={`?tag=${tag.slug}`}
+        class:list={[
+          'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
+          activeTag === tag.slug
+            ? 'bg-egrem-red text-white border-egrem-red'
+            : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+        ]}
+      >
+        {tag.label}
+      </a>
+    ))
+  }
 </nav>

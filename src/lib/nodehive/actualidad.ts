@@ -3,7 +3,12 @@ import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds, slugify } from './helpers';
 import { parseMediaImage, resolveFileUrl } from './parsers';
 import type { NhMediaImage, NhEntityMeta } from './parsers';
-import type { NhActualidadItem, NhActualidadBundle, NhActualidadTag, NhActualidadHero } from './entities';
+import type {
+  NhActualidadItem,
+  NhActualidadBundle,
+  NhActualidadTag,
+  NhActualidadHero,
+} from './entities';
 import { fetchOEmbed, extractYouTubeId } from './youtube';
 import { NODEHIVE_CONFIG } from './config';
 
@@ -148,7 +153,7 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
       `paragraph/component_patrimonio_section?include=field_video_destacado,field_boletines_destacados,field_articulo_destacado,field_articulo_destacado.field_imagen_o_multimedia,field_articulo_destacado.field_imagen_o_multimedia.field_media_image,field_articulo_destacado.field_tags&page[limit]=1`,
       lang,
     );
-    const items = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
+    const items = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
     if (!items.length) return null;
 
     const primera = items[0];
@@ -165,7 +170,9 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
     if (videoRel?.data && !Array.isArray(videoRel.data)) {
       const videoRes = findIncluded(included, 'paragraph--videos_artista', videoRel.data.id);
       if (videoRes) {
-        const urlAttr = (videoRes.attributes as Record<string, unknown>).field_url_video as { uri?: string; title?: string } | undefined;
+        const urlAttr = (videoRes.attributes as Record<string, unknown>).field_url_video as
+          | { uri?: string; title?: string }
+          | undefined;
         videoUrl = urlAttr?.uri ?? null;
         const videoId = videoUrl ? extractYouTubeId(videoUrl) : null;
         videoAvailable = Boolean(videoId);
@@ -185,21 +192,21 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
       const boletinRes = findIncluded(included, 'node--boletin_archivo', id.id);
       if (boletinRes) {
         const a = boletinRes.attributes as Record<string, unknown>;
-          boletines.push({
-            id: boletinRes.id,
-            nid: (a.drupal_internal__nid as number) ?? 0,
-            title: (a.title as string) ?? '',
-            bundle: 'boletin_archivo',
-            date: (a.field_fecha_original as string) ?? (a.created as string) ?? '',
-            created: (a.created as string) ?? '',
-            body: '',
-            summary: '',
-            author: '',
-            patrimonio: (a.field_patrimonio as boolean) ?? false,
-            image: null,
-            path: '',
-            tags: [],
-          });
+        boletines.push({
+          id: boletinRes.id,
+          nid: (a.drupal_internal__nid as number) ?? 0,
+          title: (a.title as string) ?? '',
+          bundle: 'boletin_archivo',
+          date: (a.field_fecha_original as string) ?? (a.created as string) ?? '',
+          created: (a.created as string) ?? '',
+          body: '',
+          summary: '',
+          author: '',
+          patrimonio: (a.field_patrimonio as boolean) ?? false,
+          image: null,
+          path: '',
+          tags: [],
+        });
       }
     }
 
@@ -208,7 +215,10 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
     if (articuloRel?.data && !Array.isArray(articuloRel.data)) {
       const articuloRes = findIncluded(included, 'node--article', articuloRel.data.id);
       if (articuloRes) {
-        articuloDestacado = parseItem(articuloRes as unknown as JsonApiResource<RawNodeAttrs>, included);
+        articuloDestacado = parseItem(
+          articuloRes as unknown as JsonApiResource<RawNodeAttrs>,
+          included,
+        );
       }
     }
 
@@ -217,12 +227,65 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
       internalId: (entityAttrs.drupal_internal__id as number) ?? 0,
       parentId: (entityAttrs.parent_id as string) ?? '',
       bundle: 'component_patrimonio_section',
-      videoUrl, videoTitle, videoThumbnail, videoAuthor, videoAvailable, boletines, articuloDestacado,
+      videoUrl,
+      videoTitle,
+      videoThumbnail,
+      videoAuthor,
+      videoAvailable,
+      boletines,
+      articuloDestacado,
     };
   } catch (e) {
     console.warn('[NodeHive] Failed to fetch patrimonio section:', e);
     return null;
   }
+}
+
+export async function fetchActualidadItemPathInLang(
+  id: string,
+  bundle: NhActualidadBundle,
+  lang: string,
+): Promise<string | null> {
+  try {
+    const res = await jsonApiFetch<{ path?: { alias: string | null } }>(
+      `node/${bundle}/${id}`,
+      lang,
+    );
+    const data = res.data as JsonApiResource<{ path?: { alias: string | null } }>;
+    return data?.attributes?.path?.alias ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveInlineImages(html: string, baseUrl: string): string {
+  if (!html) return html;
+  return html.replace(/src="\/(?!\/)/g, `src="${baseUrl}/`);
+}
+
+export async function fetchActualidadItemByPath(
+  path: string,
+  lang = 'es',
+): Promise<NhActualidadItem | null> {
+  let normalized = path.replace(/\/$/, '');
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // ignore decode errors
+  }
+
+  const items = await fetchActualidadItems(lang);
+  const byPath = items.find((i) => i.path && i.path === normalized);
+  if (byPath) return byPath;
+
+  const match = normalized.match(/^\/actualidad\/(noticia|article)\/(\d+)$/);
+  if (match) {
+    const bundle = match[1] as NhActualidadBundle;
+    const nid = match[2];
+    return items.find((i) => i.bundle === bundle && String(i.nid) === nid) ?? null;
+  }
+
+  return null;
 }
 
 export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadItem[]> {
@@ -251,7 +314,7 @@ export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadIte
       continue;
     }
     const { res } = result.value;
-    const data = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
+    const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
     const included = res.included;
 
     for (const resource of data) {

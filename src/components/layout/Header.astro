@@ -20,30 +20,38 @@ interface Props {
   cartCount?: number;
   nhHeader?: NhHeaderFragment | null;
   lang?: Lang;
+  alternateHref?: string;
 }
 
-const { isAuthenticated = false, cartCount = 0, nhHeader, lang = 'es' } = Astro.props;
+const {
+  isAuthenticated = false,
+  cartCount = 0,
+  nhHeader,
+  lang = 'es',
+  alternateHref,
+} = Astro.props;
 
 // If NodeHive provides a logo, resolve its URL
 const logoUrl = nhHeader?.logo?.url ? resolveFileUrl(nhHeader.logo.url) : null;
 ---
 
 {/* El spacer compensa el header fixed para que el contenido no quede debajo */}
-  <div class="h-16 lg:h-[4.5rem]" aria-hidden="true"></div>
+<div class="h-16 lg:h-[4.5rem]" aria-hidden="true"></div>
 
-  <NodeHiveEntity
-    entityType="nodehive_fragment"
-    bundle="header"
-    id={nhHeader?.id}
-    internalId={nhHeader?.drupalInternalFid}
+<NodeHiveEntity
+  entityType="nodehive_fragment"
+  bundle="header"
+  id={nhHeader?.id}
+  internalId={nhHeader?.drupalInternalFid}
+  lang={lang}
+  tag="div"
+>
+  <HeaderNav
+    client:load
+    isAuthenticated={isAuthenticated}
+    cartCount={cartCount}
+    logoUrl={logoUrl}
     lang={lang}
-    tag="div"
-  >
-    <HeaderNav
-      client:load
-      isAuthenticated={isAuthenticated}
-      cartCount={cartCount}
-      logoUrl={logoUrl}
-      lang={lang}
-    />
-  </NodeHiveEntity>
+    alternateHref={alternateHref}
+  />
+</NodeHiveEntity>

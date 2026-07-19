@@ -22,8 +22,23 @@ import LanzamientosSection from '@/components/home/LanzamientosSection.astro';
 import EventosSection from '@/components/home/EventosSection.astro';
 import ProduccionesSection from '@/components/home/ProduccionesSection.astro';
 import AudiovisualesSection from '@/components/home/AudiovisualesSection.astro';
-import { fetchHomePage, fetchNoticias, fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from '@/lib/nodehive';
-import type { NhEntityMeta, NhSection, NhNoticia, NhAlbum, NhEvento, NhProduccion, NhVideo } from '@/lib/nodehive';
+import {
+  fetchHomePage,
+  fetchNoticias,
+  fetchLanzamientos,
+  fetchEventos,
+  fetchProducciones,
+  fetchVideos,
+} from '@/lib/nodehive';
+import type {
+  NhEntityMeta,
+  NhSection,
+  NhNoticia,
+  NhAlbum,
+  NhEvento,
+  NhProduccion,
+  NhVideo,
+} from '@/lib/nodehive';
 
 const lang = Astro.locals.lang;
 
@@ -69,7 +84,12 @@ function findSection(type: string): NhSection | undefined {
 // Extract entity metadata from a section or entity
 function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | undefined {
   if (!entity) return undefined;
-  return { id: entity.id, internalId: entity.internalId, parentId: entity.parentId, bundle: entity.bundle };
+  return {
+    id: entity.id,
+    internalId: entity.internalId,
+    parentId: entity.parentId,
+    bundle: entity.bundle,
+  };
 }
 ---
 

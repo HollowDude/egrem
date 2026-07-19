@@ -27,29 +27,43 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const videos: NhVideo[] = items?.length ? items : [
-  {
-    id: '1',
-    thumbnail: { url: '/images/av-placeholder-1.jpg', alt: tr('home.videos.card_1_title'), filename: 'av-1.jpg' },
-    title: tr('home.videos.card_1_title'),
-    href: '#',
-    youtubeId: null,
-  },
-  {
-    id: '2',
-    thumbnail: { url: '/images/av-placeholder-2.jpg', alt: tr('home.videos.card_2_title'), filename: 'av-2.jpg' },
-    title: tr('home.videos.card_2_title'),
-    href: '#',
-    youtubeId: null,
-  },
-  {
-    id: '3',
-    thumbnail: { url: '/images/av-placeholder-3.jpg', alt: tr('home.videos.card_3_title'), filename: 'av-3.jpg' },
-    title: tr('home.videos.card_3_title'),
-    href: '#',
-    youtubeId: null,
-  },
-];
+const videos: NhVideo[] = items?.length
+  ? items
+  : [
+      {
+        id: '1',
+        thumbnail: {
+          url: '/images/av-placeholder-1.jpg',
+          alt: tr('home.videos.card_1_title'),
+          filename: 'av-1.jpg',
+        },
+        title: tr('home.videos.card_1_title'),
+        href: '#',
+        youtubeId: null,
+      },
+      {
+        id: '2',
+        thumbnail: {
+          url: '/images/av-placeholder-2.jpg',
+          alt: tr('home.videos.card_2_title'),
+          filename: 'av-2.jpg',
+        },
+        title: tr('home.videos.card_2_title'),
+        href: '#',
+        youtubeId: null,
+      },
+      {
+        id: '3',
+        thumbnail: {
+          url: '/images/av-placeholder-3.jpg',
+          alt: tr('home.videos.card_3_title'),
+          filename: 'av-3.jpg',
+        },
+        title: tr('home.videos.card_3_title'),
+        href: '#',
+        youtubeId: null,
+      },
+    ];
 ---
 
 <NodeHiveEntity
@@ -65,7 +79,6 @@ const videos: NhVideo[] = items?.length ? items : [
   editField="field_title"
 >
   <div class="container-site">
-
     <SectionHeader
       title={nhSectionTitle || tr('home.section.videos_title')}
       accent="red"
@@ -76,51 +89,56 @@ const videos: NhVideo[] = items?.length ? items : [
     />
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {videos.map((item) => (
-        <NodeHiveEntity
-          entityType="paragraph"
-          bundle={item.bundle ?? 'catalogo_video_yt'}
-          id={item.id}
-          internalId={item.internalId}
-          parentId={item.parentId}
-          lang={lang}
-          tag="div"
-          editLabel={item.bundle ? 'Editar Video' : undefined}
-          editField="field_link"
-        >
-          {/* Video thumbnail */}
-          <a
-            href={item.youtubeId ? '#' : item.href}
-            data-youtube-id={item.youtubeId || undefined}
-            class="group relative cursor-pointer aspect-video bg-black overflow-hidden rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 block no-underline"
+      {
+        videos.map((item) => (
+          <NodeHiveEntity
+            entityType="paragraph"
+            bundle={item.bundle ?? 'catalogo_video_yt'}
+            id={item.id}
+            internalId={item.internalId}
+            parentId={item.parentId}
+            lang={lang}
+            tag="div"
+            editLabel={item.bundle ? 'Editar Video' : undefined}
+            editField="field_link"
           >
-            <img
-              src={item.thumbnail?.url}
-              alt={item.thumbnail?.alt ?? ''}
-              class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-              decoding="async"
-              onerror="this.style.display='none'"
-            />
-            <PlayOverlay mode="always" />
-          </a>
-
-          {/* Título debajo del video */}
-          <div class="mt-3">
-            <p
-              class="font-bold uppercase tracking-wider m-0"
-              style="font-size: 0.85rem; color: var(--color-egrem-black);"
+            {/* Video thumbnail */}
+            <a
+              href={item.youtubeId ? '#' : item.href}
+              data-youtube-id={item.youtubeId || undefined}
+              class="group relative cursor-pointer aspect-video bg-black overflow-hidden rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 block no-underline"
             >
-              {item.title}
-            </p>
-            <ActionLink href={item.youtubeId ? '#' : item.href} class="mt-1" data-youtube-id={item.youtubeId || undefined}>
-              {tr('home.section.watch')}
-            </ActionLink>
-          </div>
-        </NodeHiveEntity>
-      ))}
-    </div>
+              <img
+                src={item.thumbnail?.url}
+                alt={item.thumbnail?.alt ?? ''}
+                class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+                decoding="async"
+                onerror="this.style.display='none'"
+              />
+              <PlayOverlay mode="always" />
+            </a>
 
+            {/* Título debajo del video */}
+            <div class="mt-3">
+              <p
+                class="font-bold uppercase tracking-wider m-0"
+                style="font-size: 0.85rem; color: var(--color-egrem-black);"
+              >
+                {item.title}
+              </p>
+              <ActionLink
+                href={item.youtubeId ? '#' : item.href}
+                class="mt-1"
+                data-youtube-id={item.youtubeId || undefined}
+              >
+                {tr('home.section.watch')}
+              </ActionLink>
+            </div>
+          </NodeHiveEntity>
+        ))
+      }
+    </div>
   </div>
 </NodeHiveEntity>
 

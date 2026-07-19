@@ -11,8 +11,18 @@ import HeroActualidad from '@/components/actualidad/HeroActualidad.astro';
 import PatrimonioVideoCard from '@/components/actualidad/PatrimonioVideoCard.astro';
 import PatrimonioBoletinItem from '@/components/actualidad/PatrimonioBoletinItem.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
-import { fetchActualidadItems, fetchPatrimonioSection, fetchActualidadHero, extractYouTubeId } from '@/lib/nodehive';
-import type { NhActualidadItem, NhPatrimonioSection, NhActualidadHero, NhEntityMeta } from '@/lib/nodehive';
+import {
+  fetchActualidadItems,
+  fetchPatrimonioSection,
+  fetchActualidadHero,
+  extractYouTubeId,
+} from '@/lib/nodehive';
+import type {
+  NhActualidadItem,
+  NhPatrimonioSection,
+  NhActualidadHero,
+  NhEntityMeta,
+} from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
@@ -42,26 +52,34 @@ try {
   console.error('[Actualidad] Failed to fetch hero:', e);
 }
 
-const patrimonioItems = items.filter((i) => i.patrimonio).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const patrimonioItems = items
+  .filter((i) => i.patrimonio)
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 const searchTerm = Astro.url.searchParams.get('buscar') ?? '';
 const filteredPatrimonioItems = searchTerm
-  ? patrimonioItems.filter((i) =>
-      i.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      i.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      i.author.toLowerCase().includes(searchTerm.toLowerCase()),
+  ? patrimonioItems.filter(
+      (i) =>
+        i.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        i.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        i.author.toLowerCase().includes(searchTerm.toLowerCase()),
     )
   : patrimonioItems;
 
 const activeTag = Astro.url.searchParams.get('tag') ?? 'todos';
 
-const filteredItems = activeTag === 'todos'
-  ? items
-  : items.filter((i) => i.tags.some((t) => t.slug === activeTag));
+const filteredItems =
+  activeTag === 'todos' ? items : items.filter((i) => i.tags.some((t) => t.slug === activeTag));
 
-const noticias = filteredItems.filter((i) => i.bundle === 'noticia').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-const articulos = filteredItems.filter((i) => i.bundle === 'article').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-const blogs = filteredItems.filter((i) => i.bundle === 'blog').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const noticias = filteredItems
+  .filter((i) => i.bundle === 'noticia')
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const articulos = filteredItems
+  .filter((i) => i.bundle === 'article')
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const blogs = filteredItems
+  .filter((i) => i.bundle === 'blog')
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 const allTags = new Map<string, string>();
 for (const item of items) {
@@ -76,6 +94,10 @@ const perPage = { noticias: 4, articulos: 6, blogs: 6 };
 function getSectionPage(section: string): number {
   const p = parseInt(Astro.url.searchParams.get(section) ?? '1');
   return Math.max(1, isNaN(p) ? 1 : p);
+}
+
+function itemHref(item: NhActualidadItem): string {
+  return item.path || `/actualidad/${item.bundle}/${item.nid}`;
 }
 
 function sliceItems<T>(all: T[], section: string): T[] {
@@ -126,14 +148,16 @@ function ctaLabel(bundle: string): string {
 
 function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | undefined {
   if (!entity) return undefined;
-  return { id: entity.id, internalId: entity.internalId, parentId: entity.parentId, bundle: entity.bundle };
+  return {
+    id: entity.id,
+    internalId: entity.internalId,
+    parentId: entity.parentId,
+    bundle: entity.bundle,
+  };
 }
 ---
 
-<BaseLayout
-  title={tr('actualidad.page_title')}
-  description={tr('actualidad.page_description')}
->
+<BaseLayout title={tr('actualidad.page_title')} description={tr('actualidad.page_description')}>
   <main id="main-content">
     <HeroActualidad
       hero={hero}
@@ -144,150 +168,267 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
       nhEntity={entityMeta(hero)}
     />
 
-    {error ? (
-      <section class="section-py bg-white">
-        <div class="container-site text-center">
-          <p class="text-egrem-red text-body">{error}</p>
-        </div>
-      </section>
-    ) : null}
+    {
+      error ? (
+        <section class="section-py bg-white">
+          <div class="container-site text-center">
+            <p class="text-egrem-red text-body">{error}</p>
+          </div>
+        </section>
+      ) : null
+    }
 
     <!-- ─── NOTICIAS ─────────────────────────────────────────────── -->
     <section id="noticias" class="section-py bg-white border-b border-egrem-gray/20">
       <div class="container-site">
-        <h2 class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black">
+        <h2
+          class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black"
+        >
           {tr('nav.news.news')}
         </h2>
 
-        {filteredItems.length === 0 ? (
-          <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-        ) : noticias.length === 0 ? null : (
-        <>
-        <div class="grid grid-cols-1 md:[grid-template-columns:3fr_2fr] gap-5 mb-4">
-          {noticiasPageItems[0] && <ActualidadCard
-            title={noticiasPageItems[0].title} bundle={noticiasPageItems[0].bundle} date={noticiasPageItems[0].date}
-            summary={noticiasPageItems[0].summary}
-            image={noticiasPageItems[0].image ? { url: noticiasPageItems[0].image.url, alt: noticiasPageItems[0].image.alt } : undefined}
-            path={noticiasPageItems[0].path} featured={true} lang={lang}
-            ctaLabel={ctaLabel(noticiasPageItems[0].bundle)}
-          />}
-          {noticiasPageItems[1] && <ActualidadCard
-            title={noticiasPageItems[1].title} bundle={noticiasPageItems[1].bundle} date={noticiasPageItems[1].date}
-            summary={noticiasPageItems[1].summary}
-            image={noticiasPageItems[1].image ? { url: noticiasPageItems[1].image.url, alt: noticiasPageItems[1].image.alt } : undefined}
-            path={noticiasPageItems[1].path} lang={lang}
-            ctaLabel={ctaLabel(noticiasPageItems[1].bundle)}
-          />}
-          {noticiasPageItems[2] && <ActualidadCard
-            title={noticiasPageItems[2].title} bundle={noticiasPageItems[2].bundle} date={noticiasPageItems[2].date}
-            summary={noticiasPageItems[2].summary}
-            image={noticiasPageItems[2].image ? { url: noticiasPageItems[2].image.url, alt: noticiasPageItems[2].image.alt } : undefined}
-            path={noticiasPageItems[2].path} lang={lang}
-            ctaLabel={ctaLabel(noticiasPageItems[2].bundle)}
-          />}
-          {noticiasPageItems[3] && <ActualidadCard
-            title={noticiasPageItems[3].title} bundle={noticiasPageItems[3].bundle} date={noticiasPageItems[3].date}
-            summary={noticiasPageItems[3].summary}
-            image={noticiasPageItems[3].image ? { url: noticiasPageItems[3].image.url, alt: noticiasPageItems[3].image.alt } : undefined}
-            path={noticiasPageItems[3].path} lang={lang}
-            ctaLabel={ctaLabel(noticiasPageItems[3].bundle)}
-          />}
-        </div>
-        </>
-        )}
+        {
+          filteredItems.length === 0 ? (
+            <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+          ) : noticias.length === 0 ? null : (
+            <>
+              <div class="grid grid-cols-1 md:[grid-template-columns:3fr_2fr] gap-5 mb-4">
+                {noticiasPageItems[0] && (
+                  <ActualidadCard
+                    title={noticiasPageItems[0].title}
+                    bundle={noticiasPageItems[0].bundle}
+                    nid={noticiasPageItems[0].nid}
+                    date={noticiasPageItems[0].date}
+                    summary={noticiasPageItems[0].summary}
+                    image={
+                      noticiasPageItems[0].image
+                        ? {
+                            url: noticiasPageItems[0].image.url,
+                            alt: noticiasPageItems[0].image.alt,
+                          }
+                        : undefined
+                    }
+                    path={noticiasPageItems[0].path}
+                    featured={true}
+                    lang={lang}
+                    ctaLabel={ctaLabel(noticiasPageItems[0].bundle)}
+                  />
+                )}
+                {noticiasPageItems[1] && (
+                  <ActualidadCard
+                    title={noticiasPageItems[1].title}
+                    bundle={noticiasPageItems[1].bundle}
+                    nid={noticiasPageItems[1].nid}
+                    date={noticiasPageItems[1].date}
+                    summary={noticiasPageItems[1].summary}
+                    image={
+                      noticiasPageItems[1].image
+                        ? {
+                            url: noticiasPageItems[1].image.url,
+                            alt: noticiasPageItems[1].image.alt,
+                          }
+                        : undefined
+                    }
+                    path={noticiasPageItems[1].path}
+                    lang={lang}
+                    ctaLabel={ctaLabel(noticiasPageItems[1].bundle)}
+                  />
+                )}
+                {noticiasPageItems[2] && (
+                  <ActualidadCard
+                    title={noticiasPageItems[2].title}
+                    bundle={noticiasPageItems[2].bundle}
+                    nid={noticiasPageItems[2].nid}
+                    date={noticiasPageItems[2].date}
+                    summary={noticiasPageItems[2].summary}
+                    image={
+                      noticiasPageItems[2].image
+                        ? {
+                            url: noticiasPageItems[2].image.url,
+                            alt: noticiasPageItems[2].image.alt,
+                          }
+                        : undefined
+                    }
+                    path={noticiasPageItems[2].path}
+                    lang={lang}
+                    ctaLabel={ctaLabel(noticiasPageItems[2].bundle)}
+                  />
+                )}
+                {noticiasPageItems[3] && (
+                  <ActualidadCard
+                    title={noticiasPageItems[3].title}
+                    bundle={noticiasPageItems[3].bundle}
+                    nid={noticiasPageItems[3].nid}
+                    date={noticiasPageItems[3].date}
+                    summary={noticiasPageItems[3].summary}
+                    image={
+                      noticiasPageItems[3].image
+                        ? {
+                            url: noticiasPageItems[3].image.url,
+                            alt: noticiasPageItems[3].image.alt,
+                          }
+                        : undefined
+                    }
+                    path={noticiasPageItems[3].path}
+                    lang={lang}
+                    ctaLabel={ctaLabel(noticiasPageItems[3].bundle)}
+                  />
+                )}
+              </div>
+            </>
+          )
+        }
 
-        <Paginator section="noticias" totalPages={sectionTotalPages(noticias, 'noticias')} currentPage={getSectionPage('noticias')} activeTag={activeTag} />
+        <Paginator
+          section="noticias"
+          totalPages={sectionTotalPages(noticias, 'noticias')}
+          currentPage={getSectionPage('noticias')}
+          activeTag={activeTag}
+        />
       </div>
     </section>
 
     <!-- ─── ARTÍCULOS ────────────────────────────────────────────── -->
     <section id="articulos" class="section-py bg-white border-b border-egrem-gray/20">
       <div class="container-site">
-        <h2 class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black">
+        <h2
+          class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black"
+        >
           {tr('nav.news.articles')}
         </h2>
 
-        {filteredItems.length === 0 ? (
-          <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-        ) : articulos.length === 0 ? null : (
-        <div class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 scroll-smooth" style="scrollbar-width:thin;">
-          {articulosPageItems.map((item) => (
-            <article
-              class="min-w-[300px] md:min-w-[calc(33.333%-16px)] snap-start card card--hover-red card--no-zoom group flex flex-col shrink-0"
+        {
+          filteredItems.length === 0 ? (
+            <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+          ) : articulos.length === 0 ? null : (
+            <div
+              class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 scroll-smooth"
+              style="scrollbar-width:thin;"
             >
-              <a href={item.path || '#'} class="block overflow-hidden no-underline shrink-0 relative" style="height: 12rem;">
-                {item.image?.url ? (
-                  <img src={item.image.url} alt={item.image.alt} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light" loading="lazy" decoding="async" />
-                ) : (
-                  <div class="w-full h-full bg-egrem-gray-light" />
-                )}
-                <Badge variant="gold" class="absolute top-3 left-3 z-10">{tr(`actualidad.badge.${item.bundle}`)}</Badge>
-              </a>
-              <div class="card-body flex flex-col flex-1">
-                <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
-                  <a href={item.path || '#'} class="text-inherit no-underline">{item.title}</a>
-                </h3>
-                <p class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1" style="color:var(--color-text-secondary);">
-                  {item.summary}
-                </p>
-                <div class="flex items-center justify-between mt-4">
-                  <span class="text-egrem-gray text-small">{formatDate(item.date)}</span>
-                  <ActionLink href={item.path || '#'}>{tr('actualidad.read_more')}</ActionLink>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        )}
+              {articulosPageItems.map((item) => (
+                <article class="min-w-[300px] md:min-w-[calc(33.333%-16px)] snap-start card card--hover-red card--no-zoom group flex flex-col shrink-0">
+                  <a
+                    href={itemHref(item)}
+                    class="block overflow-hidden no-underline shrink-0 relative"
+                    style="height: 12rem;"
+                  >
+                    {item.image?.url ? (
+                      <img
+                        src={item.image.url}
+                        alt={item.image.alt}
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div class="w-full h-full bg-egrem-gray-light" />
+                    )}
+                    <Badge variant="gold" class="absolute top-3 left-3 z-10">
+                      {tr(`actualidad.badge.${item.bundle}`)}
+                    </Badge>
+                  </a>
+                  <div class="card-body flex flex-col flex-1">
+                    <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
+                      <a href={itemHref(item)} class="text-inherit no-underline">
+                        {item.title}
+                      </a>
+                    </h3>
+                    <p
+                      class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1"
+                      style="color:var(--color-text-secondary);"
+                    >
+                      {item.summary}
+                    </p>
+                    <div class="flex items-center justify-between mt-4">
+                      <span class="text-egrem-gray text-small">{formatDate(item.date)}</span>
+                      <ActionLink href={itemHref(item)}>{tr('actualidad.read_more')}</ActionLink>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )
+        }
 
-        <Paginator section="articulos" totalPages={sectionTotalPages(articulos, 'articulos')} currentPage={getSectionPage('articulos')} activeTag={activeTag} />
+        <Paginator
+          section="articulos"
+          totalPages={sectionTotalPages(articulos, 'articulos')}
+          currentPage={getSectionPage('articulos')}
+          activeTag={activeTag}
+        />
       </div>
     </section>
 
     <!-- ─── BLOG ─────────────────────────────────────────────────── -->
     <section id="blogs" class="section-py bg-white border-b border-egrem-gray/20">
       <div class="container-site">
-        <h2 class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black">
+        <h2
+          class="section-title border-b-4 border-egrem-red pb-2 m-0 mb-6 inline-block text-egrem-black"
+        >
           {tr('nav.news.blog')}
         </h2>
 
-        {filteredItems.length === 0 ? (
-          <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-        ) : blogs.length === 0 ? null : (
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {blogsPageItems.map((item) => (
-            <article class="card card--hover-red card--no-zoom group flex flex-col p-6">
-              <div class="flex items-center gap-3 mb-4">
-                <div class:list={['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs', authorColor(item.author)]}>
-                  {authorInitials(item.author)}
-                </div>
-                <div class="text-sm">
-                  <p class="font-display font-bold text-egrem-black m-0 leading-tight">{item.author || 'EGREM'}</p>
-                  <p class="text-egrem-gray text-caption m-0">
-                    {tr(`actualidad.badge.${item.bundle}`)} &middot; {readingTime(item.body)}
+        {
+          filteredItems.length === 0 ? (
+            <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+          ) : blogs.length === 0 ? null : (
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {blogsPageItems.map((item) => (
+                <article class="card card--hover-red card--no-zoom group flex flex-col p-6">
+                  <div class="flex items-center gap-3 mb-4">
+                    <div
+                      class:list={[
+                        'w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs',
+                        authorColor(item.author),
+                      ]}
+                    >
+                      {authorInitials(item.author)}
+                    </div>
+                    <div class="text-sm">
+                      <p class="font-display font-bold text-egrem-black m-0 leading-tight">
+                        {item.author || 'EGREM'}
+                      </p>
+                      <p class="text-egrem-gray text-caption m-0">
+                        {tr(`actualidad.badge.${item.bundle}`)} &middot; {readingTime(item.body)}
+                      </p>
+                    </div>
+                  </div>
+                  <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2">
+                    <a href={itemHref(item)} class="text-inherit no-underline">
+                      {item.title}
+                    </a>
+                  </h3>
+                  <p
+                    class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1 mb-4"
+                    style="color:var(--color-text-secondary);"
+                  >
+                    {item.summary}
                   </p>
-                </div>
-              </div>
-              <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2">
-                <a href={item.path || '#'} class="text-inherit no-underline">{item.title}</a>
-              </h3>
-              <p class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1 mb-4" style="color:var(--color-text-secondary);">
-                {item.summary}
-              </p>
-              <a
-                href={item.path || '#'}
-                class="inline-flex items-center gap-2 text-small font-bold text-egrem-black hover:text-egrem-red transition-colors uppercase tracking-widest no-underline w-fit group/link pb-1 mt-auto"
-                style="border-bottom: 2px solid transparent;"
-              >
-                {tr('actualidad.read_more')}
-                <span class="text-[18px] group-hover/link:translate-x-1 transition-transform" style="font-family:'Material Symbols Outlined';">arrow_forward</span>
-              </a>
-            </article>
-          ))}
-        </div>
-        )}
+                  <a
+                    href={itemHref(item)}
+                    class="inline-flex items-center gap-2 text-small font-bold text-egrem-black hover:text-egrem-red transition-colors uppercase tracking-widest no-underline w-fit group/link pb-1 mt-auto"
+                    style="border-bottom: 2px solid transparent;"
+                  >
+                    {tr('actualidad.read_more')}
+                    <span
+                      class="text-[18px] group-hover/link:translate-x-1 transition-transform"
+                      style="font-family:'Material Symbols Outlined';"
+                    >
+                      arrow_forward
+                    </span>
+                  </a>
+                </article>
+              ))}
+            </div>
+          )
+        }
 
-        <Paginator section="blogs" totalPages={sectionTotalPages(blogs, 'blogs')} currentPage={getSectionPage('blogs')} activeTag={activeTag} />
+        <Paginator
+          section="blogs"
+          totalPages={sectionTotalPages(blogs, 'blogs')}
+          currentPage={getSectionPage('blogs')}
+          activeTag={activeTag}
+        />
       </div>
     </section>
 
@@ -306,7 +447,9 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
     >
       <div class="container-site">
         <div class="mb-8">
-          <h2 class="section-title border-b-4 border-egrem-gold pb-2 m-0 mb-2 inline-block text-egrem-black">
+          <h2
+            class="section-title border-b-4 border-egrem-gold pb-2 m-0 mb-2 inline-block text-egrem-black"
+          >
             {tr('nav.news.heritage')}
           </h2>
           <p class="text-body" style="color:var(--color-text-secondary); max-width:42rem;">
@@ -323,69 +466,101 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
               videoTitle={patrimonioSection?.videoTitle ?? null}
               videoThumbnail={patrimonioSection?.videoThumbnail ?? null}
               videoAuthor={patrimonioSection?.videoAuthor ?? null}
-              youtubeId={patrimonioSection?.videoUrl ? extractYouTubeId(patrimonioSection.videoUrl) : null}
+              youtubeId={patrimonioSection?.videoUrl
+                ? extractYouTubeId(patrimonioSection.videoUrl)
+                : null}
             />
 
-            {(!patrimonioSection || (!patrimonioSection.videoAvailable && patrimonioItems.filter(i => i.bundle !== 'boletin_archivo').length === 0)) && (
-              <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-            )}
+            {
+              (!patrimonioSection ||
+                (!patrimonioSection.videoAvailable &&
+                  patrimonioItems.filter((i) => i.bundle !== 'boletin_archivo').length === 0)) && (
+                <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+              )
+            }
           </div>
 
           <!-- Right Column: boletines destacados + artículo destacado -->
           <div class="lg:col-span-4 flex flex-col gap-6">
-            {(patrimonioSection?.boletines.length ?? 0) > 0 && (
-              <div class="card card--no-zoom p-6">
-                <h3 class="font-display font-bold text-xl text-egrem-black mb-4 flex items-center gap-2 border-b border-egrem-gray/20 pb-3">
-                  <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-red);">description</span>
-                  Boletines Destacados
-                </h3>
-                <ul class="flex flex-col">
-                  {patrimonioSection!.boletines.slice(0, 5).map((item) => (
-                    <PatrimonioBoletinItem
-                      title={item.title}
-                      date={item.date}
-                      fileUrl={null}
-                    />
-                  ))}
-                </ul>
-                <a href="/actualidad?tipo=boletin_archivo" class="mt-4 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link">
-                  Ver todos
-                  <span class="text-[18px] group-hover/link:translate-x-1 transition-transform" style="font-family:'Material Symbols Outlined';">arrow_forward</span>
-                </a>
-              </div>
-            )}
-
-            {patrimonioSection?.articuloDestacado && (
-              <article class="card card--no-zoom p-6 group">
-                <span class="badge mb-3 self-start inline-block">
-                  ARTÍCULO HISTÓRICO
-                </span>
-                <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2">
-                  <a href={patrimonioSection.articuloDestacado.path || '#'} class="text-inherit no-underline">
-                    {patrimonioSection.articuloDestacado.title}
-                  </a>
-                </h3>
-                <p class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 mb-3" style="color:var(--color-text-secondary);">
-                  {patrimonioSection.articuloDestacado.summary}
-                </p>
-                <div class="flex items-center gap-3 text-egrem-gray text-caption">
-                  {patrimonioSection.articuloDestacado.author && (
-                    <span class="flex items-center gap-1">
-                      <span style="font-family:'Material Symbols Outlined'; font-size:14px;">person</span>
-                      {patrimonioSection.articuloDestacado.author}
+            {
+              (patrimonioSection?.boletines.length ?? 0) > 0 && (
+                <div class="card card--no-zoom p-6">
+                  <h3 class="font-display font-bold text-xl text-egrem-black mb-4 flex items-center gap-2 border-b border-egrem-gray/20 pb-3">
+                    <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-red);">
+                      description
                     </span>
-                  )}
-                  <span class="flex items-center gap-1">
-                    <span style="font-family:'Material Symbols Outlined'; font-size:14px;">calendar_today</span>
-                    {formatDate(patrimonioSection.articuloDestacado.date)}
-                  </span>
+                    Boletines Destacados
+                  </h3>
+                  <ul class="flex flex-col">
+                    {patrimonioSection!.boletines.slice(0, 5).map((item) => (
+                      <PatrimonioBoletinItem title={item.title} date={item.date} fileUrl={null} />
+                    ))}
+                  </ul>
+                  <a
+                    href="/actualidad?tipo=boletin_archivo"
+                    class="mt-4 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link"
+                  >
+                    Ver todos
+                    <span
+                      class="text-[18px] group-hover/link:translate-x-1 transition-transform"
+                      style="font-family:'Material Symbols Outlined';"
+                    >
+                      arrow_forward
+                    </span>
+                  </a>
                 </div>
-                <a href={patrimonioSection.articuloDestacado.path || '#'} class="mt-3 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link">
-                  Leer más
-                  <span class="text-[18px] group-hover/link:translate-x-1 transition-transform" style="font-family:'Material Symbols Outlined';">arrow_forward</span>
-                </a>
-              </article>
-            )}
+              )
+            }
+
+            {
+              patrimonioSection?.articuloDestacado && (
+                <article class="card card--no-zoom p-6 group">
+                  <span class="badge mb-3 self-start inline-block">ARTÍCULO HISTÓRICO</span>
+                  <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2">
+                    <a
+                      href={itemHref(patrimonioSection.articuloDestacado)}
+                      class="text-inherit no-underline"
+                    >
+                      {patrimonioSection.articuloDestacado.title}
+                    </a>
+                  </h3>
+                  <p
+                    class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 mb-3"
+                    style="color:var(--color-text-secondary);"
+                  >
+                    {patrimonioSection.articuloDestacado.summary}
+                  </p>
+                  <div class="flex items-center gap-3 text-egrem-gray text-caption">
+                    {patrimonioSection.articuloDestacado.author && (
+                      <span class="flex items-center gap-1">
+                        <span style="font-family:'Material Symbols Outlined'; font-size:14px;">
+                          person
+                        </span>
+                        {patrimonioSection.articuloDestacado.author}
+                      </span>
+                    )}
+                    <span class="flex items-center gap-1">
+                      <span style="font-family:'Material Symbols Outlined'; font-size:14px;">
+                        calendar_today
+                      </span>
+                      {formatDate(patrimonioSection.articuloDestacado.date)}
+                    </span>
+                  </div>
+                  <a
+                    href={itemHref(patrimonioSection.articuloDestacado)}
+                    class="mt-3 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link"
+                  >
+                    Leer más
+                    <span
+                      class="text-[18px] group-hover/link:translate-x-1 transition-transform"
+                      style="font-family:'Material Symbols Outlined';"
+                    >
+                      arrow_forward
+                    </span>
+                  </a>
+                </article>
+              )
+            }
           </div>
         </div>
 
@@ -398,7 +573,10 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
           <!-- Search bar -->
           <form method="GET" action="/actualidad#archivo-patrimonial" class="mb-6">
             <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-egrem-gray" style="font-family:'Material Symbols Outlined';">search</span>
+              <span
+                class="absolute left-4 top-1/2 -translate-y-1/2 text-egrem-gray"
+                style="font-family:'Material Symbols Outlined';">search</span
+              >
               <input
                 type="text"
                 name="buscar"
@@ -410,40 +588,61 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
           </form>
 
           <!-- Cards -->
-          {filteredPatrimonioItems.length > 0 ? (
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {filteredPatrimonioItems.map((item) => (
-                <article class="card card--hover-red card--no-zoom group flex flex-col">
-                  <a href={item.path || '#'} class="block overflow-hidden no-underline shrink-0" style="height: 11rem;">
-                    {item.image?.url ? (
-                      <img src={item.image.url} alt={item.image.alt} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light" loading="lazy" decoding="async" />
-                    ) : (
-                      <div class="w-full h-full bg-egrem-gray-light" />
-                    )}
-                  </a>
-                  <div class="card-body flex flex-col flex-1">
-                    <span class="badge mb-2 self-start">{tr(`actualidad.badge.${item.bundle}`)}</span>
-                    <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
-                      <a href={item.path || '#'} class="text-inherit no-underline">{item.title}</a>
-                    </h3>
-                    <p class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1" style="color:var(--color-text-secondary);">
-                      {item.summary}
-                    </p>
-                    <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
-                      <span class="text-[14px]" style="font-family:'Material Symbols Outlined';">calendar_today</span>
-                      <span>{formatDate(item.date)}</span>
+          {
+            filteredPatrimonioItems.length > 0 ? (
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {filteredPatrimonioItems.map((item) => (
+                  <article class="card card--hover-red card--no-zoom group flex flex-col">
+                    <a
+                      href={itemHref(item)}
+                      class="block overflow-hidden no-underline shrink-0"
+                      style="height: 11rem;"
+                    >
+                      {item.image?.url ? (
+                        <img
+                          src={item.image.url}
+                          alt={item.image.alt}
+                          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div class="w-full h-full bg-egrem-gray-light" />
+                      )}
+                    </a>
+                    <div class="card-body flex flex-col flex-1">
+                      <span class="badge mb-2 self-start">
+                        {tr(`actualidad.badge.${item.bundle}`)}
+                      </span>
+                      <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
+                        <a href={itemHref(item)} class="text-inherit no-underline">
+                          {item.title}
+                        </a>
+                      </h3>
+                      <p
+                        class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1"
+                        style="color:var(--color-text-secondary);"
+                      >
+                        {item.summary}
+                      </p>
+                      <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
+                        <span class="text-[14px]" style="font-family:'Material Symbols Outlined';">
+                          calendar_today
+                        </span>
+                        <span>{formatDate(item.date)}</span>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : patrimonioItems.length > 0 ? (
-            <p class="text-egrem-gray text-body text-center py-8">
-              No se encontraron resultados para "{searchTerm}"
-            </p>
-          ) : (
-            <p class="text-egrem-gray text-body">{tr('actualidad.no_results')}</p>
-          )}
+                  </article>
+                ))}
+              </div>
+            ) : patrimonioItems.length > 0 ? (
+              <p class="text-egrem-gray text-body text-center py-8">
+                No se encontraron resultados para "{searchTerm}"
+              </p>
+            ) : (
+              <p class="text-egrem-gray text-body">{tr('actualidad.no_results')}</p>
+            )
+          }
         </div>
       </div>
     </NodeHiveEntity>

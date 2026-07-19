@@ -25,16 +25,18 @@ const { lang = 'es', langs = ['es', 'en'] } = Astro.props;
   <span class="nh-toolbar__badge">Editor</span>
   <span class="nh-toolbar__url" id="nh-toolbar-url"></span>
   <span class="nh-toolbar__spacer"></span>
-  {langs.map((l) => (
-    <button
-      type="button"
-      class:list={['nh-toolbar__lang-btn', { '--active': l === lang }]}
-      data-lang={l}
-      onclick={`window.__NODEHIVE_EDITOR__ && window.__NODEHIVE_EDITOR__.setLang('${l}')`}
-    >
-      {l.toUpperCase()}
-    </button>
-  ))}
+  {
+    langs.map((l) => (
+      <button
+        type="button"
+        class:list={['nh-toolbar__lang-btn', { '--active': l === lang }]}
+        data-lang={l}
+        onclick={`window.__NODEHIVE_EDITOR__ && window.__NODEHIVE_EDITOR__.setLang('${l}')`}
+      >
+        {l.toUpperCase()}
+      </button>
+    ))
+  }
 </div>
 
 <script is:inline>

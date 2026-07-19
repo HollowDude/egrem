@@ -35,11 +35,16 @@ const errorId = `${inputId}-error`;
     {label}
   </label>
   <div class="relative">
-    {icon && (
-      <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none" style="color: var(--color-text-secondary);">
-        <span class="icon text-[20px]">{icon}</span>
-      </span>
-    )}
+    {
+      icon && (
+        <span
+          class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"
+          style="color: var(--color-text-secondary);"
+        >
+          <span class="icon text-[20px]">{icon}</span>
+        </span>
+      )
+    }
     <input
       {type}
       {name}
@@ -48,7 +53,7 @@ const errorId = `${inputId}-error`;
       placeholder={placeholder}
       {required}
       autocomplete={autocomplete}
-      aria-invalid={error ? "true" : undefined}
+      aria-invalid={error ? 'true' : undefined}
       aria-describedby={error ? errorId : undefined}
       class="w-full bg-white rounded-xl border outline-none transition-colors font-sans text-sm"
       style={`
@@ -58,11 +63,13 @@ const errorId = `${inputId}-error`;
       `}
     />
   </div>
-  {error && (
-    <p id={errorId} class="font-sans text-xs mt-1" style="color: var(--color-form-error);">
-      {error}
-    </p>
-  )}
+  {
+    error && (
+      <p id={errorId} class="font-sans text-xs mt-1" style="color: var(--color-form-error);">
+        {error}
+      </p>
+    )
+  }
 </div>
 
 <style>

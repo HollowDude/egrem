@@ -1,0 +1,61 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ActualidadDetail from '@/components/actualidad/ActualidadDetail.astro';
+import type { Lang } from '@/i18n';
+import {
+  fetchActualidadItems,
+  fetchActualidadItemByPath,
+  fetchActualidadItemPathInLang,
+  getRelatedItems,
+} from '@/lib/nodehive';
+import type { NhActualidadItem } from '@/lib/nodehive';
+
+const lang = Astro.locals.lang;
+let item: NhActualidadItem | null = null;
+let related: NhActualidadItem[] = [];
+let alternateHref: string | undefined;
+let alternateHrefs: { es?: string; en?: string } | undefined;
+
+try {
+  item = await fetchActualidadItemByPath(Astro.url.pathname, lang);
+
+  if (!item || (item.bundle !== 'noticia' && item.bundle !== 'article')) {
+    return Astro.rewrite('/404');
+  }
+
+  const allItems = await fetchActualidadItems(lang);
+  related = getRelatedItems(item, allItems);
+
+  // Language switching: compute the alternate URL
+  const itemPath = item.path || `/actualidad/${item.bundle}/${item.nid}`;
+  const otherLang: Lang = lang === 'es' ? 'en' : 'es';
+  const alternatePath = await fetchActualidadItemPathInLang(item.id, item.bundle, otherLang);
+  alternateHref = alternatePath ? `/${otherLang}${alternatePath}` : `/${otherLang}/actualidad`;
+  alternateHrefs = {
+    es: `/${lang}${itemPath}`,
+    en: alternatePath ? `/en${alternatePath}` : undefined,
+  };
+  if (lang === 'en') {
+    alternateHrefs.en = `/${lang}${itemPath}`;
+    alternateHrefs.es = alternatePath ? `/es${alternatePath}` : undefined;
+  }
+} catch (e) {
+  console.error('[actualidad/[...slug]] Failed:', e);
+  return Astro.rewrite('/404');
+}
+---
+
+<BaseLayout
+  title={item.title}
+  description={item.summary || item.title}
+  ogImage={item.image?.url}
+  canonical={Astro.url.href}
+  alternateHref={alternateHref}
+  alternateHrefs={alternateHrefs}
+>
+  <main id="main-content">
+    <ActualidadDetail item={item} related={related} lang={lang} />
+  </main>
+</BaseLayout>

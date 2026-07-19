@@ -111,7 +111,10 @@ describe('resolveVideoLink', () => {
       json: () => Promise.resolve(mockData),
     });
 
-    const result = await resolveVideoLink('My Video', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    const result = await resolveVideoLink(
+      'My Video',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
     expect(result.title).toBe('Rick Astley - Never Gonna Give You Up');
     expect(result.youtubeId).toBe('dQw4w9WgXcQ');
     expect(result.thumbnail).toEqual({

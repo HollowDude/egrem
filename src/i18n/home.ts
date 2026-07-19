@@ -20,16 +20,20 @@ export const home: Record<Lang, Record<string, string>> = {
     'home.section.videos_title': 'Galería de Videos',
     'home.section.productions_title': 'Producciones',
     'home.hero.title': 'Empresa de Grabaciones y Ediciones Musicales',
-    'home.hero.promo_quote': 'La música es el alma de Cuba, y nosotros somos sus guardianes eternos',
+    'home.hero.promo_quote':
+      'La música es el alma de Cuba, y nosotros somos sus guardianes eternos',
     'home.news.card_1_category': 'Cultura',
     'home.news.card_1_title': 'EGREM celebra 60 años de Son Cubano',
-    'home.news.card_1_excerpt': 'Una mirada profunda a las grabaciones maestras que definieron el sonido de la nación durante décadas.',
+    'home.news.card_1_excerpt':
+      'Una mirada profunda a las grabaciones maestras que definieron el sonido de la nación durante décadas.',
     'home.news.card_2_category': 'Evento',
     'home.news.card_2_title': 'Gala de Premios de la Música 2024',
-    'home.news.card_2_excerpt': 'Los mejores artistas del sello se reúnen en una noche histórica de jazz y salsa en el Teatro Nacional.',
+    'home.news.card_2_excerpt':
+      'Los mejores artistas del sello se reúnen en una noche histórica de jazz y salsa en el Teatro Nacional.',
     'home.news.card_3_category': 'Lanzamiento',
     'home.news.card_3_title': 'Reediciones en Vinilo: Serie Platino',
-    'home.news.card_3_excerpt': 'Nuevas versiones remasterizadas de los clásicos de Benny Moré y Bebo Valdés ya disponibles.',
+    'home.news.card_3_excerpt':
+      'Nuevas versiones remasterizadas de los clásicos de Benny Moré y Bebo Valdés ya disponibles.',
     'home.releases.card_1_artist': 'Omara Portuondo',
     'home.releases.card_1_title': 'Vida y Esperanza',
     'home.releases.card_2_artist': 'Chucho Valdés',
@@ -82,13 +86,16 @@ export const home: Record<Lang, Record<string, string>> = {
     'home.hero.promo_quote': 'Music is the soul of Cuba, and we are its eternal guardians',
     'home.news.card_1_category': 'Culture',
     'home.news.card_1_title': 'EGREM Celebrates 60 Years of Cuban Son',
-    'home.news.card_1_excerpt': 'An in-depth look at the master recordings that defined the sound of the nation for decades.',
+    'home.news.card_1_excerpt':
+      'An in-depth look at the master recordings that defined the sound of the nation for decades.',
     'home.news.card_2_category': 'Event',
     'home.news.card_2_title': '2024 Music Awards Gala',
-    'home.news.card_2_excerpt': 'The label\'s best artists gather for a historic night of jazz and salsa at the National Theatre.',
+    'home.news.card_2_excerpt':
+      "The label's best artists gather for a historic night of jazz and salsa at the National Theatre.",
     'home.news.card_3_category': 'Release',
     'home.news.card_3_title': 'Vinyl Reissues: Platinum Series',
-    'home.news.card_3_excerpt': 'New remastered versions of classics by Benny Moré and Bebo Valdés now available.',
+    'home.news.card_3_excerpt':
+      'New remastered versions of classics by Benny Moré and Bebo Valdés now available.',
     'home.releases.card_1_artist': 'Omara Portuondo',
     'home.releases.card_1_title': 'Vida y Esperanza',
     'home.releases.card_2_artist': 'Chucho Valdés',

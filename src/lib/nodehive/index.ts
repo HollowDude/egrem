@@ -13,19 +13,57 @@ export type { NhHero, NhEslogan, NhSection, NhHomePage } from './pages';
 export { fetchHomePage, fetchLoginPage } from './pages';
 
 // Content fetchers
-export type { NhNoticia, NhAlbum, NhEvento, NhVideo, NhProduccion, NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight, NhActualidadItem, NhActualidadBundle, NhActualidadTag, NhActualidadHero } from './entities';
-export { fetchNoticias, fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from './fetchers';
+export type {
+  NhNoticia,
+  NhAlbum,
+  NhEvento,
+  NhVideo,
+  NhProduccion,
+  NhVideoLink,
+  NhAlbumLink,
+  NhLoginPage,
+  NhLoginRight,
+  NhActualidadItem,
+  NhActualidadBundle,
+  NhActualidadTag,
+  NhActualidadHero,
+} from './entities';
+export {
+  fetchNoticias,
+  fetchLanzamientos,
+  fetchEventos,
+  fetchProducciones,
+  fetchVideos,
+} from './fetchers';
 export type { NhPatrimonioSection } from './actualidad';
-export { fetchActualidadItems, fetchPatrimonioSection, fetchActualidadHero } from './actualidad';
+export {
+  fetchActualidadItems,
+  fetchActualidadItemByPath,
+  fetchActualidadItemPathInLang,
+  resolveInlineImages,
+  fetchPatrimonioSection,
+  fetchActualidadHero,
+} from './actualidad';
+export { getRelatedItems } from './related';
 
 // Utilities
 export { resolveFileUrl } from './parsers';
 export { slugify } from './helpers';
 
 // YouTube
-export { extractYouTubeId, fetchOEmbed, resolveVideoLink, clearCache as clearYoutubeCache } from './youtube';
+export {
+  extractYouTubeId,
+  fetchOEmbed,
+  resolveVideoLink,
+  clearCache as clearYoutubeCache,
+} from './youtube';
 export type { OEmbedResult as YoutubeOEmbedResult, ResolvedVideo } from './youtube';
 
 // Spotify
-export { extractSpotifyId, fetchOEmbed as fetchSpotifyOEmbed, resolveSpotifyLink, clearCache as clearSpotifyCache } from './spotify';
+export {
+  extractSpotifyId,
+  fetchOEmbed as fetchSpotifyOEmbed,
+  resolveSpotifyLink,
+  clearCache as clearSpotifyCache,
+} from './spotify';
 export type { OEmbedResult as SpotifyOEmbedResult, ResolvedAlbum } from './spotify';

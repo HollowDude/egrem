@@ -35,9 +35,6 @@ const { field, tag = 'span', class: className } = Astro.props;
 const Tag = tag;
 ---
 
-<Tag
-  data-nodehive-field={field}
-  class:list={[className]}
->
+<Tag data-nodehive-field={field} class:list={[className]}>
   <slot />
 </Tag>

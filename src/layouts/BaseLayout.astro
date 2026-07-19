@@ -38,6 +38,10 @@ interface Props {
   isAuthenticated?: boolean;
   /** Número de items en el carrito */
   cartCount?: number;
+  /** URL alternativa para el cambio de idioma */
+  alternateHref?: string;
+  /** URLs alternativas para hreflang */
+  alternateHrefs?: { es?: string; en?: string };
 }
 
 const {
@@ -53,16 +57,21 @@ const lang = Astro.locals.lang;
 const user = Astro.locals.user;
 const effectiveAuth = isAuthenticated ?? !!user;
 
-const pageTitle = title === 'EGREM' ? 'EGREM — Empresa de Grabaciones y Ediciones Musicales' : `${title} | EGREM`;
+const pageTitle =
+  title === 'EGREM' ? 'EGREM — Empresa de Grabaciones y Ediciones Musicales' : `${title} | EGREM`;
 const canonicalUrl = canonical ?? Astro.url.href;
 
 // Fetch NodeHive fragments (header/footer) — cada uno falla independientemente
 let nhHeader: NhHeaderFragment | null = null;
 let nhFooter: NhFooterFragment | null = null;
-try { nhHeader = await fetchHeaderFragment(lang); } catch (e) {
+try {
+  nhHeader = await fetchHeaderFragment(lang);
+} catch (e) {
   console.error('[NodeHive] Failed to fetch header fragment:', e);
 }
-try { nhFooter = await fetchFooterFragment(lang); } catch (e) {
+try {
+  nhFooter = await fetchFooterFragment(lang);
+} catch (e) {
   console.error('[NodeHive] Failed to fetch footer fragment:', e);
 }
 ---
@@ -77,30 +86,56 @@ try { nhFooter = await fetchFooterFragment(lang); } catch (e) {
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
+    {
+      Astro.props.alternateHrefs?.es && (
+        <link
+          rel="alternate"
+          hreflang="es"
+          href={new URL(Astro.props.alternateHrefs.es, Astro.site ?? Astro.url).href}
+        />
+      )
+    }
+    {
+      Astro.props.alternateHrefs?.en && (
+        <link
+          rel="alternate"
+          hreflang="en"
+          href={new URL(Astro.props.alternateHrefs.en, Astro.site ?? Astro.url).href}
+        />
+      )
+    }
 
     {/* Favicon */}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
 
     {/* Open Graph */}
-    <meta property="og:type"        content="website" />
-    <meta property="og:title"       content={pageTitle} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:url"         content={canonicalUrl} />
-    <meta property="og:image"       content={ogImage} />
-    <meta property="og:locale"      content={lang === 'en' ? 'en_US' : 'es_CU'} />
-    <meta property="og:site_name"   content="EGREM" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content={lang === 'en' ? 'en_US' : 'es_CU'} />
+    <meta property="og:site_name" content="EGREM" />
 
     {/* NodeHive: variables globales para el Visual Editor */}
-    <script is:inline define:vars={{ nodehiveBaseUrl: import.meta.env.NODEHIVE_BASE_URL, nodehiveLang: lang }}>
+    <script
+      is:inline
+      define:vars={{ nodehiveBaseUrl: import.meta.env.NODEHIVE_BASE_URL, nodehiveLang: lang }}
+    >
       window.__NODEHIVE_BASE_URL__ = nodehiveBaseUrl;
-      window.__NODEHIVE_LANG__     = nodehiveLang;
+      window.__NODEHIVE_LANG__ = nodehiveLang;
     </script>
   </head>
 
   <body class="min-h-screen flex flex-col">
-
-    <Header isAuthenticated={effectiveAuth} cartCount={cartCount} nhHeader={nhHeader} lang={lang} />
+    <Header
+      isAuthenticated={effectiveAuth}
+      cartCount={cartCount}
+      nhHeader={nhHeader}
+      lang={lang}
+      alternateHref={Astro.props.alternateHref}
+    />
 
     <div class="flex-1">
       <slot />
@@ -109,6 +144,5 @@ try { nhFooter = await fetchFooterFragment(lang); } catch (e) {
     <Footer nhFooter={nhFooter} lang={lang} />
 
     <NodeHiveConnector />
-
   </body>
 </html>

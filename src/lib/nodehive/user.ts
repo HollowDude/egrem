@@ -15,7 +15,10 @@ export interface UserProfile {
   mail: string;
 }
 
-export async function getUserProfile(uid: string, accessToken: string): Promise<UserProfile | null> {
+export async function getUserProfile(
+  uid: string,
+  accessToken: string,
+): Promise<UserProfile | null> {
   try {
     const res = await fetch(`${getBaseUrl()}/user/${uid}?_format=json`, {
       headers: {
@@ -76,7 +79,7 @@ export async function updateUserProfile(
     });
 
     if (!res.ok) {
-      const errBody = await res.json().catch(() => ({})) as Record<string, unknown>;
+      const errBody = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       return {
         ok: false,
         error: (errBody?.message as string) ?? `HTTP ${res.status}`,

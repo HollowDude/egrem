@@ -1,0 +1,28 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+---
+
+<BaseLayout title={tr('actualidad.detail.not_found_title')}>
+  <main id="main-content" class="flex-1 flex items-center justify-center">
+    <div class="container-site text-center py-24">
+      <h1 class="text-h1 text-egrem-black mb-4">{tr('actualidad.detail.not_found_title')}</h1>
+      <p
+        class="text-body mb-8"
+        style="color: var(--color-text-secondary); max-width: 30rem; margin-inline: auto;"
+      >
+        {tr('actualidad.no_results')}
+      </p>
+      <a
+        href={`/${lang}/actualidad`}
+        class="inline-flex items-center gap-2 bg-egrem-red text-white font-display font-bold uppercase tracking-widest text-sm px-6 py-3 rounded-xl no-underline hover:bg-egrem-red-dark transition-colors"
+      >
+        <span class="text-[18px]" style="font-family:'Material Symbols Outlined';">arrow_back</span>
+        {tr('actualidad.detail.back')}
+      </a>
+    </div>
+  </main>
+</BaseLayout>

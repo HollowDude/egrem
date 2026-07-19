@@ -38,8 +38,11 @@ export async function setPasswordFromOneTimeLogin(
     });
 
     if (resetRes.status !== 200) {
-      const resetData = await resetRes.json().catch(() => ({})) as Record<string, unknown>;
-      const msg = (resetData?.error as string) ?? (resetData?.message as string) ?? 'No se pudo establecer la contraseña.';
+      const resetData = (await resetRes.json().catch(() => ({}))) as Record<string, unknown>;
+      const msg =
+        (resetData?.error as string) ??
+        (resetData?.message as string) ??
+        'No se pudo establecer la contraseña.';
       return { ok: false, statusCode: resetRes.status, error: msg };
     }
 
@@ -51,10 +54,12 @@ export async function setPasswordFromOneTimeLogin(
         { headers: { Accept: 'application/vnd.api+json' } },
       );
       if (userRes.ok) {
-        const userData = await userRes.json() as Record<string, unknown>;
+        const userData = (await userRes.json()) as Record<string, unknown>;
         const userItem = (userData?.data as Array<Record<string, unknown>> | undefined)?.[0];
-        userName = (userItem?.attributes as Record<string, unknown> | undefined)?.name as string ?? '';
-        userMail = (userItem?.attributes as Record<string, unknown> | undefined)?.mail as string ?? '';
+        userName =
+          ((userItem?.attributes as Record<string, unknown> | undefined)?.name as string) ?? '';
+        userMail =
+          ((userItem?.attributes as Record<string, unknown> | undefined)?.mail as string) ?? '';
       }
     } catch {
       // non-blocking: auto-login may fail
@@ -84,7 +89,7 @@ async function doLoginAfterPasswordSet(
       body: JSON.stringify({ name: username, pass: password }),
     });
     if (loginRes.ok) {
-      const json = await loginRes.json() as Record<string, unknown>;
+      const json = (await loginRes.json()) as Record<string, unknown>;
       const currentUser = json.current_user as Record<string, unknown> | undefined;
       if (currentUser) {
         return {

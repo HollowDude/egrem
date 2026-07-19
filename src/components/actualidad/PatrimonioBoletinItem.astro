@@ -15,25 +15,48 @@ function formatDate(d: string): string {
 }
 ---
 
-<li class="py-3 border-b border-egrem-gray/20 last:border-0 group flex items-start gap-3 justify-between px-2 -mx-2 rounded-md transition-colors {fileUrl ? 'hover:bg-egrem-gray-light/50 cursor-pointer' : ''}">
+<li
+  class="py-3 border-b border-egrem-gray/20 last:border-0 group flex items-start gap-3 justify-between px-2 -mx-2 rounded-md transition-colors {fileUrl ? 'hover:bg-egrem-gray-light/50 cursor-pointer' : ''}"
+>
   <div class="flex items-start gap-3">
-    <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-gold); margin-top:2px;">picture_as_pdf</span>
+    <span
+      style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-gold); margin-top:2px;"
+      >picture_as_pdf</span
+    >
     <div>
-      <p class="font-display font-bold text-sm tracking-wide text-egrem-black {fileUrl ? 'group-hover:text-egrem-red transition-colors' : 'text-egrem-gray'}">
-        {fileUrl ? (
-          <a href={fileUrl} class="text-inherit no-underline" target="_blank" rel="noopener noreferrer">{title}</a>
-        ) : (
-          title
-        )}
+      <p
+        class="font-display font-bold text-sm tracking-wide text-egrem-black {fileUrl ? 'group-hover:text-egrem-red transition-colors' : 'text-egrem-gray'}"
+      >
+        {
+          fileUrl ? (
+            <a
+              href={fileUrl}
+              class="text-inherit no-underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {title}
+            </a>
+          ) : (
+            title
+          )
+        }
       </p>
       <p class="text-xs text-egrem-gray">
         {fileUrl ? `PDF · ${formatDate(date)}` : 'Archivo no disponible'}
       </p>
     </div>
   </div>
-  {fileUrl && (
-    <a href={fileUrl} target="_blank" rel="noopener noreferrer" class="shrink-0 no-underline">
-      <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-gray);" class="group-hover:text-egrem-red">download</span>
-    </a>
-  )}
+  {
+    fileUrl && (
+      <a href={fileUrl} target="_blank" rel="noopener noreferrer" class="shrink-0 no-underline">
+        <span
+          style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-gray);"
+          class="group-hover:text-egrem-red"
+        >
+          download
+        </span>
+      </a>
+    )
+  }
 </li>

@@ -99,12 +99,6 @@ const Tag = tag;
   data-nodehive-parent_id={parentId?.toString() ?? undefined}
   data-nodehive-langcode={lang ?? undefined}
 >
-  {editLabel && (
-    <NodeHiveEditButton
-      label={editLabel}
-      field={editField}
-      position="top-right"
-    />
-  )}
+  {editLabel && <NodeHiveEditButton label={editLabel} field={editField} position="top-right" />}
   <slot />
 </Tag>

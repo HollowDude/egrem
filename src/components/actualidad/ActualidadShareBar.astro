@@ -1,0 +1,93 @@
+---
+import { useTranslations } from '@/i18n/translations';
+import type { Lang } from '@/i18n';
+
+interface Props {
+  url: string;
+  title: string;
+  lang?: Lang;
+}
+
+const { url, title, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+---
+
+<div class="flex items-center gap-2">
+  <span
+    class="text-small font-bold uppercase tracking-wider"
+    style="color: var(--color-text-secondary);"
+  >
+    {tr('actualidad.detail.share')}:
+  </span>
+  <div class="flex gap-2">
+    <button
+      class:list={[
+        'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
+        'border-black/10 hover:border-egrem-red hover:text-egrem-red text-egrem-black',
+      ]}
+      aria-label={tr('actualidad.detail.share')}
+      id="share-native-btn"
+    >
+      <span class="text-[20px]" style="font-family:'Material Symbols Outlined';">share</span>
+    </button>
+    <button
+      class:list={[
+        'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
+        'border-black/10 hover:border-egrem-red hover:text-egrem-red text-egrem-black',
+      ]}
+      aria-label={tr('actualidad.detail.copy_link')}
+      id="share-copy-btn"
+    >
+      <span class="text-[20px]" style="font-family:'Material Symbols Outlined';">link</span>
+    </button>
+    <a
+      href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`}
+      class:list={[
+        'w-10 h-10 rounded-full border flex items-center justify-center transition-colors no-underline',
+        'border-black/10 hover:border-egrem-red hover:text-egrem-red text-egrem-black',
+      ]}
+      aria-label="Email"
+    >
+      <span class="text-[20px]" style="font-family:'Material Symbols Outlined';">mail</span>
+    </a>
+  </div>
+</div>
+
+<script>
+  const copyBtn = document.getElementById('share-copy-btn');
+  const nativeBtn = document.getElementById('share-native-btn');
+  const pageUrl = window.location.href;
+  const pageTitle = document.title;
+
+  copyBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      const original = copyBtn.innerHTML;
+      copyBtn.innerHTML =
+        '<span class="text-[20px]" style="font-family:\'Material Symbols Outlined\';">check</span>';
+      copyBtn.classList.add('text-green-600', 'border-green-600');
+      setTimeout(() => {
+        copyBtn.innerHTML = original;
+        copyBtn.classList.remove('text-green-600', 'border-green-600');
+      }, 2000);
+    } catch {
+      // fallback
+    }
+  });
+
+  nativeBtn?.addEventListener('click', async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: pageTitle, url: pageUrl });
+      } catch {
+        // user cancelled
+      }
+    } else if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(pageUrl);
+      } catch {
+        // ignore
+      }
+    }
+  });
+</script>

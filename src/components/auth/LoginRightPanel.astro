@@ -26,34 +26,73 @@ const phrase = right?.phrase || fallback.phrase;
 const photo = right?.photo?.url ? resolveFileUrl(right.photo.url) : fallback.photo;
 ---
 
-{right ? (
-  <NodeHiveEntity
-    entityType="paragraph"
-    bundle="_component_login_right"
-    id={right.id}
-    internalId={right.internalId}
-    parentId={right.parentId}
-    lang={lang}
-    tag="div"
-    class="relative w-full h-full overflow-hidden flex flex-col justify-end"
-    editLabel={tr('auth.login.right.edit')}
-  >
-    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style={`background-image: url('${photo}');`} data-nodehive-field="field_photo" aria-hidden="true"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" aria-hidden="true"></div>
-    <div class="relative z-10 p-10 pb-12">
-      <h2 class="font-display font-bold text-[clamp(24px,3vw,34px)] uppercase leading-tight text-white mb-4" data-nodehive-field="field_title">{title}</h2>
-      <p class="font-sans text-base md:text-lg leading-relaxed text-white/85 max-w-[28ch]" data-nodehive-field="field_subtitle">{subtitle}</p>
-      <p class="font-script text-[22px] mt-4" style="color: var(--color-egrem-gold);" data-nodehive-field="field_frase">{phrase}</p>
+{
+  right ? (
+    <NodeHiveEntity
+      entityType="paragraph"
+      bundle="_component_login_right"
+      id={right.id}
+      internalId={right.internalId}
+      parentId={right.parentId}
+      lang={lang}
+      tag="div"
+      class="relative w-full h-full overflow-hidden flex flex-col justify-end"
+      editLabel={tr('auth.login.right.edit')}
+    >
+      <div
+        class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={`background-image: url('${photo}');`}
+        data-nodehive-field="field_photo"
+        aria-hidden="true"
+      />
+      <div
+        class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"
+        aria-hidden="true"
+      />
+      <div class="relative z-10 p-10 pb-12">
+        <h2
+          class="font-display font-bold text-[clamp(24px,3vw,34px)] uppercase leading-tight text-white mb-4"
+          data-nodehive-field="field_title"
+        >
+          {title}
+        </h2>
+        <p
+          class="font-sans text-base md:text-lg leading-relaxed text-white/85 max-w-[28ch]"
+          data-nodehive-field="field_subtitle"
+        >
+          {subtitle}
+        </p>
+        <p
+          class="font-script text-[22px] mt-4"
+          style="color: var(--color-egrem-gold);"
+          data-nodehive-field="field_frase"
+        >
+          {phrase}
+        </p>
+      </div>
+    </NodeHiveEntity>
+  ) : (
+    <div class="relative w-full h-full overflow-hidden flex flex-col justify-end">
+      <div
+        class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={`background-image: url('${photo}');`}
+        aria-hidden="true"
+      />
+      <div
+        class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"
+        aria-hidden="true"
+      />
+      <div class="relative z-10 p-10 pb-12">
+        <h2 class="font-display font-bold text-[clamp(24px,3vw,34px)] uppercase leading-tight text-white mb-4">
+          {title}
+        </h2>
+        <p class="font-sans text-base md:text-lg leading-relaxed text-white/85 max-w-[28ch]">
+          {subtitle}
+        </p>
+        <p class="font-script text-[22px] mt-4" style="color: var(--color-egrem-gold);">
+          {phrase}
+        </p>
+      </div>
     </div>
-  </NodeHiveEntity>
-) : (
-  <div class="relative w-full h-full overflow-hidden flex flex-col justify-end">
-    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style={`background-image: url('${photo}');`} aria-hidden="true"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" aria-hidden="true"></div>
-    <div class="relative z-10 p-10 pb-12">
-      <h2 class="font-display font-bold text-[clamp(24px,3vw,34px)] uppercase leading-tight text-white mb-4">{title}</h2>
-      <p class="font-sans text-base md:text-lg leading-relaxed text-white/85 max-w-[28ch]">{subtitle}</p>
-      <p class="font-script text-[22px] mt-4" style="color: var(--color-egrem-gold);">{phrase}</p>
-    </div>
-  </div>
-)}
+  )
+}

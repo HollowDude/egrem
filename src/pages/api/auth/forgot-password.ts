@@ -26,5 +26,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 };
 
 function json(data: unknown, status: number): Response {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }

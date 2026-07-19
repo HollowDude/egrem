@@ -9,7 +9,7 @@ const _secret = import.meta.env.SESSION_SECRET as string | undefined;
 if (!_secret || _secret.length < 32) {
   throw new Error(
     '[Session] SESSION_SECRET must be at least 32 characters.\n' +
-    'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+      "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
   );
 }
 const ENC_KEY = new TextEncoder().encode(_secret).slice(0, 32);
