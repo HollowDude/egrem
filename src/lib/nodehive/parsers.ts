@@ -62,6 +62,30 @@ export function parseMediaImage(
   };
 }
 
+export interface NhMediaFile {
+  url: string;
+  filename: string;
+  title: string;
+}
+
+export function parseMediaDocument(
+  mediaRes: JsonApiResource,
+  included: JsonApiResource[] | undefined,
+): NhMediaFile | null {
+  const fileRel = mediaRes.relationships?.field_media_document;
+  const fileIds = resolveRelIds(fileRel);
+  if (!fileIds.length) return null;
+  const fileRes = findIncluded(included, 'file--file', fileIds[0].id);
+  if (!fileRes) return null;
+  const attrs = fileRes.attributes as Record<string, unknown>;
+  const uri = attrs.uri as { url?: string } | undefined;
+  return {
+    url: uri?.url ?? '',
+    filename: (attrs.filename as string) ?? '',
+    title: ((mediaRes.attributes as Record<string, unknown>).name as string) ?? '',
+  };
+}
+
 export function resolveFileUrl(path: string): string {
   if (!path) return '';
   if (path.startsWith('http')) return path;

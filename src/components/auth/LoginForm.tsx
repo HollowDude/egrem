@@ -46,7 +46,8 @@ export default function LoginForm({ lang = 'es' }: Props) {
         return;
       }
 
-      window.location.href = '/';
+      const params = new URLSearchParams(window.location.search);
+      window.location.href = params.get('redirect') || '/';
     } catch {
       setError(tr('auth.error.generic'));
     } finally {

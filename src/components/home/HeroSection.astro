@@ -74,7 +74,7 @@ const buttons = nhButtons ?? [
   {/* Imagen de fondo — foto desde Drupal o placeholder */}
   <div
     class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-    style={`background-image: url('${nhPhoto?.url ? resolveFileUrl(nhPhoto.url) : '/images/hero-bg.jpg'}')`}
+    style={`background-image: url('${nhPhoto?.url ? resolveFileUrl(nhPhoto.url) : ''}')`}
     data-nodehive-field="field_background"
     aria-hidden="true"
   >

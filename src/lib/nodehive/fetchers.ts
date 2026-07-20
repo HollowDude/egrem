@@ -9,7 +9,6 @@
  */
 
 import type {
-  NhNoticia,
   NhAlbum,
   NhEvento,
   NhVideo,
@@ -20,15 +19,6 @@ import type {
 import { resolveVideoLink } from './youtube';
 import { resolveSpotifyLink } from './spotify';
 import { jsonApiFetch } from './client';
-
-/* ─── Noticias ─────────────────────────────────────────────────── */
-
-// TODO(nodehive): implementar fetch real cuando exista endpoint
-//   node/noticia?include=field_image,field_image.field_media_image&sort=-created&page[limit]=3
-export async function fetchNoticias(_lang = 'es'): Promise<NhNoticia[]> {
-  console.warn('[NodeHive] fetchNoticias: pendiente de implementar endpoint');
-  return [];
-}
 
 /* ─── Lanzamientos (álbumes) ───────────────────────────────────── */
 

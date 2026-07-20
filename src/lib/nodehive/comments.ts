@@ -9,6 +9,7 @@ export interface NhComment {
   body: string;
   created: string;
   relativeTime: string;
+  status: 'published' | 'pending';
 }
 
 function relativeTime(dateStr: string, lang: string): string {
@@ -28,42 +29,99 @@ function relativeTime(dateStr: string, lang: string): string {
   return lang === 'en' ? `${d}d ago` : `hace ${d}d`;
 }
 
-export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComment[]> {
+function mapResource(
+  resource: JsonApiResource,
+  included: JsonApiResource[],
+  lang: string,
+  status: 'published' | 'pending',
+): NhComment {
+  const a = resource.attributes as Record<string, unknown>;
+  const bodyField = a.comment_body as { value?: string } | { value?: string }[] | undefined;
+  const bodyValue = Array.isArray(bodyField)
+    ? bodyField[0]?.value
+    : (bodyField as { value?: string } | undefined)?.value;
+
+  const uidRel = resource.relationships?.uid;
+  const uidData = Array.isArray(uidRel?.data) ? uidRel?.data[0] : uidRel?.data;
+  let authorName = (a.name as string) ?? '';
+  if (uidData && typeof uidData === 'object' && 'id' in uidData) {
+    const user = included.find((r) => r.type === 'user--user' && r.id === uidData.id);
+    if (user) {
+      const ua = user.attributes as Record<string, unknown>;
+      authorName = (ua.display_name as string) ?? (ua.name as string) ?? '';
+    }
+  }
+
+  return {
+    id: resource.id,
+    author: authorName || 'Anónimo',
+    authorInitial: (authorName || '?')[0].toUpperCase(),
+    body: (bodyValue as string) ?? '',
+    created: a.created as string,
+    relativeTime: relativeTime(a.created as string, lang),
+    status,
+  };
+}
+
+async function fetchCommentsByFilter(
+  filter: string,
+  lang: string,
+  accessToken?: string,
+): Promise<{ resources: JsonApiResource[]; included: JsonApiResource[] }> {
+  const path = `comment/${COMMENT_TYPE}?${filter}&sort=created&include=uid`;
+
+  if (accessToken) {
+    const url = `${getBaseUrlValue()}/${lang}/jsonapi/${path}`
+      .replace(/\[/g, '%5B')
+      .replace(/\]/g, '%5D');
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'application/vnd.api+json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (!res.ok) return { resources: [], included: [] };
+    const json: JsonApiResponse = await res.json();
+    const resources = Array.isArray(json.data) ? json.data : json.data ? [json.data] : [];
+    return { resources, included: json.included ?? [] };
+  }
+
+  const res = await jsonApiFetch<Record<string, unknown>>(path, lang).catch(() => null);
+  if (!res) return { resources: [], included: [] };
+  const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
+  return { resources: data as JsonApiResource[], included: (res.included ?? []) as JsonApiResource[] };
+}
+
+export async function getComments(
+  nodeUuid: string,
+  lang = 'es',
+  options?: { uid?: string; accessToken?: string },
+): Promise<NhComment[]> {
   try {
-    const res = await jsonApiFetch<Record<string, unknown>>(
-      `comment/${COMMENT_TYPE}?filter[entity_id.id][value]=${nodeUuid}&filter[status][value]=1&sort=created&include=uid`,
+    const published = await fetchCommentsByFilter(
+      `filter[entity_id.id][value]=${nodeUuid}&filter[status][value]=1`,
       lang,
     );
-    const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
-    const included = res.included ?? [];
 
-    return data.map((resource) => {
-      const a = resource.attributes as Record<string, unknown>;
-      const bodyField = a.comment_body as { value?: string } | { value?: string }[] | undefined;
-      const bodyValue = Array.isArray(bodyField)
-        ? bodyField[0]?.value
-        : (bodyField as { value?: string } | undefined)?.value;
+    const all: NhComment[] = published.resources.map((r) =>
+      mapResource(r, published.included, lang, 'published'),
+    );
 
-      const uidRel = resource.relationships?.uid;
-      const uidData = Array.isArray(uidRel?.data) ? uidRel?.data[0] : uidRel?.data;
-      let authorName = (a.name as string) ?? '';
-      if (uidData && typeof uidData === 'object' && 'id' in uidData) {
-        const user = included.find((r) => r.type === 'user--user' && r.id === uidData.id);
-        if (user) {
-          const ua = user.attributes as Record<string, unknown>;
-          authorName = (ua.display_name as string) ?? (ua.name as string) ?? '';
+    if (options?.uid && options?.accessToken) {
+      const pending = await fetchCommentsByFilter(
+        `filter[entity_id.id][value]=${nodeUuid}&filter[uid.id][value]=${options.uid}&filter[status][value]=0`,
+        lang,
+        options.accessToken,
+      );
+      for (const r of pending.resources) {
+        if (!all.some((c) => c.id === r.id)) {
+          all.push(mapResource(r, pending.included, lang, 'pending'));
         }
       }
+    }
 
-      return {
-        id: resource.id,
-        author: authorName || 'Anónimo',
-        authorInitial: (authorName || '?')[0].toUpperCase(),
-        body: (bodyValue as string) ?? '',
-        created: a.created as string,
-        relativeTime: relativeTime(a.created as string, lang),
-      } satisfies NhComment;
-    });
+    all.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
+    return all;
   } catch (e) {
     console.warn('[NodeHive] getComments failed:', e);
     return [];

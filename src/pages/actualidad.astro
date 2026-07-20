@@ -11,6 +11,7 @@ import HeroActualidad from '@/components/actualidad/HeroActualidad.astro';
 import FilterBar from '@/components/actualidad/FilterBar.astro';
 import PatrimonioVideoCard from '@/components/actualidad/PatrimonioVideoCard.astro';
 import PatrimonioBoletinItem from '@/components/actualidad/PatrimonioBoletinItem.astro';
+import BoletinesModal from '@/components/actualidad/BoletinesModal.tsx';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import {
   fetchActualidadItems,
@@ -81,6 +82,15 @@ const articulos = filteredItems
 const blogs = filteredItems
   .filter((i) => i.bundle === 'blog')
   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+const boletinesModalData = items
+  .filter((i) => i.bundle === 'boletin_archivo')
+  .map((i) => ({
+    id: i.id,
+    title: i.title,
+    date: i.date,
+    fileUrl: i.attachment?.url ?? null,
+  }));
 
 const allTags = new Map<string, string>();
 for (const item of items) {
@@ -536,12 +546,17 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                   </h3>
                   <ul class="flex flex-col">
                     {patrimonioSection!.boletines.slice(0, 5).map((item) => (
-                      <PatrimonioBoletinItem title={item.title} date={item.date} fileUrl={null} />
+                      <PatrimonioBoletinItem
+                        title={item.title}
+                        date={item.date}
+                        fileUrl={item.attachment?.url ?? null}
+                      />
                     ))}
                   </ul>
-                  <a
-                    href="/actualidad?tipo=boletin_archivo"
-                    class="mt-4 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link"
+                  <button
+                    type="button"
+                    data-boletines-modal-trigger
+                    class="mt-4 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest bg-transparent border-0 p-0 cursor-pointer no-underline hover:text-egrem-red transition-colors group/link"
                   >
                     Ver todos
                     <span
@@ -550,7 +565,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                     >
                       arrow_forward
                     </span>
-                  </a>
+                  </button>
                 </div>
               )
             }
@@ -711,5 +726,6 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
       </div>
     </NodeHiveEntity>
     <YouTubePlayer client:load />
+    <BoletinesModal client:load boletines={boletinesModalData} />
   </main>
 </BaseLayout>

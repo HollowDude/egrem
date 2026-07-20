@@ -24,7 +24,6 @@ import ProduccionesSection from '@/components/home/ProduccionesSection.astro';
 import AudiovisualesSection from '@/components/home/AudiovisualesSection.astro';
 import {
   fetchHomePage,
-  fetchNoticias,
   fetchLanzamientos,
   fetchEventos,
   fetchProducciones,
@@ -33,7 +32,6 @@ import {
 import type {
   NhEntityMeta,
   NhSection,
-  NhNoticia,
   NhAlbum,
   NhEvento,
   NhProduccion,
@@ -43,7 +41,6 @@ import type {
 const lang = Astro.locals.lang;
 
 let nhData: Awaited<ReturnType<typeof fetchHomePage>> | null = null;
-let noticias: NhNoticia[] = [];
 let lanzamientos: NhAlbum[] = [];
 let eventos: NhEvento[] = [];
 let producciones: NhProduccion[] = [];
@@ -67,11 +64,7 @@ if (nhData?.albumLinks.length) {
 
 // Content fetchers — fallan silenciosamente si el backend no tiene endpoints
 try {
-  [noticias, eventos, producciones] = await Promise.all([
-    fetchNoticias(lang),
-    fetchEventos(lang),
-    fetchProducciones(lang),
-  ]);
+  [eventos, producciones] = await Promise.all([fetchEventos(lang), fetchProducciones(lang)]);
 } catch (e) {
   console.warn('[NodeHive] Some content fetchers failed (endpoints may not exist yet):', e);
 }
@@ -107,7 +100,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
       lang={lang}
     />
     <NoticiasSection
-      noticias={noticias}
+      noticias={nhData?.novedades}
       nhSectionTitle={findSection('_component_homepage_novedades')?.title}
       nhEntity={entityMeta(findSection('_component_homepage_novedades'))}
       lang={lang}

@@ -2,7 +2,7 @@
 export type { JsonApiResource, JsonApiResponse } from './client';
 
 // Parsers — primitives
-export type { NhLink, NhMediaImage, NhButton, NhEntityMeta, NhBase } from './parsers';
+export type { NhLink, NhMediaImage, NhMediaFile, NhButton, NhEntityMeta, NhBase } from './parsers';
 
 // Fragments
 export type { NhRed, NhContacto, NhHeaderFragment, NhFooterFragment } from './fragments';
@@ -14,7 +14,6 @@ export { fetchHomePage, fetchLoginPage } from './pages';
 
 // Content fetchers
 export type {
-  NhNoticia,
   NhAlbum,
   NhEvento,
   NhVideo,
@@ -29,15 +28,11 @@ export type {
   NhActualidadHero,
   NhArtist,
 } from './entities';
-export {
-  fetchNoticias,
-  fetchLanzamientos,
-  fetchEventos,
-  fetchProducciones,
-  fetchVideos,
-} from './fetchers';
+export { fetchLanzamientos, fetchEventos, fetchProducciones, fetchVideos } from './fetchers';
 export type { NhPatrimonioSection } from './actualidad';
 export {
+  parseActualidadNode,
+  resolveActualidadRefs,
   fetchActualidadItems,
   fetchActualidadItemByPath,
   fetchActualidadItemPathInLang,
@@ -49,7 +44,7 @@ export { getRelatedItems } from './related';
 
 // Utilities
 export { resolveFileUrl } from './parsers';
-export { slugify, estimateReadingTime } from './helpers';
+export { slugify, stripHtml, estimateReadingTime } from './helpers';
 
 // YouTube
 export {

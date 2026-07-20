@@ -17,7 +17,8 @@ try {
 }
 
 if (Astro.locals.user) {
-  return Astro.redirect('/');
+  const redirectUrl = Astro.url.searchParams.get('redirect') || '/';
+  return Astro.redirect(redirectUrl);
 }
 ---
 

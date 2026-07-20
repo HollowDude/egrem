@@ -98,23 +98,27 @@ const tr = useTranslations(lang);
       authorInitial: string;
       body: string;
       relativeTime: string;
+      status: string;
     }>,
   ) {
+    const visible = comments.filter((c) => c.status === 'published' || authenticated);
+    const publishedCount = comments.filter((c) => c.status === 'published').length;
+
     countEl.textContent =
-      comments.length > 0
-        ? `${comments.length} ${lang === 'en' ? 'comments' : 'comentarios'}`
+      publishedCount > 0
+        ? `${publishedCount} ${lang === 'en' ? 'comments' : 'comentarios'}`
         : lang === 'en'
           ? 'Comments'
           : 'Comentarios';
 
-    if (comments.length === 0) {
+    if (visible.length === 0) {
       list.innerHTML = `<p class="text-egrem-gray text-small text-center py-4">${
         lang === 'en' ? 'No comments yet. Be the first!' : 'No hay comentarios aún. ¡Sé el primero!'
       }</p>`;
       return;
     }
 
-    list.innerHTML = comments
+    list.innerHTML = visible
       .map(
         (c) => `
       <div class="flex gap-3">
@@ -122,17 +126,14 @@ const tr = useTranslations(lang);
           ${c.authorInitial}
         </div>
         <div class="flex-1 min-w-0">
-          <div class="bg-egrem-gray-light p-3 rounded-xl rounded-tl-none border border-egrem-gray/20">
+          <div class="${c.status === 'pending' ? 'bg-yellow-50 border-egrem-gold' : 'bg-egrem-gray-light border-egrem-gray/20'} p-3 rounded-xl rounded-tl-none border">
             <p class="font-display font-bold text-sm text-egrem-black mb-1">
               ${c.author}
               <span class="font-normal text-egrem-gray text-caption"> · ${c.relativeTime}</span>
             </p>
             <p class="font-display text-body m-0 text-egrem-black">${c.body}</p>
+            ${c.status === 'pending' ? `<p class="font-display text-small m-0 mt-1 italic" style="color: var(--color-egrem-gold);">${lang === 'en' ? 'Pending approval' : 'Pendiente de aprobación'}</p>` : ''}
           </div>
-          <button class="text-caption font-bold text-egrem-gray hover:text-egrem-red transition-colors mt-1 flex items-center gap-1 bg-transparent border-none cursor-pointer">
-            <span class="text-[14px]" style="font-family:'Material Symbols Outlined';">reply</span>
-            ${lang === 'en' ? 'Reply' : 'Responder'}
-          </button>
         </div>
       </div>
     `,

@@ -4,7 +4,14 @@ import { parseButton, parseMediaImage } from './parsers';
 import type { NhButton, NhMediaImage, NhEntityMeta } from './parsers';
 import type { JsonApiResource } from './client';
 import { NODEHIVE_CONFIG } from './config';
-import type { NhVideoLink, NhAlbumLink, NhLoginPage, NhLoginRight } from './entities';
+import type {
+  NhVideoLink,
+  NhAlbumLink,
+  NhLoginPage,
+  NhLoginRight,
+  NhActualidadItem,
+} from './entities';
+import { resolveActualidadRefs } from './actualidad';
 
 export interface NhHero extends NhEntityMeta {
   title: string;
@@ -31,13 +38,14 @@ export interface NhHomePage {
   sections: NhSection[];
   videoLinks: NhVideoLink[];
   albumLinks: NhAlbumLink[];
+  novedades: NhActualidadItem[];
 }
 
 export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
   const PAGE_UUID = NODEHIVE_CONFIG.pages.home;
 
   const res = await jsonApiFetch(
-    `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo,field_components.field_photo.field_media_image,field_components.field_videos,field_components.field_lanzamientos`,
+    `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo,field_components.field_photo.field_media_image,field_components.field_videos,field_components.field_lanzamientos,field_components.field_contenido,field_components.field_contenido.field_imagen_o_multimedia,field_components.field_contenido.field_imagen_o_multimedia.field_media_image,field_components.field_contenido.field_tags,field_components.field_contenido.field_artistas_relacionados,field_components.field_contenido.field_artistas_relacionados.field_imagen,field_components.field_contenido.field_artistas_relacionados.field_imagen.field_media_image`,
     lang,
   );
 
@@ -51,6 +59,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
   const sections: NhSection[] = [];
   const videoLinks: NhVideoLink[] = [];
   const albumLinks: NhAlbumLink[] = [];
+  const novedades: NhActualidadItem[] = [];
 
   for (const ref of componentRels) {
     const comp = findIncluded(included, ref.type, ref.id);
@@ -141,6 +150,18 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
         title: (attrs.field_title as string) ?? '',
         type: compType,
       });
+    } else if (compType === '_component_homepage_novedades') {
+      const contenidoRefs = resolveRelIds(comp.relationships?.field_contenido);
+      const resolved = resolveActualidadRefs(contenidoRefs, included);
+      novedades.push(...resolved);
+      sections.push({
+        id: comp.id,
+        internalId,
+        parentId,
+        bundle: compType,
+        title: (attrs.field_title as string) ?? '',
+        type: compType,
+      });
     } else {
       sections.push({
         id: comp.id,
@@ -164,6 +185,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
     sections,
     videoLinks,
     albumLinks,
+    novedades,
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseButton } from '../parsers';
+import { parseButton, parseMediaDocument } from '../parsers';
 import type { JsonApiResource } from '../client';
 
 function mockButtonResource(overrides: Record<string, unknown> = {}): JsonApiResource {
@@ -38,5 +38,68 @@ describe('parseButton', () => {
   it('handles missing title', () => {
     const res = mockButtonResource({ field_title: null });
     expect(parseButton(res).title).toBe('');
+  });
+});
+
+function mockDocumentMedia(overrides: Record<string, unknown> = {}): {
+  mediaRes: JsonApiResource;
+  included: JsonApiResource[];
+} {
+  const mediaRes: JsonApiResource = {
+    type: 'media--document',
+    id: 'doc-1',
+    attributes: { name: 'Boletín 2024', ...overrides },
+    relationships: {
+      field_media_document: {
+        data: { type: 'file--file', id: 'file-1' },
+      },
+    },
+  };
+  const included: JsonApiResource[] = [
+    mediaRes,
+    {
+      type: 'file--file',
+      id: 'file-1',
+      attributes: {
+        filename: 'boletin-2024.pdf',
+        uri: { url: '/files/boletin-2024.pdf' },
+      },
+    },
+  ];
+  return { mediaRes, included };
+}
+
+describe('parseMediaDocument', () => {
+  it('parses a document with all fields', () => {
+    const { mediaRes, included } = mockDocumentMedia();
+    const result = parseMediaDocument(mediaRes, included);
+    expect(result).not.toBeNull();
+    expect(result!.url).toBe('/files/boletin-2024.pdf');
+    expect(result!.filename).toBe('boletin-2024.pdf');
+    expect(result!.title).toBe('Boletín 2024');
+  });
+
+  it('returns null when file reference is missing', () => {
+    const mediaRes: JsonApiResource = {
+      type: 'media--document',
+      id: 'doc-empty',
+      attributes: { name: 'Empty' },
+      relationships: {},
+    };
+    expect(parseMediaDocument(mediaRes, [mediaRes])).toBeNull();
+  });
+
+  it('returns null when file not in included', () => {
+    const mediaRes: JsonApiResource = {
+      type: 'media--document',
+      id: 'doc-2',
+      attributes: { name: 'Missing' },
+      relationships: {
+        field_media_document: {
+          data: { type: 'file--file', id: 'file-missing' },
+        },
+      },
+    };
+    expect(parseMediaDocument(mediaRes, [mediaRes])).toBeNull();
   });
 });

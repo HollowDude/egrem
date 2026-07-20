@@ -85,7 +85,12 @@ export default function HeaderNav({
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState('');
   const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCurrentPath(window.location.pathname);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = searchOpen ? 'hidden' : '';
@@ -314,7 +319,7 @@ export default function HeaderNav({
               /* ── Estado invitado ── */
               <div className="hidden sm:flex items-center gap-2">
                 <a
-                  href="/login"
+                  href={`/login${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
                   className={buttonClasses('outline-red', 'sm')}
                 >
                   {tr('nav.login')}
@@ -442,7 +447,7 @@ export default function HeaderNav({
           {!isAuthenticated && (
             <div className="border-t px-4 py-4 flex items-center gap-3" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
               <a
-                href="/login"
+                href={`/login${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
                 className={buttonClasses('outline-red', 'md', 'flex-1')}
               >
                 {tr('nav.login')}

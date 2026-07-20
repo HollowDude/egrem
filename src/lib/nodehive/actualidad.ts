@@ -1,8 +1,13 @@
-import type { JsonApiResource, JsonApiResponse, JsonApiRelationship } from './client';
+import type {
+  JsonApiResource,
+  JsonApiResponse,
+  JsonApiRelationship,
+  JsonApiResourceIdentifier,
+} from './client';
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds, slugify } from './helpers';
-import { parseMediaImage, resolveFileUrl } from './parsers';
-import type { NhMediaImage, NhEntityMeta } from './parsers';
+import { parseMediaImage, parseMediaDocument, resolveFileUrl } from './parsers';
+import type { NhMediaImage, NhMediaFile, NhEntityMeta } from './parsers';
 import type {
   NhActualidadItem,
   NhActualidadBundle,
@@ -89,7 +94,7 @@ function parseTags(
     .filter((t): t is NhActualidadTag => t !== null);
 }
 
-function parseItem(
+export function parseActualidadNode(
   resource: JsonApiResource<RawNodeAttrs>,
   included: JsonApiResource[] | undefined,
 ): NhActualidadItem | null {
@@ -106,14 +111,51 @@ function parseItem(
   const bundle = bundleMap[type];
   if (!bundle) return null;
 
-  const imageRel = resource.relationships?.field_imagen_o_multimedia;
-  const imageIds = resolveRelIds(imageRel);
   let image: NhMediaImage | null = null;
-  if (imageIds.length > 0) {
-    const mediaRes = findIncluded(included, 'media--image', imageIds[0].id);
-    if (mediaRes) {
-      image = parseMediaImage(mediaRes, included);
-      if (image?.url) image.url = resolveFileUrl(image.url);
+  let attachment: NhMediaFile | null = null;
+  if (bundle === 'boletin_archivo') {
+    const fileRel = resource.relationships?.field_boletin;
+    const fileIds = resolveRelIds(fileRel);
+    if (fileIds.length > 0) {
+      const ref = fileIds[0];
+      if (ref.type === 'media--document') {
+        const mediaRes = findIncluded(included, 'media--document', ref.id);
+        if (mediaRes) {
+          attachment = parseMediaDocument(mediaRes, included);
+          if (attachment?.url) attachment.url = resolveFileUrl(attachment.url);
+        }
+      } else if (ref.type === 'file--file') {
+        const fileRes = findIncluded(included, 'file--file', ref.id);
+        if (fileRes) {
+          const fa = fileRes.attributes as Record<string, unknown>;
+          const uri = fa.uri as { url?: string } | undefined;
+          attachment = {
+            url: uri?.url ?? '',
+            filename: (fa.filename as string) ?? '',
+            title: '',
+          };
+          if (attachment?.url) attachment.url = resolveFileUrl(attachment.url);
+        }
+      }
+    }
+  } else {
+    const imageRel = resource.relationships?.field_imagen_o_multimedia;
+    const imageIds = resolveRelIds(imageRel);
+    if (imageIds.length > 0) {
+      const ref = imageIds[0];
+      if (ref.type === 'media--document') {
+        const mediaRes = findIncluded(included, 'media--document', ref.id);
+        if (mediaRes) {
+          attachment = parseMediaDocument(mediaRes, included);
+          if (attachment?.url) attachment.url = resolveFileUrl(attachment.url);
+        }
+      } else {
+        const mediaRes = findIncluded(included, 'media--image', ref.id);
+        if (mediaRes) {
+          image = parseMediaImage(mediaRes, included);
+          if (image?.url) image.url = resolveFileUrl(image.url);
+        }
+      }
     }
   }
 
@@ -134,6 +176,7 @@ function parseItem(
     author: a.field_autor ?? '',
     patrimonio: a.field_patrimonio ?? false,
     image,
+    attachment,
     path: a.path?.alias ?? '',
     tags: parseTags(resource, included),
     relatedArtists: parseArtists(resource, included),
@@ -189,7 +232,7 @@ export async function fetchActualidadHero(lang = 'es'): Promise<NhActualidadHero
 export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioSection | null> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `paragraph/component_patrimonio_section?include=field_video_destacado,field_boletines_destacados,field_articulo_destacado,field_articulo_destacado.field_imagen_o_multimedia,field_articulo_destacado.field_imagen_o_multimedia.field_media_image,field_articulo_destacado.field_tags&page[limit]=1`,
+      `paragraph/component_patrimonio_section?include=field_video_destacado,field_boletines_destacados,field_boletines_destacados.field_boletin,field_articulo_destacado,field_articulo_destacado.field_imagen_o_multimedia,field_articulo_destacado.field_imagen_o_multimedia.field_media_image,field_articulo_destacado.field_tags&page[limit]=1`,
       lang,
     );
     const items = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
@@ -231,6 +274,33 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
       const boletinRes = findIncluded(included, 'node--boletin_archivo', id.id);
       if (boletinRes) {
         const a = boletinRes.attributes as Record<string, unknown>;
+        const fileIds = resolveRelIds(
+          (boletinRes.relationships as Record<string, JsonApiRelationship> | undefined)
+            ?.field_boletin,
+        );
+        let attachment: NhMediaFile | null = null;
+        if (fileIds.length > 0) {
+          const ref = fileIds[0];
+          if (ref.type === 'media--document') {
+            const mediaRes = findIncluded(included, 'media--document', ref.id);
+            if (mediaRes) {
+              attachment = parseMediaDocument(mediaRes, included);
+              if (attachment?.url) attachment.url = resolveFileUrl(attachment.url);
+            }
+          } else if (ref.type === 'file--file') {
+            const fileRes = findIncluded(included, 'file--file', ref.id);
+            if (fileRes) {
+              const fa = fileRes.attributes as Record<string, unknown>;
+              const uri = fa.uri as { url?: string } | undefined;
+              attachment = {
+                url: uri?.url ?? '',
+                filename: (fa.filename as string) ?? '',
+                title: '',
+              };
+              if (attachment?.url) attachment.url = resolveFileUrl(attachment.url);
+            }
+          }
+        }
         boletines.push({
           id: boletinRes.id,
           nid: (a.drupal_internal__nid as number) ?? 0,
@@ -245,6 +315,7 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
           image: null,
           path: '',
           tags: [],
+          attachment,
         });
       }
     }
@@ -254,7 +325,7 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
     if (articuloRel?.data && !Array.isArray(articuloRel.data)) {
       const articuloRes = findIncluded(included, 'node--article', articuloRel.data.id);
       if (articuloRes) {
-        articuloDestacado = parseItem(
+        articuloDestacado = parseActualidadNode(
           articuloRes as unknown as JsonApiResource<RawNodeAttrs>,
           included,
         );
@@ -338,7 +409,7 @@ export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadIte
     noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
     article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
     blog: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
-    boletin_archivo: '',
+    boletin_archivo: 'field_boletin',
   };
 
   const results = await Promise.allSettled(
@@ -363,7 +434,7 @@ export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadIte
     const included = res.included;
 
     for (const resource of data) {
-      const item = parseItem(resource, included);
+      const item = parseActualidadNode(resource, included);
       if (item) items.push(item);
     }
   }
@@ -371,4 +442,17 @@ export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadIte
   items.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
 
   return items;
+}
+
+export function resolveActualidadRefs(
+  refs: JsonApiResourceIdentifier[],
+  included: JsonApiResource[] | undefined,
+): NhActualidadItem[] {
+  return refs
+    .map((ref) => {
+      const node = findIncluded(included, ref.type, ref.id);
+      if (!node) return null;
+      return parseActualidadNode(node as unknown as JsonApiResource<RawNodeAttrs>, included);
+    })
+    .filter((item): item is NhActualidadItem => item !== null);
 }
