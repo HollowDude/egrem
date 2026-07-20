@@ -8,9 +8,46 @@ import type {
   NhActualidadBundle,
   NhActualidadTag,
   NhActualidadHero,
+  NhArtist,
 } from './entities';
 import { fetchOEmbed, extractYouTubeId } from './youtube';
 import { NODEHIVE_CONFIG } from './config';
+
+function parseArtists(
+  resource: { relationships?: Record<string, JsonApiRelationship> },
+  included: JsonApiResource[] | undefined,
+): NhArtist[] {
+  const artistRel = resource.relationships?.field_artistas_relacionados;
+  const artistIds = resolveRelIds(artistRel);
+  const result: NhArtist[] = [];
+  for (const ref of artistIds) {
+    const node = findIncluded(included, 'node--artista', ref.id);
+    if (!node) continue;
+    const a = node.attributes as Record<string, unknown>;
+    const name = (a.title as string) ?? '';
+    if (!name) continue;
+    const photoRel = (node.relationships as Record<string, JsonApiRelationship> | undefined)
+      ?.field_imagen;
+    const photoIds = resolveRelIds(photoRel);
+    let photo: NhMediaImage | null = null;
+    if (photoIds.length > 0) {
+      const mediaRes = findIncluded(included, 'media--image', photoIds[0].id);
+      if (mediaRes) {
+        photo = parseMediaImage(mediaRes, included);
+        if (photo?.url) photo.url = resolveFileUrl(photo.url);
+      }
+    }
+    result.push({
+      id: node.id,
+      name,
+      role:
+        (a.field_genero as string | undefined) ?? (a.field_rol as string | undefined) ?? undefined,
+      photo,
+      href: (a.path as { alias?: string })?.alias ?? `/artista/${a.drupal_internal__nid}`,
+    });
+  }
+  return result;
+}
 
 export interface NhPatrimonioSection extends NhEntityMeta {
   videoUrl: string | null;
@@ -99,6 +136,8 @@ function parseItem(
     image,
     path: a.path?.alias ?? '',
     tags: parseTags(resource, included),
+    relatedArtists: parseArtists(resource, included),
+    relatedEvents: [],
   };
 }
 
@@ -274,11 +313,14 @@ export async function fetchActualidadItemByPath(
     // ignore decode errors
   }
 
+  // Strip language prefix if present
+  normalized = normalized.replace(/^\/(es|en)(\/|$)/, '/');
+
   const items = await fetchActualidadItems(lang);
   const byPath = items.find((i) => i.path && i.path === normalized);
   if (byPath) return byPath;
 
-  const match = normalized.match(/^\/actualidad\/(noticia|article)\/(\d+)$/);
+  const match = normalized.match(/^\/actualidad\/(noticia|article|blog)\/(\d+)$/);
   if (match) {
     const bundle = match[1] as NhActualidadBundle;
     const nid = match[2];
@@ -288,11 +330,14 @@ export async function fetchActualidadItemByPath(
   return null;
 }
 
+const ARTIST_INCLUDES =
+  'field_artistas_relacionados,field_artistas_relacionados.field_imagen,field_artistas_relacionados.field_imagen.field_media_image';
+
 export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadItem[]> {
   const bundleIncludes: Record<string, string> = {
-    noticia: 'field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags',
-    article: 'field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags',
-    blog: 'field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags',
+    noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
+    article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
+    blog: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
     boletin_archivo: '',
   };
 

@@ -1,0 +1,53 @@
+---
+import type { NhArtist } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+import type { Lang } from '@/i18n';
+
+interface Props {
+  artists: NhArtist[];
+  lang?: Lang;
+}
+
+const { artists, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+---
+
+{
+  artists.length > 0 && (
+    <div class="card card--no-zoom p-6">
+      <h3 class="font-display font-bold text-xl text-egrem-black mb-4 border-b border-black/10 pb-3 uppercase tracking-wider">
+        {tr('actualidad.detail.related_artists_title')}
+      </h3>
+      <div class="flex flex-col gap-4">
+        {artists.slice(0, 5).map((artist) => (
+          <a href={artist.href} class="flex items-center gap-4 no-underline group">
+            <div class="w-12 h-12 rounded-full overflow-hidden bg-egrem-gray-light shrink-0 border border-egrem-gray/20 group-hover:border-egrem-gold transition-colors">
+              {artist.photo?.url ? (
+                <img
+                  src={artist.photo.url}
+                  alt={artist.name}
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div class="w-full h-full flex items-center justify-center text-egrem-gray text-lg">
+                  <span style="font-family:'Material Symbols Outlined';">person</span>
+                </div>
+              )}
+            </div>
+            <div>
+              <h4 class="font-display font-bold text-sm text-egrem-black group-hover:text-egrem-red transition-colors leading-tight m-0">
+                {artist.name}
+              </h4>
+              {artist.role && (
+                <p class="font-display text-small m-0" style="color: var(--color-text-secondary);">
+                  {artist.role}
+                </p>
+              )}
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}

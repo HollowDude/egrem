@@ -2,18 +2,14 @@
 import type { NhActualidadHero } from '@/lib/nodehive';
 import type { NhEntityMeta } from '@/lib/nodehive';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
-import FilterBar from './FilterBar.astro';
-
 interface Props {
   hero: NhActualidadHero | null;
-  tags: { slug: string; label: string }[];
-  activeTag: string;
   title: string;
   subtitle: string;
   nhEntity?: NhEntityMeta;
 }
 
-const { hero, tags, activeTag, title, subtitle, nhEntity } = Astro.props;
+const { hero, title, subtitle, nhEntity } = Astro.props;
 const heroTitle = hero?.title || title;
 const heroSubtitle = hero?.subtitle || subtitle;
 ---
@@ -57,6 +53,5 @@ const heroSubtitle = hero?.subtitle || subtitle;
         </p>
       )
     }
-    {tags.length > 0 && <FilterBar tags={tags} activeTag={activeTag} />}
   </div>
 </NodeHiveEntity>

@@ -1,0 +1,56 @@
+---
+import type { NhArtist } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  artist: NhArtist;
+  lang?: Lang;
+}
+
+const { artist, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+---
+
+<div class="bg-white border border-egrem-gray/20 rounded-xl overflow-hidden group">
+  <div class="h-1 w-full bg-egrem-gold"></div>
+  <div class="p-6">
+    <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-egrem-gray/20 mx-auto mb-4">
+      {
+        artist.photo?.url ? (
+          <img
+            src={artist.photo.url}
+            alt={artist.photo.alt || artist.name}
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div class="w-full h-full bg-egrem-gray-light flex items-center justify-center">
+            <span class="text-2xl text-egrem-gray" style="font-family:'Material Symbols Outlined';">
+              person
+            </span>
+          </div>
+        )
+      }
+    </div>
+    <div class="text-center mb-4">
+      {
+        artist.role && (
+          <span class="text-[11px] font-bold uppercase tracking-widest text-egrem-gold block mb-1">
+            {artist.role}
+          </span>
+        )
+      }
+      <h3 class="font-display font-bold text-xl text-egrem-black m-0 leading-tight">
+        {artist.name}
+      </h3>
+    </div>
+    <a
+      href={artist.href}
+      class="block w-full text-center border-2 border-egrem-black text-egrem-black py-2.5 rounded-2xl hover:bg-egrem-black hover:text-white transition-colors font-display font-bold text-sm uppercase tracking-wide no-underline"
+    >
+      {tr('actualidad.detail.view_profile')}
+    </a>
+  </div>
+</div>

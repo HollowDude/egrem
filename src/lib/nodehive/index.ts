@@ -27,6 +27,7 @@ export type {
   NhActualidadBundle,
   NhActualidadTag,
   NhActualidadHero,
+  NhArtist,
 } from './entities';
 export {
   fetchNoticias,
@@ -48,7 +49,7 @@ export { getRelatedItems } from './related';
 
 // Utilities
 export { resolveFileUrl } from './parsers';
-export { slugify } from './helpers';
+export { slugify, estimateReadingTime } from './helpers';
 
 // YouTube
 export {

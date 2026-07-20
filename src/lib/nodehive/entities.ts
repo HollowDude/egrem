@@ -89,6 +89,13 @@ export interface NhActualidadTag {
   label: string;
 }
 
+export interface NhArtist extends NhBase {
+  name: string;
+  role?: string;
+  photo: NhMediaImage | null;
+  href: string;
+}
+
 export interface NhActualidadItem extends NhBase {
   nid: number;
   title: string;
@@ -102,6 +109,8 @@ export interface NhActualidadItem extends NhBase {
   image: NhMediaImage | null;
   path: string;
   tags: NhActualidadTag[];
+  relatedArtists?: NhArtist[];
+  relatedEvents?: NhEvento[];
 }
 
 export interface NhActualidadHero extends NhEntityMeta {

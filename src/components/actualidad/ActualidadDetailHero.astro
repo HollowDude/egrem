@@ -2,17 +2,23 @@
 import Badge from '@/components/ui/Badge.astro';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
+import type { NhMediaImage } from '@/lib/nodehive';
+import { estimateReadingTime } from '@/lib/nodehive';
 
 interface Props {
   title: string;
   bundle: string;
   date: string;
   author: string;
+  body?: string;
+  image?: NhMediaImage | null;
+  variant?: 'plain' | 'overlay';
   lang?: Lang;
 }
 
-const { title, bundle, date, author, lang = 'es' } = Astro.props;
+const { title, bundle, date, author, body, image, variant = 'plain', lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
+const readingTime = body ? estimateReadingTime(body) : 0;
 
 function formatDate(d: string): string {
   if (!d) return '';
@@ -26,28 +32,82 @@ function formatDate(d: string): string {
 }
 ---
 
-<section class="mb-8 border-b border-black/10 pb-6">
-  <Badge variant="gold" class="mb-4 inline-block">{tr(`actualidad.badge.${bundle}`)}</Badge>
-  <h1 class="text-h1 text-egrem-black mb-4 leading-tight">{title}</h1>
-  <div
-    class="flex flex-wrap items-center gap-4 text-small"
-    style="color: var(--color-text-secondary);"
-  >
-    <span class="flex items-center gap-1">
-      <span class="text-[16px]" style="font-family:'Material Symbols Outlined';"
-        >calendar_today</span
+{
+  variant === 'overlay' ? (
+    <section
+      class="relative mb-8 rounded-xl overflow-hidden bg-egrem-dark"
+      style="min-height: 400px; max-height: 614px;"
+    >
+      {image?.url ? (
+        <img
+          src={image.url}
+          alt={image.alt}
+          class="w-full h-full absolute inset-0 object-cover"
+          loading="eager"
+          decoding="async"
+        />
+      ) : (
+        <div class="w-full h-full absolute inset-0 bg-egrem-dark" />
+      )}
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+      <div class="relative z-10 flex flex-col justify-end h-full p-6 md:p-10">
+        <Badge variant="gold" class="mb-3 self-start">
+          {tr(`actualidad.badge.${bundle}`)}
+        </Badge>
+        <h1 class="text-h1 text-white mb-3 leading-tight drop-shadow-md">{title}</h1>
+        <div class="flex flex-wrap items-center gap-4 text-small text-white/80">
+          <span class="flex items-center gap-1">
+            <span class="text-[16px]" style="font-family:'Material Symbols Outlined';">
+              calendar_today
+            </span>
+            <span>{formatDate(date)}</span>
+          </span>
+          {author && (
+            <span class="flex items-center gap-1">
+              <span class="text-[16px]" style="font-family:'Material Symbols Outlined';">
+                person
+              </span>
+              <span>{tr('actualidad.by_author').replace('{author}', author)}</span>
+            </span>
+          )}
+          {readingTime > 0 && (
+            <span class="flex items-center gap-1">
+              <span class="text-[16px]" style="font-family:'Material Symbols Outlined';">
+                schedule
+              </span>
+              <span>
+                {tr('actualidad.detail.reading_time').replace('{min}', String(readingTime))}
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section class="mb-8 border-b border-black/10 pb-6">
+      <Badge variant="gold" class="mb-4 inline-block">
+        {tr(`actualidad.badge.${bundle}`)}
+      </Badge>
+      <h1 class="text-h1 text-egrem-black mb-4 leading-tight">{title}</h1>
+      <div
+        class="flex flex-wrap items-center gap-4 text-small"
+        style="color: var(--color-text-secondary);"
       >
-      <span>{formatDate(date)}</span>
-    </span>
-    {
-      author && (
         <span class="flex items-center gap-1">
           <span class="text-[16px]" style="font-family:'Material Symbols Outlined';">
-            person
+            calendar_today
           </span>
-          <span>{tr('actualidad.by_author').replace('{author}', author)}</span>
+          <span>{formatDate(date)}</span>
         </span>
-      )
-    }
-  </div>
-</section>
+        {author && (
+          <span class="flex items-center gap-1">
+            <span class="text-[16px]" style="font-family:'Material Symbols Outlined';">
+              person
+            </span>
+            <span>{tr('actualidad.by_author').replace('{author}', author)}</span>
+          </span>
+        )}
+      </div>
+    </section>
+  )
+}

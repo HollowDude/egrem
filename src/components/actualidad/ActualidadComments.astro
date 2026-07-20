@@ -1,0 +1,174 @@
+---
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  nodeUuid: string;
+  nodeNid: number;
+  isAuthenticated: boolean;
+  lang?: Lang;
+}
+
+const { nodeUuid, nodeNid, isAuthenticated, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+---
+
+<section
+  class="mt-10 bg-white border border-egrem-gray/20 rounded-xl p-6"
+  id="comments-section"
+  data-comments-uuid={nodeUuid}
+  data-comments-nid={nodeNid}
+  data-comments-lang={lang}
+  data-comments-authenticated={String(isAuthenticated)}
+>
+  <h3 class="font-display font-bold text-xl text-egrem-black mb-6 flex items-center gap-2">
+    <span style="font-family:'Material Symbols Outlined';">chat</span>
+    <span data-comments-count>{tr('actualidad.detail.comments_title')}</span>
+  </h3>
+
+  {
+    isAuthenticated ? (
+      <div class="flex gap-3 mb-6">
+        <div class="w-10 h-10 rounded-full bg-egrem-gray-light flex items-center justify-center shrink-0">
+          <span class="text-egrem-gray" style="font-family:'Material Symbols Outlined';">
+            person
+          </span>
+        </div>
+        <div class="flex-1">
+          <textarea
+            class="w-full bg-white border border-egrem-gray/20 rounded-lg p-3 font-display text-body focus:border-egrem-gold focus:ring-1 focus:ring-egrem-gold transition-all resize-none"
+            placeholder={tr('actualidad.detail.comments_placeholder')}
+            rows="3"
+            data-comments-textarea
+          />
+          <div class="flex justify-end mt-2">
+            <button
+              class="bg-egrem-black text-white px-6 py-2 rounded-2xl hover:bg-egrem-red transition-colors font-display font-bold text-sm uppercase tracking-wider cursor-pointer border-none"
+              data-comments-submit
+            >
+              {tr('actualidad.detail.comments_submit')}
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class="mb-6 p-4 bg-egrem-gray-light rounded-lg text-center">
+        <p class="text-egrem-gray text-body m-0">
+          <a href="/login" class="text-egrem-red font-bold no-underline hover:underline">
+            {tr('actualidad.detail.comments_login_required')}
+          </a>
+        </p>
+      </div>
+    )
+  }
+
+  <div class="flex flex-col gap-4" data-comments-list>
+    <!-- populated by client script -->
+  </div>
+</section>
+
+<script>
+  const section = document.getElementById('comments-section');
+  if (!section) throw new Error('missing comments section');
+
+  const uuid = section.dataset.commentsUuid!;
+  const nid = section.dataset.commentsNid!;
+  const lang = section.dataset.commentsLang || 'es';
+  const authenticated = section.dataset.commentsAuthenticated === 'true';
+  const list = section.querySelector('[data-comments-list]')!;
+  const countEl = section.querySelector('[data-comments-count]')!;
+  const textarea = section.querySelector<HTMLTextAreaElement>('[data-comments-textarea]');
+  const submitBtn = section.querySelector<HTMLButtonElement>('[data-comments-submit]');
+
+  async function loadComments() {
+    try {
+      const res = await fetch(`/api/actualidad/comments?node=${uuid}&lang=${lang}`);
+      if (!res.ok) return;
+      const comments = await res.json();
+      renderComments(comments);
+    } catch {
+      // silent
+    }
+  }
+
+  function renderComments(
+    comments: Array<{
+      id: string;
+      author: string;
+      authorInitial: string;
+      body: string;
+      relativeTime: string;
+    }>,
+  ) {
+    countEl.textContent =
+      comments.length > 0
+        ? `${comments.length} ${lang === 'en' ? 'comments' : 'comentarios'}`
+        : lang === 'en'
+          ? 'Comments'
+          : 'Comentarios';
+
+    if (comments.length === 0) {
+      list.innerHTML = `<p class="text-egrem-gray text-small text-center py-4">${
+        lang === 'en' ? 'No comments yet. Be the first!' : 'No hay comentarios aún. ¡Sé el primero!'
+      }</p>`;
+      return;
+    }
+
+    list.innerHTML = comments
+      .map(
+        (c) => `
+      <div class="flex gap-3">
+        <div class="w-10 h-10 rounded-full bg-egrem-gray-light flex items-center justify-center shrink-0 font-bold font-display text-lg text-egrem-red">
+          ${c.authorInitial}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="bg-egrem-gray-light p-3 rounded-xl rounded-tl-none border border-egrem-gray/20">
+            <p class="font-display font-bold text-sm text-egrem-black mb-1">
+              ${c.author}
+              <span class="font-normal text-egrem-gray text-caption"> · ${c.relativeTime}</span>
+            </p>
+            <p class="font-display text-body m-0 text-egrem-black">${c.body}</p>
+          </div>
+          <button class="text-caption font-bold text-egrem-gray hover:text-egrem-red transition-colors mt-1 flex items-center gap-1 bg-transparent border-none cursor-pointer">
+            <span class="text-[14px]" style="font-family:'Material Symbols Outlined';">reply</span>
+            ${lang === 'en' ? 'Reply' : 'Responder'}
+          </button>
+        </div>
+      </div>
+    `,
+      )
+      .join('');
+  }
+
+  loadComments();
+
+  if (authenticated && textarea && submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      const body = textarea.value.trim();
+      if (!body) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = lang === 'en' ? 'Sending...' : 'Enviando...';
+
+      try {
+        const res = await fetch('/api/actualidad/comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nid: parseInt(nid), body }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || 'Error');
+          return;
+        }
+        textarea.value = '';
+        await loadComments();
+      } catch {
+        alert('Error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = lang === 'en' ? 'Publish' : 'Publicar';
+      }
+    });
+  }
+</script>

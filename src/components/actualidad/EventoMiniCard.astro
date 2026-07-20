@@ -1,0 +1,53 @@
+---
+import type { NhEvento } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+
+interface Props {
+  evento: NhEvento;
+  lang?: Lang;
+}
+
+const { evento, lang = 'es' } = Astro.props;
+
+function formatDay(d: string): string {
+  return new Date(d).getDate().toString();
+}
+function formatMonth(d: string): string {
+  return new Date(d)
+    .toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'short' })
+    .replace('.', '');
+}
+---
+
+<a
+  href={evento.href}
+  class="block bg-white border border-egrem-gray/20 rounded-2xl p-4 hover:border-egrem-gold transition-colors group no-underline"
+>
+  <div class="flex gap-4 items-center">
+    <div
+      class="bg-egrem-gray-light text-center px-3 py-2 rounded-lg border border-egrem-gray/20 min-w-[60px]"
+    >
+      <span class="block text-[11px] font-bold uppercase tracking-widest text-egrem-red"
+        >{formatMonth(evento.date)}</span
+      >
+      <span class="block font-display font-bold text-xl text-egrem-black leading-none mt-0.5"
+        >{formatDay(evento.date)}</span
+      >
+    </div>
+    <div class="min-w-0">
+      <h4
+        class="font-display font-bold text-base text-egrem-black m-0 leading-tight group-hover:text-egrem-red transition-colors"
+      >
+        {evento.title}
+      </h4>
+      <p
+        class="text-small m-0 mt-1 flex items-center gap-1"
+        style="color:var(--color-text-secondary);"
+      >
+        <span class="text-[14px]" style="font-family:'Material Symbols Outlined';">location_on</span
+        >
+        <span>{evento.venue}</span>
+      </p>
+    </div>
+  </div>
+</a>

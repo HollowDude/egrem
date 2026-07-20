@@ -8,6 +8,7 @@ import ActionLink from '@/components/ui/ActionLink.astro';
 import YouTubePlayer from '@/components/ui/YouTubePlayer';
 import Paginator from '@/components/actualidad/Paginator.astro';
 import HeroActualidad from '@/components/actualidad/HeroActualidad.astro';
+import FilterBar from '@/components/actualidad/FilterBar.astro';
 import PatrimonioVideoCard from '@/components/actualidad/PatrimonioVideoCard.astro';
 import PatrimonioBoletinItem from '@/components/actualidad/PatrimonioBoletinItem.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
@@ -89,7 +90,7 @@ for (const item of items) {
 }
 const tags = Array.from(allTags.entries()).map(([slug, label]) => ({ slug, label }));
 
-const perPage = { noticias: 4, articulos: 6, blogs: 6 };
+const perPage = { noticias: 4, articulos: 6, blogs: 6, patrimonio: 9 };
 
 function getSectionPage(section: string): number {
   const p = parseInt(Astro.url.searchParams.get(section) ?? '1');
@@ -114,6 +115,7 @@ function sectionTotalPages(items: unknown[], section: string): number {
 const noticiasPageItems = sliceItems(noticias, 'noticias');
 const articulosPageItems = sliceItems(articulos, 'articulos');
 const blogsPageItems = sliceItems(blogs, 'blogs');
+const patrimonioPageItems = sliceItems(filteredPatrimonioItems, 'patrimonio');
 
 function formatDate(d: string): string {
   if (!d) return '';
@@ -161,12 +163,20 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
   <main id="main-content">
     <HeroActualidad
       hero={hero}
-      tags={tags}
-      activeTag={activeTag}
       title={tr('actualidad.hero.title')}
       subtitle={tr('actualidad.hero.subtitle')}
       nhEntity={entityMeta(hero)}
     />
+
+    {
+      tags.length > 0 && (
+        <section class="section-py !py-6 bg-white border-b border-egrem-gray/20">
+          <div class="container-site">
+            <FilterBar tags={tags} activeTag={activeTag} />
+          </div>
+        </section>
+      )
+    }
 
     {
       error ? (
@@ -190,7 +200,17 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
         {
           filteredItems.length === 0 ? (
             <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-          ) : noticias.length === 0 ? null : (
+          ) : noticias.length === 0 ? (
+            <div class="flex flex-col items-center justify-center py-16 text-center">
+              <span
+                class="text-5xl text-egrem-gray/40 mb-4"
+                style="font-family:'Material Symbols Outlined';"
+              >
+                newspaper
+              </span>
+              <p class="text-egrem-gray text-body">{tr('actualidad.section_empty')}</p>
+            </div>
+          ) : (
             <>
               <div class="grid grid-cols-1 md:[grid-template-columns:3fr_2fr] gap-5 mb-4">
                 {noticiasPageItems[0] && (
@@ -284,6 +304,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
           totalPages={sectionTotalPages(noticias, 'noticias')}
           currentPage={getSectionPage('noticias')}
           activeTag={activeTag}
+          anchor="noticias"
         />
       </div>
     </section>
@@ -300,7 +321,17 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
         {
           filteredItems.length === 0 ? (
             <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-          ) : articulos.length === 0 ? null : (
+          ) : articulos.length === 0 ? (
+            <div class="flex flex-col items-center justify-center py-16 text-center">
+              <span
+                class="text-5xl text-egrem-gray/40 mb-4"
+                style="font-family:'Material Symbols Outlined';"
+              >
+                article
+              </span>
+              <p class="text-egrem-gray text-body">{tr('actualidad.section_empty')}</p>
+            </div>
+          ) : (
             <div
               class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 scroll-smooth"
               style="scrollbar-width:thin;"
@@ -355,6 +386,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
           totalPages={sectionTotalPages(articulos, 'articulos')}
           currentPage={getSectionPage('articulos')}
           activeTag={activeTag}
+          anchor="articulos"
         />
       </div>
     </section>
@@ -371,7 +403,17 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
         {
           filteredItems.length === 0 ? (
             <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-          ) : blogs.length === 0 ? null : (
+          ) : blogs.length === 0 ? (
+            <div class="flex flex-col items-center justify-center py-16 text-center">
+              <span
+                class="text-5xl text-egrem-gray/40 mb-4"
+                style="font-family:'Material Symbols Outlined';"
+              >
+                menu_book
+              </span>
+              <p class="text-egrem-gray text-body">{tr('actualidad.section_empty')}</p>
+            </div>
+          ) : (
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
               {blogsPageItems.map((item) => (
                 <article class="card card--hover-red card--no-zoom group flex flex-col p-6">
@@ -428,6 +470,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
           totalPages={sectionTotalPages(blogs, 'blogs')}
           currentPage={getSectionPage('blogs')}
           activeTag={activeTag}
+          anchor="blogs"
         />
       </div>
     </section>
@@ -590,57 +633,78 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
           <!-- Cards -->
           {
             filteredPatrimonioItems.length > 0 ? (
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {filteredPatrimonioItems.map((item) => (
-                  <article class="card card--hover-red card--no-zoom group flex flex-col">
-                    <a
-                      href={itemHref(item)}
-                      class="block overflow-hidden no-underline shrink-0"
-                      style="height: 11rem;"
-                    >
-                      {item.image?.url ? (
-                        <img
-                          src={item.image.url}
-                          alt={item.image.alt}
-                          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div class="w-full h-full bg-egrem-gray-light" />
-                      )}
-                    </a>
-                    <div class="card-body flex flex-col flex-1">
-                      <span class="badge mb-2 self-start">
-                        {tr(`actualidad.badge.${item.bundle}`)}
-                      </span>
-                      <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
-                        <a href={itemHref(item)} class="text-inherit no-underline">
-                          {item.title}
-                        </a>
-                      </h3>
-                      <p
-                        class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1"
-                        style="color:var(--color-text-secondary);"
+              <>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {patrimonioPageItems.map((item) => (
+                    <article class="card card--hover-red card--no-zoom group flex flex-col">
+                      <a
+                        href={itemHref(item)}
+                        class="block overflow-hidden no-underline shrink-0"
+                        style="height: 11rem;"
                       >
-                        {item.summary}
-                      </p>
-                      <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
-                        <span class="text-[14px]" style="font-family:'Material Symbols Outlined';">
-                          calendar_today
+                        {item.image?.url ? (
+                          <img
+                            src={item.image.url}
+                            alt={item.image.alt}
+                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div class="w-full h-full bg-egrem-gray-light" />
+                        )}
+                      </a>
+                      <div class="card-body flex flex-col flex-1">
+                        <span class="badge mb-2 self-start">
+                          {tr(`actualidad.badge.${item.bundle}`)}
                         </span>
-                        <span>{formatDate(item.date)}</span>
+                        <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
+                          <a href={itemHref(item)} class="text-inherit no-underline">
+                            {item.title}
+                          </a>
+                        </h3>
+                        <p
+                          class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1"
+                          style="color:var(--color-text-secondary);"
+                        >
+                          {item.summary}
+                        </p>
+                        <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
+                          <span
+                            class="text-[14px]"
+                            style="font-family:'Material Symbols Outlined';"
+                          >
+                            calendar_today
+                          </span>
+                          <span>{formatDate(item.date)}</span>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                    </article>
+                  ))}
+                </div>
+                <Paginator
+                  section="patrimonio"
+                  totalPages={sectionTotalPages(filteredPatrimonioItems, 'patrimonio')}
+                  currentPage={getSectionPage('patrimonio')}
+                  activeTag={activeTag}
+                  searchTerm={searchTerm}
+                  anchor="archivo-patrimonial"
+                />
+              </>
             ) : patrimonioItems.length > 0 ? (
               <p class="text-egrem-gray text-body text-center py-8">
                 No se encontraron resultados para "{searchTerm}"
               </p>
             ) : (
-              <p class="text-egrem-gray text-body">{tr('actualidad.no_results')}</p>
+              <div class="flex flex-col items-center justify-center py-16 text-center">
+                <span
+                  class="text-5xl text-egrem-gray/40 mb-4"
+                  style="font-family:'Material Symbols Outlined';"
+                >
+                  archive
+                </span>
+                <p class="text-egrem-gray text-body">{tr('actualidad.section_empty')}</p>
+              </div>
             )
           }
         </div>

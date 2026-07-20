@@ -9,19 +9,23 @@ import {
   fetchActualidadItemByPath,
   fetchActualidadItemPathInLang,
   getRelatedItems,
+  fetchEventos,
 } from '@/lib/nodehive';
-import type { NhActualidadItem } from '@/lib/nodehive';
+import type { NhActualidadItem, NhEvento } from '@/lib/nodehive';
+import { getSession } from '@/lib/auth/session';
 
 const lang = Astro.locals.lang;
 let item: NhActualidadItem | null = null;
 let related: NhActualidadItem[] = [];
 let alternateHref: string | undefined;
 let alternateHrefs: { es?: string; en?: string } | undefined;
+let eventos: NhEvento[] = [];
+let isAuthenticated = false;
 
 try {
   item = await fetchActualidadItemByPath(Astro.url.pathname, lang);
 
-  if (!item || (item.bundle !== 'noticia' && item.bundle !== 'article')) {
+  if (!item || (item.bundle !== 'noticia' && item.bundle !== 'article' && item.bundle !== 'blog')) {
     return Astro.rewrite('/404');
   }
 
@@ -41,6 +45,14 @@ try {
     alternateHrefs.en = `/${lang}${itemPath}`;
     alternateHrefs.es = alternatePath ? `/es${alternatePath}` : undefined;
   }
+
+  // Blog extras
+  if (item.bundle === 'blog') {
+    eventos = await fetchEventos(lang);
+  }
+
+  const session = await getSession(Astro.cookies);
+  isAuthenticated = session !== null;
 } catch (e) {
   console.error('[actualidad/[...slug]] Failed:', e);
   return Astro.rewrite('/404');
@@ -56,6 +68,12 @@ try {
   alternateHrefs={alternateHrefs}
 >
   <main id="main-content">
-    <ActualidadDetail item={item} related={related} lang={lang} />
+    <ActualidadDetail
+      item={item}
+      related={related}
+      eventos={eventos}
+      isAuthenticated={isAuthenticated}
+      lang={lang}
+    />
   </main>
 </BaseLayout>

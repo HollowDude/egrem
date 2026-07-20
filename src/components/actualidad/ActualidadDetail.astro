@@ -1,5 +1,5 @@
 ---
-import type { NhActualidadItem } from '@/lib/nodehive';
+import type { NhActualidadItem, NhEvento } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import Breadcrumb from '@/components/ui/Breadcrumb.astro';
@@ -7,16 +7,24 @@ import ActualidadDetailHero from '@/components/actualidad/ActualidadDetailHero.a
 import ActualidadBody from '@/components/actualidad/ActualidadBody.astro';
 import ActualidadShareBar from '@/components/actualidad/ActualidadShareBar.astro';
 import ActualidadRelatedList from '@/components/actualidad/ActualidadRelatedList.astro';
+import ActualidadArtistasRelacionados from '@/components/actualidad/ActualidadArtistasRelacionados.astro';
+import ActualidadEventosRelacionados from '@/components/actualidad/ActualidadEventosRelacionados.astro';
+import ActualidadFeaturedArtistCard from '@/components/actualidad/ActualidadFeaturedArtistCard.astro';
+import EventoMiniCard from '@/components/actualidad/EventoMiniCard.astro';
+import ActualidadComments from '@/components/actualidad/ActualidadComments.astro';
 import { useTranslations } from '@/i18n/translations';
 
 interface Props {
   item: NhActualidadItem;
   related: NhActualidadItem[];
+  eventos?: NhEvento[];
+  isAuthenticated?: boolean;
   lang: Lang;
 }
 
-const { item, related, lang } = Astro.props;
+const { item, related, eventos = [], isAuthenticated = false, lang } = Astro.props;
 const tr = useTranslations(lang);
+const isBlog = item.bundle === 'blog';
 
 function bundleLabel(bundle: string): string {
   const labels: Record<string, string> = {
@@ -35,7 +43,7 @@ function bundleLabel(bundle: string): string {
       { label: tr('nav.news'), href: '/actualidad' },
       {
         label: bundleLabel(item.bundle),
-        href: `/actualidad#${item.bundle === 'article' ? 'articulos' : 'noticias'}`,
+        href: `/actualidad#${item.bundle === 'article' ? 'articulos' : item.bundle === 'blog' ? 'blogs' : 'noticias'}`,
       },
       { label: item.title },
     ]}
@@ -48,11 +56,14 @@ function bundleLabel(bundle: string): string {
         bundle={item.bundle}
         date={item.date}
         author={item.author}
+        body={item.body}
+        image={item.image}
+        variant={isBlog ? 'overlay' : 'plain'}
         lang={lang}
       />
 
       {
-        item.image?.url && (
+        !isBlog && item.image?.url && (
           <div class="card card--no-zoom overflow-hidden mb-8">
             <img
               src={item.image.url}
@@ -75,15 +86,54 @@ function bundleLabel(bundle: string): string {
         editLabel="Editar contenido"
         editField="body"
       >
-        <ActualidadBody body={item.body} tags={item.tags} />
+        <ActualidadBody body={item.body} tags={item.tags} dropCap={isBlog} hashtagStyle={isBlog} />
       </NodeHiveEntity>
+
+      {
+        isBlog && (
+          <ActualidadComments
+            nodeUuid={item.id}
+            nodeNid={item.nid}
+            isAuthenticated={isAuthenticated}
+            lang={lang}
+          />
+        )
+      }
 
       <div class="mt-10 pt-6 border-t border-black/10">
         <ActualidadShareBar url={Astro.url.href} title={item.title} lang={lang} />
       </div>
     </article>
 
-    <aside class="lg:col-span-4">
+    <aside class="lg:col-span-4 flex flex-col gap-6">
+      {
+        isBlog && item.relatedArtists && item.relatedArtists.length > 0 && (
+          <ActualidadFeaturedArtistCard artist={item.relatedArtists[0]} lang={lang} />
+        )
+      }
+      {
+        !isBlog && (
+          <ActualidadArtistasRelacionados artists={item.relatedArtists ?? []} lang={lang} />
+        )
+      }
+      <ActualidadEventosRelacionados events={item.relatedEvents ?? []} lang={lang} />
+      {
+        isBlog && eventos.length > 0 && (
+          <div>
+            <h3 class="font-display font-bold text-lg text-egrem-black mb-4 flex items-center gap-2">
+              <span class="text-egrem-red" style="font-family:'Material Symbols Outlined';">
+                event
+              </span>
+              {tr('actualidad.detail.related_events_title')}
+            </h3>
+            <div class="flex flex-col gap-3">
+              {eventos.map((ev) => (
+                <EventoMiniCard evento={ev} lang={lang} />
+              ))}
+            </div>
+          </div>
+        )
+      }
       <ActualidadRelatedList items={related} lang={lang} />
     </aside>
   </div>

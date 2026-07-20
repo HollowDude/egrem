@@ -20,6 +20,12 @@ export function resolveRelIds(rel: JsonApiRelationship | undefined): JsonApiReso
   return Array.isArray(rel.data) ? rel.data : [rel.data];
 }
 
+export function estimateReadingTime(body: string): number {
+  const text = body.replace(/<[^>]*>/g, '');
+  const words = text.trim().split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / 200));
+}
+
 export function slugify(name: string): string {
   return name
     .trim()

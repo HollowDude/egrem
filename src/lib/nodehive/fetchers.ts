@@ -19,6 +19,7 @@ import type {
 } from './entities';
 import { resolveVideoLink } from './youtube';
 import { resolveSpotifyLink } from './spotify';
+import { jsonApiFetch } from './client';
 
 /* ─── Noticias ─────────────────────────────────────────────────── */
 
@@ -61,11 +62,41 @@ export async function fetchLanzamientos(albumLinks: NhAlbumLink[]): Promise<NhAl
 
 /* ─── Eventos ──────────────────────────────────────────────────── */
 
-// TODO(nodehive): implementar fetch real cuando exista endpoint
-//   node/evento?include=&sort=field_date&page[limit]=3
-export async function fetchEventos(_lang = 'es'): Promise<NhEvento[]> {
-  console.warn('[NodeHive] fetchEventos: pendiente de implementar endpoint');
-  return [];
+async function fetchEventosFromDrupal(lang = 'es'): Promise<NhEvento[]> {
+  try {
+    const res = await jsonApiFetch<Record<string, unknown>>(
+      'node/evento?sort=field_fecha&page[limit]=5',
+      lang,
+    );
+    const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
+
+    return data.map((resource) => {
+      const a = resource.attributes as Record<string, unknown>;
+      const path = a.path as { alias?: string } | undefined;
+      const fieldFecha = a.field_fecha as string | undefined;
+      const fieldHora = a.field_hora as string | undefined;
+      const fieldLugar = a.field_lugar as string | undefined;
+      return {
+        id: resource.id,
+        title: (a.title as string) ?? '',
+        venue: (fieldLugar as string) ?? '',
+        date: fieldFecha ?? (a.created as string) ?? '',
+        time: fieldHora ?? '',
+        href: path?.alias ?? `/evento/${a.drupal_internal__nid}`,
+      } satisfies NhEvento;
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('404')) {
+      console.debug('[NodeHive] fetchEventos: endpoint node/evento not available on Drupal');
+    } else {
+      console.warn('[NodeHive] fetchEventos: fallback to empty —', e);
+    }
+    return [];
+  }
+}
+
+export async function fetchEventos(lang = 'es'): Promise<NhEvento[]> {
+  return fetchEventosFromDrupal(lang);
 }
 
 /* ─── Producciones ─────────────────────────────────────────────── */

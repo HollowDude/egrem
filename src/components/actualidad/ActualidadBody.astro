@@ -6,9 +6,11 @@ import { resolveInlineImages } from '@/lib/nodehive';
 interface Props {
   body: string;
   tags: NhActualidadTag[];
+  dropCap?: boolean;
+  hashtagStyle?: boolean;
 }
 
-const { body, tags } = Astro.props;
+const { body, tags, dropCap = false, hashtagStyle = false } = Astro.props;
 
 const resolvedBody = resolveInlineImages(
   body,
@@ -16,16 +18,23 @@ const resolvedBody = resolveInlineImages(
 );
 ---
 
-<div class="egrem-richtext text-body leading-relaxed" style="color: var(--color-egrem-black);">
+<div
+  class:list={['egrem-richtext text-body leading-relaxed', dropCap && 'egrem-dropcap']}
+  style="color: var(--color-egrem-black);"
+>
   {resolvedBody ? <Fragment set:html={resolvedBody} /> : <p class="text-egrem-gray">—</p>}
 </div>
 
 {
   tags.length > 0 && (
     <div class="flex flex-wrap gap-2 mt-10 pt-6 border-t border-black/10">
-      {tags.map((tag) => (
-        <Badge variant="outline">{tag.label}</Badge>
-      ))}
+      {tags.map((tag) =>
+        hashtagStyle ? (
+          <Badge variant="outline">{'#' + tag.label}</Badge>
+        ) : (
+          <Badge variant="outline">{tag.label}</Badge>
+        ),
+      )}
     </div>
   )
 }
@@ -61,6 +70,23 @@ const resolvedBody = resolveInlineImages(
     font-style: italic;
     color: var(--color-egrem-black);
     opacity: 0.85;
+  }
+
+  .egrem-richtext blockquote footer {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    font-style: normal;
+    color: var(--color-egrem-gray);
+  }
+
+  .egrem-dropcap > p:first-of-type::first-letter {
+    font-size: 3.5em;
+    font-weight: 700;
+    float: left;
+    line-height: 0.8;
+    padding-right: 0.5rem;
+    color: var(--color-egrem-red);
+    font-family: var(--font-display);
   }
 
   .egrem-richtext a {

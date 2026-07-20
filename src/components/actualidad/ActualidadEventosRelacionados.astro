@@ -1,0 +1,96 @@
+---
+import type { NhEvento } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+import type { Lang } from '@/i18n';
+
+interface Props {
+  events: NhEvento[];
+  lang?: Lang;
+}
+
+const { events, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+
+const MONTHS_ES = [
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
+];
+const MONTHS_EN = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+function formatMonth(d: string): string {
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return '';
+  const months = lang === 'en' ? MONTHS_EN : MONTHS_ES;
+  return months[dateObj.getMonth()] ?? '';
+}
+
+function formatDay(d: string): string {
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return '';
+  return String(dateObj.getDate());
+}
+---
+
+{
+  events.length > 0 && (
+    <div class="card card--no-zoom p-6">
+      <h3 class="font-display font-bold text-xl text-egrem-black mb-4 border-b border-black/10 pb-3 uppercase tracking-wider">
+        {tr('actualidad.detail.related_events_title')}
+      </h3>
+      <div class="flex flex-col gap-4">
+        {events.slice(0, 5).map((event) => (
+          <a
+            href={event.href}
+            class="flex gap-3 no-underline group hover:bg-egrem-gray-light/50 p-2 -mx-2 rounded-lg transition-colors"
+          >
+            <div class="flex flex-col items-center justify-center bg-egrem-gray-light p-2 rounded min-w-[56px] border border-egrem-gray/20 group-hover:border-egrem-gold transition-colors">
+              <span class="font-display font-bold text-xs uppercase text-egrem-red leading-none">
+                {formatMonth(event.date)}
+              </span>
+              <span class="font-display font-bold text-xl text-egrem-black leading-none mt-1">
+                {formatDay(event.date)}
+              </span>
+            </div>
+            <div class="flex flex-col justify-center min-w-0">
+              <h4 class="font-display font-bold text-sm text-egrem-black group-hover:text-egrem-red transition-colors line-clamp-2 leading-tight m-0">
+                {event.title}
+              </h4>
+              <p
+                class="font-display text-small m-0 flex items-center gap-1 mt-0.5"
+                style="color: var(--color-text-secondary);"
+              >
+                <span style="font-family:'Material Symbols Outlined'; font-size:14px;">
+                  location_on
+                </span>
+                {event.venue}
+              </p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
