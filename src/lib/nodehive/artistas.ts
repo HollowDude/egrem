@@ -1,9 +1,11 @@
-import type { JsonApiResource, JsonApiRelationship, JsonApiResourceIdentifier } from './client';
+import type { JsonApiResource, JsonApiRelationship } from './client';
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds } from './helpers';
 import { parseMediaImage, resolveFileUrl } from './parsers';
 import type { NhMediaImage } from './parsers';
-import type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia } from './entities';
+import { resolveVideoLink } from './youtube';
+import type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia, NhArtistaVideo } from './entities';
+import { parseAlbumResource } from './musica';
 
 function parseAgencia(
   resource: { relationships?: Record<string, JsonApiRelationship> },
@@ -94,14 +96,19 @@ export async function fetchArtistaByPath(
       };
     }).filter((s) => s.url);
 
-    const videos: { id: string; url: string }[] = resolveRelIds(
-      (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_videos_artista,
-    ).map((ref) => {
-      const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
-      const pa = p?.attributes as Record<string, unknown> | undefined;
-      const urlField = pa?.field_url_video as { uri?: string } | undefined;
-      return { id: ref.id, url: urlField?.uri ?? '' };
-    }).filter((v) => v.url);
+    const videos: NhArtistaVideo[] = (await Promise.all(
+      resolveRelIds(
+        (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_videos_artista,
+      ).map(async (ref) => {
+        const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
+        const pa = p?.attributes as Record<string, unknown> | undefined;
+        const urlField = pa?.field_url_video as { uri?: string } | undefined;
+        const url = urlField?.uri ?? '';
+        if (!url) return null;
+        const resolved = await resolveVideoLink('', url);
+        return { id: ref.id, url, youtubeId: resolved.youtubeId, title: resolved.title, thumbnail: resolved.thumbnail?.url ?? null };
+      }),
+    )).filter((v): v is NhArtistaVideo => v !== null);
 
     return {
       id: resource.id,
@@ -151,14 +158,19 @@ export async function fetchArtistaByNid(
       };
     }).filter((s) => s.url);
 
-    const videos: { id: string; url: string }[] = resolveRelIds(
-      (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_videos_artista,
-    ).map((ref) => {
-      const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
-      const pa = p?.attributes as Record<string, unknown> | undefined;
-      const urlField = pa?.field_url_video as { uri?: string } | undefined;
-      return { id: ref.id, url: urlField?.uri ?? '' };
-    }).filter((v) => v.url);
+    const videos: NhArtistaVideo[] = (await Promise.all(
+      resolveRelIds(
+        (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_videos_artista,
+      ).map(async (ref) => {
+        const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
+        const pa = p?.attributes as Record<string, unknown> | undefined;
+        const urlField = pa?.field_url_video as { uri?: string } | undefined;
+        const url = urlField?.uri ?? '';
+        if (!url) return null;
+        const resolved = await resolveVideoLink('', url);
+        return { id: ref.id, url, youtubeId: resolved.youtubeId, title: resolved.title, thumbnail: resolved.thumbnail?.url ?? null };
+      }),
+    )).filter((v): v is NhArtistaVideo => v !== null);
 
     return {
       id: resource.id,
@@ -178,20 +190,6 @@ export async function fetchArtistaByNid(
   }
 }
 
-function parseAlbumCover(
-  resource: { relationships?: Record<string, JsonApiRelationship> },
-  included: JsonApiResource[] | undefined,
-): NhMediaImage | null {
-  const rel = resource.relationships?.field_imagen_portada;
-  const ids = resolveRelIds(rel);
-  if (ids.length === 0) return null;
-  const mediaRes = findIncluded(included, 'media--image', ids[0].id);
-  if (!mediaRes) return null;
-  const img = parseMediaImage(mediaRes, included);
-  if (img?.url) img.url = resolveFileUrl(img.url);
-  return img;
-}
-
 export async function fetchAlbumsByArtist(
   artistaNid: number,
   lang = 'es',
@@ -202,52 +200,7 @@ export async function fetchAlbumsByArtist(
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
-    const included = res.included ?? [];
-
-    return data.map((resource) => {
-      const a = resource.attributes as Record<string, unknown>;
-      const rels = resource.relationships as Record<string, JsonApiRelationship> | undefined;
-
-      const tracks: string[] = resolveRelIds(rels?.field_track_list).map((ref) => {
-        const p = findIncluded(included, 'paragraph--album_tracks', ref.id);
-        return (p?.attributes as Record<string, unknown>)?.field_track_title as string ?? '';
-      }).filter(Boolean);
-
-      const externalApps: { title: string; url: string }[] = resolveRelIds(rels?.field_external_apps).map((ref) => {
-        const p = findIncluded(included, 'paragraph--external_apps', ref.id);
-        const pa = p?.attributes as Record<string, unknown> | undefined;
-        const link = pa?.field_app_link as { uri?: string; title?: string } | undefined;
-        return {
-          title: (pa?.field_titulo as string) ?? '',
-          url: link?.uri ?? '',
-        };
-      }).filter((e) => e.url);
-
-      const selloRel = rels?.field_sello?.data as JsonApiResourceIdentifier | undefined;
-      let sello: { name: string; tid: number } | undefined;
-      if (selloRel) {
-        const term = findIncluded(included, 'taxonomy_term--sello_discografico', selloRel.id);
-        if (term) {
-          const ta = term.attributes as Record<string, unknown>;
-          sello = { name: (ta.name as string) ?? '', tid: (ta.drupal_internal__tid as number) ?? 0 };
-        }
-      }
-
-      const bodyRel = a.body as { value?: string } | undefined;
-
-      return {
-        id: resource.id,
-        nid: (a.drupal_internal__nid as number) ?? 0,
-        title: (a.title as string) ?? '',
-        year: (a.field_year as number | null) ?? null,
-        albumNumber: (a.field_album_number as number | null) ?? null,
-        body: bodyRel?.value ?? '',
-        cover: parseAlbumCover(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
-        sello: sello && sello.name ? sello : undefined,
-        tracks,
-        externalApps,
-      };
-    });
+    return data.map((resource) => parseAlbumResource(resource, res.included ?? []));
   } catch (e) {
     console.warn('[NodeHive] fetchAlbumsByArtist failed:', e);
     return [];

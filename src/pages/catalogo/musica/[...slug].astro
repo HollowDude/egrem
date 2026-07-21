@@ -1,0 +1,210 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Breadcrumb from '@/components/ui/Breadcrumb.astro';
+import Button from '@/components/ui/Button.astro';
+import SpotifyPlayer from '@/components/ui/SpotifyPlayer';
+import { fetchAlbumByPath, fetchAlbumByNid } from '@/lib/nodehive';
+import type { NhAlbumDiscografia } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+import { extractSpotifyId } from '@/lib/nodehive/spotify';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+let album: NhAlbumDiscografia | null = null;
+
+try {
+  const slug = Astro.url.pathname.replace(/^\/?(?:es\/|en\/)?catalogo\/musica\//, '').replace(/\/$/, '');
+  const isNumeric = /^\d+$/.test(slug);
+
+  if (isNumeric) {
+    album = await fetchAlbumByNid(parseInt(slug), lang);
+  } else {
+    album = await fetchAlbumByPath(Astro.url.pathname, lang);
+    if (!album && /^\d+$/.test(slug)) {
+      album = await fetchAlbumByNid(parseInt(slug), lang);
+    }
+  }
+
+  if (!album) {
+    return Astro.rewrite('/404');
+  }
+} catch (e) {
+  console.error('[catalogo/musica/[...slug]] Failed:', e);
+  return Astro.rewrite('/404');
+}
+
+const pageTitle = `${album.title} | EGREM`;
+
+const spotifyApp = album.externalApps.find((a) => {
+  const id = extractSpotifyId(a.url);
+  return id !== null;
+});
+const spotifyEmbedUrl = spotifyApp?.url ? spotifyApp.url : null;
+
+const otherApps = album.externalApps.filter((a) => a !== spotifyApp);
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={album.title}
+  ogImage={album.cover?.url}
+  canonical={Astro.url.href}
+>
+  <main id="main-content" class="container-site py-8 md:py-12">
+    <Breadcrumb
+      items={[
+        { label: 'EGREM', href: '/' },
+        { label: tr('musica.hero.title'), href: '/catalogo/musica' },
+        { label: album.title },
+      ]}
+    />
+
+    <div class="bg-egrem-gray-light border border-egrem-gold/30 rounded-xl p-4 md:p-6 flex items-center gap-3 md:gap-4 mt-6 mb-8">
+      <span class="text-egrem-gold text-2xl" style="font-family: 'Material Symbols Outlined';">schedule</span>
+      <div>
+        <p class="font-display font-bold text-body text-egrem-black m-0">{tr('musica.detail.availability_title')}</p>
+        <p class="font-display text-small text-egrem-gray m-0">{tr('musica.detail.availability_desc')}</p>
+      </div>
+    </div>
+
+    <section class="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+      <div class="md:col-span-5 bg-white p-2 rounded-xl border border-egrem-gray/20 shadow-sm">
+        {album.cover?.url ? (
+          <img
+            src={album.cover.url}
+            alt={album.cover.alt || album.title}
+            class="w-full h-auto aspect-square object-cover rounded-lg"
+            loading="eager"
+            decoding="async"
+          />
+        ) : (
+          <div class="w-full aspect-square flex items-center justify-center rounded-lg bg-egrem-gray-light">
+            <span class="text-6xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">album</span>
+          </div>
+        )}
+      </div>
+
+      <div class="md:col-span-7 flex flex-col gap-4 md:gap-5">
+        <span class="inline-block bg-egrem-red/10 text-egrem-red font-display font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit">
+          {tr('musica.detail.badge_soon')}
+        </span>
+
+        <h1 class="text-h2 md:text-[clamp(2rem,5vw,3.5rem)] font-display font-bold text-egrem-black leading-tight m-0">{album.title}</h1>
+
+        {album.artistName && (
+          <h2 class="text-h4 text-egrem-gold m-0">{album.artistName}</h2>
+        )}
+
+        <div class="flex flex-wrap gap-4 md:gap-6 font-display text-small text-egrem-gray border-y border-egrem-gray/20 py-4">
+          {album.year && (
+            <span class="flex items-center gap-1.5">
+              <span class="text-egrem-red text-lg" style="font-family: 'Material Symbols Outlined';">calendar_today</span>
+              {album.year}
+            </span>
+          )}
+          {album.sello && (
+            <span class="flex items-center gap-1.5">
+              <span class="text-egrem-red text-lg" style="font-family: 'Material Symbols Outlined';">business</span>
+              {album.sello.name}
+            </span>
+          )}
+        </div>
+
+        {album.body && (
+          <div
+            class="font-display text-body leading-relaxed text-egrem-gray [&_p]:mb-3 [&_p:last-child]:mb-0"
+            set:html={album.body}
+          />
+        )}
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          {spotifyEmbedUrl && (
+            <button
+              data-spotify-embed={spotifyEmbedUrl}
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red-dark hover:scale-105 active:scale-[0.97] transition-all duration-200"
+            >
+              <span style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1; font-size: 18px;">play_arrow</span>
+              {tr('musica.detail.listen')}
+            </button>
+          )}
+
+          <span class="inline-flex items-center gap-2 px-5 py-2.5 border border-egrem-gray/30 text-egrem-gray/50 font-display font-bold text-[11px] uppercase tracking-wider rounded-xl cursor-not-allowed">
+            <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">shopping_bag</span>
+            {tr('musica.detail.visit_store')}
+          </span>
+
+          {otherApps.map((app) => {
+            const isSpotify = extractSpotifyId(app.url) !== null;
+            return (
+              <button
+                {...(isSpotify ? { 'data-spotify-embed': app.url } : {})}
+                class="inline-flex items-center gap-2 px-5 py-2.5 border border-egrem-red text-egrem-red font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red hover:text-white hover:scale-105 active:scale-[0.97] transition-all duration-200"
+                {...(!isSpotify ? { onclick: `window.open('${app.url}', '_blank')` } : {})}
+              >
+                <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">{isSpotify ? 'podcasts' : 'music_note'}</span>
+                {app.title}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12 md:mt-16">
+      <div class="lg:col-span-2">
+        <h3 class="text-h4 text-egrem-black mb-5 border-b-2 border-egrem-red pb-2 inline-block">{tr('musica.detail.tracklist_title')}</h3>
+        {album.tracks.length > 0 ? (
+          <div class="bg-white border border-egrem-gray/20 rounded-xl overflow-hidden">
+            <ul class="divide-y divide-egrem-gray/10">
+              {album.tracks.map((track, idx) => (
+                <li class="flex items-center gap-4 px-5 py-3.5 group hover:bg-egrem-gray-light transition-colors">
+                  <span class="font-display font-bold text-[11px] text-egrem-gray w-6 text-center">{String(idx + 1).padStart(2, '0')}</span>
+                  <span class="font-display font-semibold text-[0.95rem] text-egrem-black">{track}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p class="font-display text-body text-egrem-gray">{tr('musica.detail.tracklist_title')} —</p>
+        )}
+      </div>
+
+      <div class="flex flex-col gap-6">
+        {album.sello && (
+          <div>
+            <h3 class="text-h4 text-egrem-black mb-4 border-b-2 border-egrem-gold pb-2 inline-block">{tr('musica.detail.credits_title')}</h3>
+            <div class="bg-egrem-gray-light p-4 md:p-5 rounded-xl space-y-3">
+              <div class="flex justify-between border-b border-egrem-gray/20 pb-2">
+                <span class="font-display font-bold text-[11px] text-egrem-gray uppercase tracking-wider">{tr('musica.detail.sello')}</span>
+                <span class="font-display font-semibold text-small text-egrem-black">{album.sello.name}</span>
+              </div>
+              {album.artistName && (
+                <div class="flex justify-between border-b border-egrem-gray/20 pb-2">
+                  <span class="font-display font-bold text-[11px] text-egrem-gray uppercase tracking-wider">{tr('musica.detail.artist')}</span>
+                  <span class="font-display font-semibold text-small text-egrem-black">{album.artistName}</span>
+                </div>
+              )}
+              {album.year && (
+                <div class="flex justify-between">
+                  <span class="font-display font-bold text-[11px] text-egrem-gray uppercase tracking-wider">{tr('musica.detail.year')}</span>
+                  <span class="font-display font-semibold text-small text-egrem-black">{album.year}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <div class="mt-12 text-center">
+      <Button variant="ghost" size="md" href="/catalogo/musica">
+        {tr('musica.detail.back')}
+      </Button>
+    </div>
+  </main>
+</BaseLayout>
+
+<SpotifyPlayer client:load />

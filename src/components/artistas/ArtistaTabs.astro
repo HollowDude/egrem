@@ -12,11 +12,14 @@ interface Props {
 const { tabs } = Astro.props;
 ---
 
-<nav class="flex border-b border-egrem-gray/20 mb-8 overflow-x-auto" aria-label="Artist tabs">
+<nav class="flex border-b border-egrem-gray/20 mb-8 overflow-x-auto" role="tablist" aria-label="Artist tabs">
   {tabs.map((tab) => (
     <button
       type="button"
+      role="tab"
       data-artista-tab={tab.id}
+      aria-selected={tab.id === tabs[0].id}
+      aria-controls={`panel-${tab.id}`}
       class="flex items-center gap-2 px-6 py-4 font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-b-2 border-transparent hover:text-egrem-red hover:border-egrem-red cursor-pointer bg-transparent whitespace-nowrap text-egrem-gray data-[active=true]:text-egrem-red data-[active=true]:border-egrem-red"
       data-active={tab.id === tabs[0].id}
     >
@@ -33,7 +36,11 @@ const { tabs } = Astro.props;
   const panels = document.querySelectorAll<HTMLElement>('[data-artista-tab-content]');
 
   function activateTab(id: string) {
-    tabs.forEach((btn) => btn.dataset.active = btn.dataset.artistaTab === id ? 'true' : 'false');
+    tabs.forEach((btn) => {
+      const isActive = btn.dataset.artistaTab === id;
+      btn.dataset.active = isActive ? 'true' : 'false';
+      btn.ariaSelected = String(isActive);
+    });
     panels.forEach((panel) => {
       panel.hidden = panel.dataset.artistaTabContent !== id;
     });

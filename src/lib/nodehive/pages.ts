@@ -1,6 +1,6 @@
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds } from './helpers';
-import { parseButton, parseMediaImage } from './parsers';
+import { parseButton, parseMediaImage, resolveFileUrl } from './parsers';
 import type { NhButton, NhMediaImage, NhEntityMeta } from './parsers';
 import type { JsonApiResource } from './client';
 import { NODEHIVE_CONFIG } from './config';
@@ -244,4 +244,58 @@ export async function fetchLoginPage(lang = 'es'): Promise<NhLoginPage | null> {
     title: (pageAttrs.title as string) ?? 'Inicio de Sesión',
     right,
   };
+}
+
+interface NhCatalogoHero extends NhEntityMeta {
+  title: string;
+  subtitle: string;
+  photo: NhMediaImage | null;
+}
+
+export async function fetchCatalogoHero(
+  componentBundle: string,
+  pageUUID: string,
+  lang = 'es',
+): Promise<NhCatalogoHero | null> {
+  try {
+    if (!pageUUID) return null;
+
+    const res = await jsonApiFetch(
+      `node/astro_page/${pageUUID}?include=field_components,field_components.field_photo,field_components.field_photo.field_media_image`,
+      lang,
+    );
+
+    const data = res.data as JsonApiResource;
+    const included = res.included;
+    const componentRefs = resolveRelIds(data.relationships?.field_components);
+    const heroRef = componentRefs.find((r) => r.type === `paragraph--${componentBundle}`);
+    if (!heroRef) return null;
+
+    const heroComp = findIncluded(included, `paragraph--${componentBundle}`, heroRef.id);
+    if (!heroComp) return null;
+
+    const attrs = heroComp.attributes as Record<string, unknown>;
+    const photoRefs = resolveRelIds(heroComp.relationships?.field_photo);
+    let photo: NhMediaImage | null = null;
+    if (photoRefs.length) {
+      const mediaRes = findIncluded(included, 'media--image', photoRefs[0].id);
+      if (mediaRes) {
+        photo = parseMediaImage(mediaRes, included);
+        if (photo?.url) photo.url = resolveFileUrl(photo.url);
+      }
+    }
+
+    return {
+      id: heroComp.id,
+      internalId: (attrs.drupal_internal__id as number) ?? 0,
+      parentId: (attrs.parent_id as string) ?? '',
+      bundle: componentBundle,
+      title: (attrs.field_title as string) ?? '',
+      subtitle: (attrs.field_subtitle as string) ?? '',
+      photo,
+    };
+  } catch (e) {
+    console.warn(`[NodeHive] Failed to fetch hero ${componentBundle}:`, e);
+    return null;
+  }
 }

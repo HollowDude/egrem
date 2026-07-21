@@ -5,12 +5,13 @@ const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 ---
 
-<section class="bg-egrem-dark section-py border-b border-egrem-gray/20 text-center relative overflow-hidden">
-  <div class="container-site relative z-10">
-    <h1 class="text-h1 text-white uppercase mb-3">
+<section class="relative h-[320px] overflow-hidden bg-egrem-dark">
+  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+  <div class="absolute bottom-0 left-0 right-0 pb-12 md:pb-16 container-site">
+    <h1 class="text-h1 text-white uppercase mb-4">
       {tr('artistas.hero.title')}
     </h1>
-    <p class="text-body text-egrem-gray max-w-2xl mx-auto mb-6">
+    <p class="font-script text-[24px] text-egrem-gold max-w-2xl">
       {tr('artistas.hero.subtitle')}
     </p>
   </div>

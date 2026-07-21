@@ -8,9 +8,11 @@ interface Props {
 
 const { albums } = Astro.props;
 const tr = useTranslations(Astro.locals.lang);
+
+const decades = [...new Set(albums.map((a) => a.year ? `${Math.floor(a.year / 10) * 10}s` : '').filter(Boolean))].sort();
 ---
 
-<div data-artista-tab-content="discografia">
+<div data-artista-tab-content="discografia" hidden>
   {
     albums.length === 0 ? (
       <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -23,94 +25,94 @@ const tr = useTranslations(Astro.locals.lang);
         <p class="text-egrem-gray text-body">{tr('artistas.detail.discografia.empty')}</p>
       </div>
     ) : (
-      <div class="flex flex-col gap-6">
-        {albums.map((album) => (
-          <article class="card card--no-zoom card--horizontal grid grid-cols-1 md:grid-cols-[200px_1fr] gap-0 overflow-hidden">
-            <div class="aspect-square md:aspect-auto md:h-full bg-egrem-gray-light overflow-hidden">
-              {album.cover?.url ? (
-                <img
-                  src={album.cover.url}
-                  alt={album.cover.alt || album.title}
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <div class="w-full h-full flex items-center justify-center bg-egrem-gray-light">
-                  <span
-                    class="text-4xl text-egrem-gray/40"
-                    style="font-family: 'Material Symbols Outlined';"
-                  >
-                    album
-                  </span>
-                </div>
-              )}
-            </div>
-            <div class="card-body flex flex-col gap-3">
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <h3 class="font-display font-bold text-xl text-egrem-black m-0">
+      <>
+        <div class="flex flex-wrap items-center gap-2 mb-7">
+          <span class="font-display font-bold text-[10px] text-egrem-gray uppercase tracking-wider mr-1">{tr('artistas.detail.discografia.filter_label')}</span>
+          <button
+            class="album-filter-btn px-3 py-1.5 border border-egrem-gray/30 rounded-full font-display font-bold text-[11px] uppercase tracking-wider transition-colors bg-egrem-red text-white border-egrem-red"
+            data-decade="all"
+          >{tr('artistas.detail.discografia.filter_all')}</button>
+          {decades.map((d) => (
+            <button
+              class="album-filter-btn px-3 py-1.5 border border-egrem-gray/30 rounded-full font-display font-bold text-[11px] uppercase tracking-wider text-egrem-gray hover:border-egrem-red transition-colors bg-transparent"
+              data-decade={d}
+            >{d}</button>
+          ))}
+          <span class="ml-auto font-display font-bold text-[10px] text-egrem-gray uppercase tracking-wider">{albums.length} {tr('artistas.detail.discografia.albums_count')}</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-5" id="album-grid">
+          {albums.map((album) => {
+            const decade = album.year ? `${Math.floor(album.year / 10) * 10}s` : 'all';
+            return (
+              <div class="album-card group cursor-pointer" data-decade={decade}>
+                <a href={album.href}>
+                  <div class="relative aspect-square bg-egrem-gray-light overflow-hidden border border-egrem-gray/20 group-hover:border-egrem-gold transition-all rounded-lg mb-3">
+                    {album.cover?.url ? (
+                      <img
+                        src={album.cover.url}
+                        alt={album.cover.alt || album.title}
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div class="w-full h-full flex items-center justify-center">
+                        <span
+                          class="text-4xl text-egrem-gray/40"
+                          style="font-family: 'Material Symbols Outlined';"
+                        >
+                          album
+                        </span>
+                      </div>
+                    )}
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                      <span
+                        class="text-white text-5xl opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"
+                        style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;"
+                      >
+                        play_circle
+                      </span>
+                    </div>
+                    {album.year && (
+                      <span class="absolute top-2 right-2 bg-black/60 text-white font-display font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        {album.year}
+                      </span>
+                    )}
+                  </div>
+                </a>
+                <h4 class="font-display font-bold text-[16px] uppercase text-egrem-black group-hover:text-egrem-red transition-colors leading-tight mb-0.5">
+                  <a href={album.href} class="text-inherit no-underline">
                     {album.title}
-                  </h3>
-                  {album.year && (
-                    <span class="text-egrem-gray text-small">{album.year}</span>
-                  )}
-                </div>
-                {album.albumNumber && (
-                  <span class="badge whitespace-nowrap shrink-0">
-                    {album.albumNumber === 1 ? 'Álbum' : `Vol. ${album.albumNumber}`}
-                  </span>
+                  </a>
+                </h4>
+                {album.sello && (
+                  <p class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-wider mb-2">
+                    {album.sello.name}{album.year ? ` • ${album.year}` : ''}
+                  </p>
                 )}
               </div>
-
-              {album.sello && (
-                <p class="text-egrem-gray text-small m-0">
-                  {album.sello.name}
-                </p>
-              )}
-
-              {album.body && (
-                <div
-                  class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3"
-                  style="color: var(--color-text-secondary);"
-                  set:html={album.body}
-                />
-              )}
-
-              {album.tracks.length > 0 && (
-                <div>
-                  <h4 class="font-display font-bold text-sm text-egrem-black uppercase tracking-wider mb-2">
-                    Pistas
-                  </h4>
-                  <ol class="list-decimal list-inside font-display text-[0.9rem] m-0 flex flex-col gap-1">
-                    {album.tracks.map((track) => (
-                      <li style="color: var(--color-text-secondary);">{track}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-
-              {album.externalApps.length > 0 && (
-                <div class="flex flex-wrap gap-2 mt-2">
-                  {album.externalApps.map((app) => (
-                    <a
-                      href={app.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-egrem-gray/30 text-egrem-black hover:bg-egrem-gray-light hover:border-egrem-red hover:text-egrem-red transition-all duration-200 no-underline text-small font-display font-bold"
-                    >
-                      <span style="font-family: 'Material Symbols Outlined'; font-size: 14px;">
-                        open_in_new
-                      </span>
-                      {app.title}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+        <script>
+          const filterBtns = document.querySelectorAll<HTMLButtonElement>('.album-filter-btn');
+          const albumCards = document.querySelectorAll<HTMLElement>('.album-card');
+          filterBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+              filterBtns.forEach((b) => {
+                b.classList.remove('bg-egrem-red', 'text-white', 'border-egrem-red');
+                b.classList.add('bg-transparent', 'text-egrem-gray');
+              });
+              btn.classList.remove('bg-transparent', 'text-egrem-gray');
+              btn.classList.add('bg-egrem-red', 'text-white', 'border-egrem-red');
+              const decade = btn.dataset.decade;
+              albumCards.forEach((card) => {
+                card.style.display = decade === 'all' || card.dataset.decade === decade ? '' : 'none';
+              });
+            });
+          });
+        </script>
+      </>
     )
   }
 </div>

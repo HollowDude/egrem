@@ -1,0 +1,171 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HeroCatalogo from '@/components/catalogo/HeroCatalogo.astro';
+import SpotifyPlayer from '@/components/ui/SpotifyPlayer';
+import { fetchAlbumesCatalogo, fetchCatalogoHero } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+import { NODEHIVE_CONFIG } from '@/lib/nodehive/config';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+const sello = Astro.url.searchParams.get('sello') ?? '';
+const search = Astro.url.searchParams.get('q') ?? '';
+const currentPage = Math.max(1, parseInt(Astro.url.searchParams.get('page') ?? '1'));
+
+const result = await fetchAlbumesCatalogo({ sello: sello || undefined, search: search || undefined, page: currentPage }, lang);
+const { albums, total, totalPages, currentPage: page, availableSellos } = result;
+const showingEnd = Math.min(page * 24, total);
+const showingStart = total > 0 ? (page - 1) * 24 + 1 : 0;
+
+let hero = null;
+try {
+  hero = await fetchCatalogoHero('_component_musica_hero', NODEHIVE_CONFIG.pages.musica, lang);
+} catch (e) {
+  console.error('[catalogo/musica] Failed to fetch hero:', e);
+}
+
+function pageUrl(p: number): string {
+  const params = new URLSearchParams();
+  if (sello) params.set('sello', sello);
+  if (search) params.set('q', search);
+  if (p > 1) params.set('page', String(p));
+  const qs = params.toString();
+  return `/catalogo/musica${qs ? '?' + qs : ''}`;
+}
+
+const paginationStart = Math.max(1, page - 4);
+const paginationEnd = Math.min(totalPages, paginationStart + 9);
+const visiblePages: number[] = [];
+for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
+---
+
+<BaseLayout
+  title={tr('musica.page_title')}
+  description={tr('musica.page_description')}
+>
+  <main id="main-content">
+    <HeroCatalogo
+      title={hero?.title || tr('musica.hero.title')}
+      subtitle={hero?.subtitle || tr('musica.hero.subtitle')}
+      photo={hero?.photo}
+      nhEntity={hero || undefined}
+    />
+
+    <section class="sticky top-16 lg:top-[4.5rem] z-40 bg-white/95 backdrop-blur-sm border-y border-egrem-gray/20">
+      <div class="container-site py-4">
+        <form method="GET" action="/catalogo/musica" class="flex flex-wrap items-end gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('musica.filter.search')}</label>
+            <div class="relative">
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-egrem-gray text-lg" style="font-family: 'Material Symbols Outlined';">search</span>
+              <input
+                name="q"
+                type="text"
+                value={search}
+                placeholder={tr('musica.filter.search_placeholder')}
+                class="w-full md:w-56 bg-transparent border-b border-egrem-gray/30 pl-9 pb-1 font-display text-body text-egrem-black placeholder:text-egrem-gray/50 focus:outline-none focus:border-egrem-gold transition-colors"
+              />
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('musica.filter.sello')}</label>
+            <select
+              name="sello"
+              class="bg-white border border-egrem-gray/30 text-egrem-black rounded-xl focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-3"
+              onchange="this.form.submit()"
+            >
+              <option value="">{tr('musica.filter.all')}</option>
+              {availableSellos.map((s) => (
+                <option value={s.slug} selected={s.slug === sello}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" class="hidden md:inline-flex px-5 py-1.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red-dark transition-colors">
+            Filtrar
+          </button>
+          {(sello || search) && (
+            <a href="/catalogo/musica" class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline">
+              Limpiar
+            </a>
+          )}
+        </form>
+      </div>
+    </section>
+
+    <section class="section-py bg-white">
+      <div class="container-site">
+        {albums.length === 0 ? (
+          <div class="flex flex-col items-center justify-center py-16 text-center">
+            <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">music_off</span>
+            <p class="text-egrem-gray text-body">{tr('musica.no_results')}</p>
+          </div>
+        ) : (
+          <>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-5">
+              {albums.map((album) => (
+                <a href={album.href} class="group no-underline">
+                  <div class="aspect-square relative overflow-hidden rounded-2xl border border-egrem-gray/20 bg-egrem-gray-light group-hover:border-egrem-gold transition-all duration-300 mb-3">
+                    {album.cover?.url ? (
+                      <img
+                        src={album.cover.url}
+                        alt={album.cover.alt || album.title}
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div class="w-full h-full flex items-center justify-center">
+                        <span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">album</span>
+                      </div>
+                    )}
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                      <span class="text-white text-5xl opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_circle</span>
+                    </div>
+                  </div>
+                  {album.artistName && (
+                    <p class="font-display font-bold text-[11px] text-egrem-gold uppercase tracking-widest mb-0.5">{album.artistName}</p>
+                  )}
+                  <h3 class="font-display font-bold text-[16px] text-egrem-black group-hover:text-egrem-red transition-colors leading-tight mb-0.5">{album.title}</h3>
+                  <p class="font-display font-bold text-[11px] text-egrem-gray uppercase tracking-wider">
+                    {album.year ? `${album.year}` : ''}
+                  </p>
+                </a>
+              ))}
+            </div>
+
+            <div class="mt-12 flex flex-col items-center gap-4">
+              <p class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
+                Mostrando {showingStart}–{showingEnd} de {total} títulos
+              </p>
+              {totalPages > 1 && (
+                <nav class="flex items-center gap-2">
+                  {page > 1 && (
+                    <a href={pageUrl(page - 1)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline" aria-label={tr('musica.pagination.prev')}>
+                      <span style="font-family: 'Material Symbols Outlined';">chevron_left</span>
+                    </a>
+                  )}
+                  {visiblePages.map((p) => (
+                    <a
+                      href={pageUrl(p)}
+                      class:list={['w-10 h-10 flex items-center justify-center rounded-xl no-underline font-bold', p === page ? 'bg-egrem-red text-white' : 'border border-egrem-gray/30 text-egrem-black hover:bg-egrem-gray-light']}
+                    >{p}</a>
+                  ))}
+                  {page < totalPages && (
+                    <a href={pageUrl(page + 1)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline" aria-label={tr('musica.pagination.next')}>
+                      <span style="font-family: 'Material Symbols Outlined';">chevron_right</span>
+                    </a>
+                  )}
+                </nav>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<SpotifyPlayer client:load />

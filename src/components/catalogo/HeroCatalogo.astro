@@ -1,0 +1,48 @@
+---
+import type { NhMediaImage, NhEntityMeta } from '@/lib/nodehive';
+import { resolveFileUrl } from '@/lib/nodehive';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+
+interface Props {
+  title: string;
+  subtitle: string;
+  photo?: NhMediaImage | null;
+  nhEntity?: NhEntityMeta;
+}
+
+const { title, subtitle, photo, nhEntity } = Astro.props;
+const bundle = nhEntity?.bundle ?? '_component_catalogo_hero';
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={bundle}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={Astro.locals.lang}
+  tag="section"
+  class="relative h-[280px] overflow-hidden"
+  editLabel="Editar Hero"
+  editField="field_title"
+>
+  {photo?.url ? (
+    <div class="absolute inset-0">
+      <img
+        src={resolveFileUrl(photo.url)}
+        alt=""
+        class="w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  ) : null}
+  <div class="absolute inset-0 bg-gradient-to-br from-egrem-black/80 via-egrem-black/60 to-egrem-dark" />
+  <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+  <div class="absolute bottom-0 left-0 right-0 pb-12 md:pb-16 container-site">
+    <h1 class="text-h1 text-white mb-2" data-nodehive-field="field_title">{title}</h1>
+    <p class="font-script text-egrem-gold text-[clamp(1.125rem,2.5vw,1.5rem)]" data-nodehive-field="field_subtitle">
+      {subtitle}
+    </p>
+  </div>
+</NodeHiveEntity>

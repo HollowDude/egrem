@@ -19,10 +19,11 @@ import { accessibility } from './accessibility';
 import { auth } from './auth';
 import { actualidad } from './actualidad';
 import { artistas } from './artistas';
+import { musica } from './musica';
 
 export const t: Record<Lang, Record<string, string>> = {
-  es: { ...nav.es, ...footer.es, ...home.es, ...accessibility.es, ...auth.es, ...actualidad.es, ...artistas.es },
-  en: { ...nav.en, ...footer.en, ...home.en, ...accessibility.en, ...auth.en, ...actualidad.en, ...artistas.en },
+  es: { ...nav.es, ...footer.es, ...home.es, ...accessibility.es, ...auth.es, ...actualidad.es, ...artistas.es, ...musica.es },
+  en: { ...nav.en, ...footer.en, ...home.en, ...accessibility.en, ...auth.en, ...actualidad.en, ...artistas.en, ...musica.en },
 };
 
 export function useTranslations(lang: Lang) {

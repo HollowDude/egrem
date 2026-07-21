@@ -1,23 +1,26 @@
 ---
-import { extractYouTubeId } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
+import type { NhArtistaVideo } from '@/lib/nodehive';
 
 interface Props {
-  videos: { id: string; url: string }[];
+  videos: NhArtistaVideo[];
 }
 
 const { videos } = Astro.props;
 const tr = useTranslations(Astro.locals.lang);
 
-const resolved = videos
-  .map((v) => {
-    const youtubeId = extractYouTubeId(v.url);
-    return { ...v, youtubeId, thumbnail: youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : null };
-  })
-  .filter((v) => v.youtubeId);
+const resolved: (NhArtistaVideo & { title: string })[] = videos
+  .filter((v) => v.youtubeId)
+  .map((v) => ({
+    ...v,
+    title: v.title || 'Video',
+  }));
+
+const featured = resolved[0] ?? null;
+const rest = resolved.slice(1);
 ---
 
-<div data-artista-tab-content="videos">
+<div data-artista-tab-content="videos" hidden>
   {
     resolved.length === 0 ? (
       <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -30,36 +33,58 @@ const resolved = videos
         <p class="text-egrem-gray text-body">{tr('artistas.no_results')}</p>
       </div>
     ) : (
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {resolved.map((v) => (
+      <>
+        {featured && (
           <a
-            href={v.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="card card--no-zoom group overflow-hidden block no-underline"
+            href={featured.url}
+            data-youtube-id={featured.youtubeId}
+            class="relative aspect-video w-full border border-egrem-gray/20 overflow-hidden rounded-lg mb-4 group cursor-pointer block no-underline bg-black"
           >
-            <div class="relative aspect-video bg-egrem-gray-light overflow-hidden">
-              {v.thumbnail && (
-                <img
-                  src={v.thumbnail}
-                  alt=""
-                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  loading="lazy"
-                  decoding="async"
-                />
-              )}
-              <div class="absolute inset-0 flex items-center justify-center">
-                <span
-                  class="text-5xl text-white/80 group-hover:text-egrem-red transition-colors"
-                  style="font-family: 'Material Symbols Outlined'; font-size: 48px;"
-                >
-                  play_circle
-                </span>
-              </div>
+            {featured.thumbnail && (
+              <img
+                src={featured.thumbnail}
+                alt=""
+                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="eager"
+                decoding="async"
+              />
+            )}
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="w-16 h-16 rounded-full bg-egrem-red flex items-center justify-center shadow-2xl group-hover:scale-110 active:scale-95 transition-transform">
+                <span class="text-white text-[32px]" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_arrow</span>
+              </span>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pointer-events-none">
+              <p class="font-display font-bold text-[10px] text-white/60 uppercase tracking-widest mb-1">{tr('artistas.detail.videos.featured_tag')}</p>
+              <h3 class="font-display font-bold text-[22px] md:text-[26px] text-white uppercase leading-none m-0">{featured.title}</h3>
             </div>
           </a>
-        ))}
-      </div>
+        )}
+        {rest.length > 0 && (
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {rest.map((v) => (
+              <a
+                href={v.url}
+                data-youtube-id={v.youtubeId}
+                class="relative aspect-video overflow-hidden rounded-2xl border-2 border-transparent hover:border-egrem-red group cursor-pointer block no-underline transition-colors"
+              >
+                {v.thumbnail && (
+                  <img
+                    src={v.thumbnail}
+                    alt=""
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <span class="text-white text-2xl" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_arrow</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </>
     )
   }
 </div>

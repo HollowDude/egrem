@@ -137,9 +137,17 @@ export interface NhArtistaListItem extends NhBase {
   href: string;
 }
 
+export interface NhArtistaVideo {
+  id: string;
+  url: string;
+  youtubeId: string | null;
+  title: string;
+  thumbnail: string | null;
+}
+
 export interface NhArtistaDetail extends NhArtistaListItem {
   redesSociales: NhRedSocial[];
-  videos: { id: string; url: string }[];
+  videos: NhArtistaVideo[];
 }
 
 export interface NhAlbumDiscografia extends NhBase {
@@ -149,7 +157,9 @@ export interface NhAlbumDiscografia extends NhBase {
   albumNumber: number | null;
   body: string;
   cover: NhMediaImage | null;
-  sello?: { name: string; tid: number };
+  sello?: { name: string; tid: number; slug: string };
   tracks: string[];
   externalApps: { title: string; url: string }[];
+  href: string;
+  artistName?: string;
 }

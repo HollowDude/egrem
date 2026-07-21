@@ -1,0 +1,8 @@
+---
+export const prerender = false;
+
+return Astro.redirect(
+  `${Astro.locals.lang === 'en' ? '/en' : ''}/catalogo/musica/${Astro.url.pathname.replace(/^\/?(?:es\/|en\/)?album\//, '').replace(/\/$/, '')}`,
+  308,
+);
+---

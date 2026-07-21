@@ -10,7 +10,7 @@ export { fetchHeaderFragment, fetchFooterFragment } from './fragments';
 
 // Pages
 export type { NhHero, NhEslogan, NhSection, NhHomePage } from './pages';
-export { fetchHomePage, fetchLoginPage } from './pages';
+export { fetchHomePage, fetchLoginPage, fetchCatalogoHero } from './pages';
 
 // Content fetchers
 export type {
@@ -65,5 +65,9 @@ export {
 export type { OEmbedResult as SpotifyOEmbedResult, ResolvedAlbum } from './spotify';
 
 // Artistas
-export type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia } from './entities';
+export type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia, NhArtistaVideo } from './entities';
 export { fetchArtistas, fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist } from './artistas';
+
+// Música (catálogo)
+export type { CatalogoMusicaParams, CatalogoMusicaResult } from './musica';
+export { fetchAlbumesCatalogo, fetchAlbumByPath, fetchAlbumByNid, parseAlbumResource } from './musica';
