@@ -1,0 +1,50 @@
+---
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  redes: { id: string; platform: string; url: string; label: string }[];
+}
+
+const { redes } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+
+const iconMap: Record<string, string> = {
+  Facebook: 'facebook',
+  Instagram: 'photo_camera',
+  Twitter: 'alternate_email',
+  YouTube: 'play_circle',
+  Spotify: 'headphones',
+  TikTok: 'music_note',
+  Web: 'language',
+};
+
+function platformIcon(platform: string): string {
+  return iconMap[platform] ?? iconMap.Web;
+}
+---
+
+{
+  redes.length > 0 && (
+    <div class="card card--no-zoom p-6">
+      <h3 class="font-display font-bold text-base text-egrem-black mb-4 uppercase tracking-wider border-b border-egrem-gray/20 pb-3">
+        {tr('artistas.detail.redes')}
+      </h3>
+      <div class="flex flex-wrap gap-3">
+        {redes.map((red) => (
+          <a
+            href={red.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl border border-egrem-gray/30 text-egrem-black hover:bg-egrem-gray-light hover:text-egrem-red hover:border-egrem-red transition-all duration-200 no-underline"
+            aria-label={red.label || red.platform}
+          >
+            <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">
+              {platformIcon(red.platform)}
+            </span>
+            <span class="font-display font-bold text-sm">{red.platform}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}

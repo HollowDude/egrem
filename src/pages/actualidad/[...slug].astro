@@ -21,6 +21,7 @@ let alternateHref: string | undefined;
 let alternateHrefs: { es?: string; en?: string } | undefined;
 let eventos: NhEvento[] = [];
 let isAuthenticated = false;
+let userName = '';
 
 try {
   item = await fetchActualidadItemByPath(Astro.url.pathname, lang);
@@ -53,6 +54,7 @@ try {
 
   const session = await getSession(Astro.cookies);
   isAuthenticated = session !== null;
+  userName = session?.name ?? '';
 } catch (e) {
   console.error('[actualidad/[...slug]] Failed:', e);
   return Astro.rewrite('/404');
@@ -73,6 +75,7 @@ try {
       related={related}
       eventos={eventos}
       isAuthenticated={isAuthenticated}
+      userName={userName}
       lang={lang}
     />
   </main>

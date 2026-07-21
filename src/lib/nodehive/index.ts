@@ -63,3 +63,7 @@ export {
   clearCache as clearSpotifyCache,
 } from './spotify';
 export type { OEmbedResult as SpotifyOEmbedResult, ResolvedAlbum } from './spotify';
+
+// Artistas
+export type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia } from './entities';
+export { fetchArtistas, fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist } from './artistas';

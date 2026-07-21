@@ -1,0 +1,103 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HeroArtistas from '@/components/artistas/HeroArtistas.astro';
+import FilterBarArtistas from '@/components/artistas/FilterBarArtistas.astro';
+import ArtistaCard from '@/components/artistas/ArtistaCard.astro';
+import PaginatorArtistas from '@/components/artistas/PaginatorArtistas.astro';
+import { fetchArtistas } from '@/lib/nodehive';
+import type { NhArtistaListItem } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+let artistas: NhArtistaListItem[] = [];
+try {
+  artistas = await fetchArtistas(lang);
+} catch (e) {
+  console.error('[catalogo/artistas] Failed to fetch:', e);
+}
+
+const allAgencias = new Map<string, { name: string; slug: string }>();
+for (const a of artistas) {
+  if (a.agencia && !allAgencias.has(a.agencia.slug)) {
+    allAgencias.set(a.agencia.slug, { name: a.agencia.name, slug: a.agencia.slug });
+  }
+}
+const agencias = Array.from(allAgencias.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+const activeAgencia = Astro.url.searchParams.get('agencia') ?? 'todas';
+const activeLetra = Astro.url.searchParams.get('letra') ?? 'todas';
+
+let filtered = artistas;
+if (activeAgencia !== 'todas') {
+  filtered = filtered.filter((a) => a.agencia?.slug === activeAgencia);
+}
+if (activeLetra !== 'todas') {
+  if (activeLetra === 'num') {
+    filtered = filtered.filter((a) => /^[^a-zA-Z]/.test(a.name));
+  } else {
+    filtered = filtered.filter((a) =>
+      a.name.toLowerCase().startsWith(activeLetra),
+    );
+  }
+}
+
+const perPage = 12;
+const currentPage = Math.max(1, parseInt(Astro.url.searchParams.get('page') ?? '1'));
+const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+const pageItems = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+---
+
+<BaseLayout
+  title={tr('artistas.page_title')}
+  description={tr('artistas.page_description')}
+>
+  <main id="main-content">
+    <HeroArtistas />
+
+    <section class="section-py !py-6 bg-white border-b border-egrem-gray/20">
+      <div class="container-site">
+        <FilterBarArtistas
+          agencias={agencias}
+          activeAgencia={activeAgencia}
+          activeLetra={activeLetra}
+        />
+      </div>
+    </section>
+
+    <section class="section-py bg-white">
+      <div class="container-site">
+        {
+          filtered.length === 0 ? (
+            <div class="flex flex-col items-center justify-center py-16 text-center">
+              <span
+                class="text-5xl text-egrem-gray/40 mb-4"
+                style="font-family: 'Material Symbols Outlined';"
+              >
+                person_off
+              </span>
+              <p class="text-egrem-gray text-body">{tr('artistas.no_results')}</p>
+            </div>
+          ) : (
+            <>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {pageItems.map((artista) => (
+                  <ArtistaCard artista={artista} />
+                ))}
+              </div>
+              <PaginatorArtistas
+                totalPages={totalPages}
+                currentPage={currentPage}
+                activeAgencia={activeAgencia}
+                activeLetra={activeLetra}
+              />
+            </>
+          )
+        }
+      </div>
+    </section>
+  </main>
+</BaseLayout>

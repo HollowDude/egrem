@@ -19,10 +19,11 @@ interface Props {
   related: NhActualidadItem[];
   eventos?: NhEvento[];
   isAuthenticated?: boolean;
+  userName?: string;
   lang: Lang;
 }
 
-const { item, related, eventos = [], isAuthenticated = false, lang } = Astro.props;
+const { item, related, eventos = [], isAuthenticated = false, userName = '', lang } = Astro.props;
 const tr = useTranslations(lang);
 const isBlog = item.bundle === 'blog';
 
@@ -95,6 +96,7 @@ function bundleLabel(bundle: string): string {
             nodeUuid={item.id}
             nodeNid={item.nid}
             isAuthenticated={isAuthenticated}
+            userName={userName}
             lang={lang}
           />
         )

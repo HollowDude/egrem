@@ -1,0 +1,23 @@
+---
+import type { NhArtistaDetail } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  artista: NhArtistaDetail;
+}
+
+const { artista } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+---
+
+<div data-artista-tab-content="biografia" class="max-w-3xl">
+  {artista.body ? (
+    <div
+      class="font-display text-body leading-relaxed [&_p]:mb-4 [&_p:last-child]:mb-0"
+      style="color: var(--color-text-secondary);"
+      set:html={artista.body}
+    />
+  ) : (
+    <p class="text-egrem-gray text-body">{tr('artistas.no_results')}</p>
+  )}
+</div>

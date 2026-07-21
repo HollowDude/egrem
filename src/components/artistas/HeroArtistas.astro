@@ -1,0 +1,17 @@
+---
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+---
+
+<section class="bg-egrem-dark section-py border-b border-egrem-gray/20 text-center relative overflow-hidden">
+  <div class="container-site relative z-10">
+    <h1 class="text-h1 text-white uppercase mb-3">
+      {tr('artistas.hero.title')}
+    </h1>
+    <p class="text-body text-egrem-gray max-w-2xl mx-auto mb-6">
+      {tr('artistas.hero.subtitle')}
+    </p>
+  </div>
+</section>

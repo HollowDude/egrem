@@ -119,3 +119,37 @@ export interface NhActualidadHero extends NhEntityMeta {
   subtitle: string;
   photo: NhMediaImage | null;
 }
+
+export interface NhRedSocial {
+  id: string;
+  platform: string;
+  url: string;
+  label: string;
+}
+
+export interface NhArtistaListItem extends NhBase {
+  nid: number;
+  name: string;
+  image: NhMediaImage | null;
+  agencia?: { name: string; slug: string; tid: number };
+  body: string;
+  summary: string;
+  href: string;
+}
+
+export interface NhArtistaDetail extends NhArtistaListItem {
+  redesSociales: NhRedSocial[];
+  videos: { id: string; url: string }[];
+}
+
+export interface NhAlbumDiscografia extends NhBase {
+  nid: number;
+  title: string;
+  year: number | null;
+  albumNumber: number | null;
+  body: string;
+  cover: NhMediaImage | null;
+  sello?: { name: string; tid: number };
+  tracks: string[];
+  externalApps: { title: string; url: string }[];
+}

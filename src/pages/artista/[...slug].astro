@@ -1,0 +1,98 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ArtistaHero from '@/components/artistas/ArtistaHero.astro';
+import ArtistaTabs from '@/components/artistas/ArtistaTabs.astro';
+import ArtistaBiografia from '@/components/artistas/ArtistaBiografia.astro';
+import ArtistaDiscografia from '@/components/artistas/ArtistaDiscografia.astro';
+import ArtistaVideos from '@/components/artistas/ArtistaVideos.astro';
+import ArtistaEventos from '@/components/artistas/ArtistaEventos.astro';
+import ArtistaAgenciaCard from '@/components/artistas/ArtistaAgenciaCard.astro';
+import ArtistaRedesSociales from '@/components/artistas/ArtistaRedesSociales.astro';
+import Breadcrumb from '@/components/ui/Breadcrumb.astro';
+import Button from '@/components/ui/Button.astro';
+import { fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist } from '@/lib/nodehive';
+import type { NhArtistaDetail, NhAlbumDiscografia } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+let artista: NhArtistaDetail | null = null;
+let albums: NhAlbumDiscografia[] = [];
+
+try {
+  const slug = Astro.url.pathname.replace(/^\/?(?:es\/|en\/)?artista\//, '').replace(/\/$/, '');
+  const isNumeric = /^\d+$/.test(slug);
+
+  if (isNumeric) {
+    artista = await fetchArtistaByNid(parseInt(slug), lang);
+  } else {
+    artista = await fetchArtistaByPath(Astro.url.pathname, lang);
+    if (!artista && /^\d+$/.test(slug)) {
+      artista = await fetchArtistaByNid(parseInt(slug), lang);
+    }
+  }
+
+  if (!artista) {
+    return Astro.rewrite('/404');
+  }
+
+  albums = await fetchAlbumsByArtist(artista.nid, lang);
+} catch (e) {
+  console.error('[artista/[...slug]] Failed:', e);
+  return Astro.rewrite('/404');
+}
+
+const tabs = [
+  { id: 'biografia', label: tr('artistas.detail.tab.biografia'), icon: 'person' },
+  { id: 'discografia', label: tr('artistas.detail.tab.discografia'), icon: 'library_music' },
+  { id: 'videos', label: tr('artistas.detail.tab.videos'), icon: 'videocam' },
+  { id: 'eventos', label: tr('artistas.detail.tab.eventos'), icon: 'event' },
+];
+
+const pageTitle = `${artista.name} | ${tr('artistas.page_title')}`;
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={artista.summary || artista.name}
+  ogImage={artista.image?.url}
+  canonical={Astro.url.href}
+>
+  <main id="main-content">
+    <ArtistaHero artista={artista} />
+
+    <div class="container-site py-8 md:py-12">
+      <Breadcrumb
+        items={[
+          { label: 'EGREM', href: '/' },
+          { label: tr('artistas.hero.title'), href: '/catalogo/artistas' },
+          { label: artista.name },
+        ]}
+      />
+
+      <ArtistaTabs tabs={tabs} />
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-8">
+          <ArtistaBiografia artista={artista} />
+          <ArtistaDiscografia albums={albums} />
+          <ArtistaVideos videos={artista.videos} />
+          <ArtistaEventos />
+        </div>
+        <aside class="lg:col-span-4 flex flex-col gap-6">
+          <ArtistaAgenciaCard agencia={artista.agencia} />
+          <ArtistaRedesSociales redes={artista.redesSociales} />
+        </aside>
+      </div>
+
+      <div class="mt-12 text-center">
+        <Button variant="ghost" size="md" href="/catalogo/artistas">
+          {tr('artistas.detail.back')}
+        </Button>
+      </div>
+    </div>
+  </main>
+</BaseLayout>

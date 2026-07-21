@@ -1,0 +1,73 @@
+---
+import type { NhArtistaListItem } from '@/lib/nodehive';
+import Badge from '@/components/ui/Badge.astro';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  artista: NhArtistaListItem;
+}
+
+const { artista } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+const initials = artista.name
+  .split(/\s+/)
+  .map((w) => w[0])
+  .join('')
+  .slice(0, 2)
+  .toUpperCase();
+---
+
+<article class="card card--hover-red group flex flex-col">
+  <a
+    href={artista.href}
+    class="block overflow-hidden no-underline shrink-0 relative"
+    style="aspect-ratio: 16/10;"
+  >
+    {artista.image?.url ? (
+      <img
+        src={artista.image.url}
+        alt={artista.image.alt || artista.name}
+        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
+        loading="lazy"
+        decoding="async"
+      />
+    ) : (
+      <div class="w-full h-full bg-egrem-gray-light flex items-center justify-center">
+        <span class="text-4xl font-display font-bold text-egrem-gray">{initials}</span>
+      </div>
+    )}
+    {artista.agencia && (
+      <div class="absolute top-3 left-3 z-10">
+        <Badge variant="outline">{artista.agencia.name}</Badge>
+      </div>
+    )}
+  </a>
+  <div class="card-body flex flex-col flex-1">
+    <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
+      <a href={artista.href} class="text-inherit no-underline">
+        {artista.name}
+      </a>
+    </h3>
+    {artista.summary && (
+      <p
+        class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-2 flex-1"
+        style="color: var(--color-text-secondary);"
+      >
+        {artista.summary}
+      </p>
+    )}
+    <a
+      href={artista.href}
+      class="inline-flex items-center gap-2 text-small font-bold text-egrem-black hover:text-egrem-red transition-colors uppercase tracking-widest no-underline w-fit group/link pb-1 mt-4"
+      style="border-bottom: 2px solid transparent;"
+    >
+      {tr('artistas.view_profile')}
+      <span
+        class="text-[18px] group-hover/link:translate-x-1 transition-transform"
+        style="font-family: 'Material Symbols Outlined';"
+      >
+        arrow_forward
+      </span>
+    </a>
+  </div>
+</article>

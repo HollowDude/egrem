@@ -6,10 +6,11 @@ interface Props {
   nodeUuid: string;
   nodeNid: number;
   isAuthenticated: boolean;
+  userName?: string;
   lang?: Lang;
 }
 
-const { nodeUuid, nodeNid, isAuthenticated, lang = 'es' } = Astro.props;
+const { nodeUuid, nodeNid, isAuthenticated, userName = '', lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 ---
 
@@ -20,6 +21,7 @@ const tr = useTranslations(lang);
   data-comments-nid={nodeNid}
   data-comments-lang={lang}
   data-comments-authenticated={String(isAuthenticated)}
+  data-comments-username={userName}
 >
   <h3 class="font-display font-bold text-xl text-egrem-black mb-6 flex items-center gap-2">
     <span style="font-family:'Material Symbols Outlined';">chat</span>
@@ -75,32 +77,60 @@ const tr = useTranslations(lang);
   const nid = section.dataset.commentsNid!;
   const lang = section.dataset.commentsLang || 'es';
   const authenticated = section.dataset.commentsAuthenticated === 'true';
+  const userName = section.dataset.commentsUsername || '';
   const list = section.querySelector('[data-comments-list]')!;
   const countEl = section.querySelector('[data-comments-count]')!;
   const textarea = section.querySelector<HTMLTextAreaElement>('[data-comments-textarea]');
   const submitBtn = section.querySelector<HTMLButtonElement>('[data-comments-submit]');
 
+  interface PendingComment {
+    id: string;
+    author: string;
+    authorInitial: string;
+    body: string;
+    created: string;
+    relativeTime: string;
+    status: string;
+  }
+
+  const STORAGE_KEY = `egrem_pending_comments_${uuid}`;
+
+  function getPendingComments(): PendingComment[] {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function savePendingComments(comments: PendingComment[]) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(comments));
+  }
+
   async function loadComments() {
     try {
-      const res = await fetch(`/api/actualidad/comments?node=${uuid}&lang=${lang}`);
-      if (!res.ok) return;
-      const comments = await res.json();
-      renderComments(comments);
+      const [serverRes] = await Promise.all([
+        fetch(`/api/actualidad/comments?node=${uuid}&lang=${lang}`),
+      ]);
+      if (!serverRes.ok) return;
+      const serverComments: PendingComment[] = await serverRes.json();
+
+      const pending = getPendingComments();
+
+      const serverIds = new Set(serverComments.map((c) => c.id));
+      const stillPending = pending.filter((c) => !serverIds.has(c.id));
+      savePendingComments(stillPending);
+
+      const merged = [...serverComments, ...stillPending];
+      merged.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
+
+      renderComments(merged);
     } catch {
       // silent
     }
   }
 
-  function renderComments(
-    comments: Array<{
-      id: string;
-      author: string;
-      authorInitial: string;
-      body: string;
-      relativeTime: string;
-      status: string;
-    }>,
-  ) {
+  function renderComments(comments: PendingComment[]) {
     const visible = comments.filter((c) => c.status === 'published' || authenticated);
     const publishedCount = comments.filter((c) => c.status === 'published').length;
 
@@ -163,6 +193,22 @@ const tr = useTranslations(lang);
           return;
         }
         textarea.value = '';
+
+        const { commentId, status } = await res.json();
+        const pending: PendingComment = {
+          id: commentId || crypto.randomUUID(),
+          author: userName || (lang === 'en' ? 'You' : 'Tú'),
+          authorInitial: (userName || (lang === 'en' ? 'Y' : 'T'))[0].toUpperCase(),
+          body,
+          created: new Date().toISOString(),
+          relativeTime: lang === 'en' ? 'just now' : 'ahora mismo',
+          status: status === 'published' ? 'published' : 'pending',
+        };
+        if (pending.status === 'pending') {
+          const existing = getPendingComments();
+          existing.push(pending);
+          savePendingComments(existing);
+        }
         await loadComments();
       } catch {
         alert('Error');

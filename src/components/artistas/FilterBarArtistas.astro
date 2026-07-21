@@ -1,0 +1,74 @@
+---
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  agencias: { name: string; slug: string }[];
+  activeAgencia: string;
+  activeLetra: string;
+}
+
+const { agencias, activeAgencia, activeLetra } = Astro.props;
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+const letras = '#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+function filterUrl(params: Record<string, string | undefined>): string {
+  const p = new URLSearchParams();
+  const agencia = params.agencia ?? activeAgencia;
+  const letra = params.letra ?? activeLetra;
+  if (agencia && agencia !== 'todas') p.set('agencia', agencia);
+  if (letra && letra !== 'todas') p.set('letra', letra);
+  const qs = p.toString();
+  return qs ? `/catalogo/artistas?${qs}` : '/catalogo/artistas';
+}
+---
+
+<div class="flex flex-col gap-6">
+  <nav class="flex flex-wrap gap-2 justify-center" aria-label="Filter by agency">
+    <a
+      href={filterUrl({ agencia: undefined })}
+      class:list={[
+        'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
+        activeAgencia === 'todas'
+          ? 'bg-egrem-red text-white border-egrem-red'
+          : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+      ]}
+    >
+      {tr('artistas.filter.all')}
+    </a>
+    {agencias.map((ag) => (
+      <a
+        href={filterUrl({ agencia: ag.slug })}
+        class:list={[
+          'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
+          activeAgencia === ag.slug
+            ? 'bg-egrem-red text-white border-egrem-red'
+            : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+        ]}
+      >
+        {ag.name}
+      </a>
+    ))}
+  </nav>
+
+  <nav class="flex flex-wrap gap-1 justify-center" aria-label="Filter by letter">
+    {letras.map((letra) => (
+      <a
+        href={filterUrl({ letra: letra === '#' ? undefined : letra.toLowerCase() })}
+        class:list={[
+          'w-9 h-9 flex items-center justify-center rounded-lg font-display font-bold text-xs uppercase tracking-wider transition-all duration-200 no-underline',
+          letra === '#'
+            ? activeLetra === 'num'
+              ? 'bg-egrem-red text-white'
+              : 'bg-transparent text-egrem-gray border border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red'
+            : activeLetra === letra.toLowerCase()
+              ? 'bg-egrem-red text-white'
+              : 'bg-transparent text-egrem-black border border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+        ]}
+      >
+        {letra === '#' ? '#' : letra}
+      </a>
+    ))}
+  </nav>
+</div>

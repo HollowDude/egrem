@@ -1,0 +1,25 @@
+---
+import Button from '@/components/ui/Button.astro';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  agencia: { name: string; slug: string; tid: number } | undefined;
+}
+
+const { agencia } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+---
+
+{
+  agencia && (
+    <div class="card card--no-zoom p-6">
+      <h3 class="font-display font-bold text-base text-egrem-black mb-4 uppercase tracking-wider border-b border-egrem-gray/20 pb-3">
+        {tr('artistas.detail.agencia_label')}
+      </h3>
+      <p class="font-display text-body text-egrem-black mb-4">{agencia.name}</p>
+      <Button variant="primary" size="sm" href={`mailto:booking@egrem.cu?subject=Booking ${encodeURIComponent(agencia.name)}`}>
+        {tr('artistas.detail.booking')}
+      </Button>
+    </div>
+  )
+}

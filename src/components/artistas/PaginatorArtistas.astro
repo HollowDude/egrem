@@ -1,0 +1,61 @@
+---
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  totalPages: number;
+  currentPage: number;
+  activeAgencia: string;
+  activeLetra: string;
+}
+
+const { totalPages, currentPage, activeAgencia, activeLetra } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+
+function pageHref(page: number): string {
+  const params = new URLSearchParams();
+  params.set('page', String(page));
+  if (activeAgencia !== 'todas') params.set('agencia', activeAgencia);
+  if (activeLetra !== 'todas') params.set('letra', activeLetra);
+  return `/catalogo/artistas?${params.toString()}`;
+}
+---
+
+{
+  totalPages > 1 && (
+    <div class="flex justify-center border-t border-egrem-gray/20 pt-6">
+      <nav class="flex items-center gap-2">
+        {currentPage > 1 && (
+          <a
+            href={pageHref(currentPage - 1)}
+            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            aria-label={tr('artistas.pagination.prev')}
+          >
+            <span style="font-family: 'Material Symbols Outlined';">chevron_left</span>
+          </a>
+        )}
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <a
+            href={pageHref(p)}
+            class:list={[
+              'w-10 h-10 flex items-center justify-center rounded-xl no-underline font-bold',
+              p === currentPage
+                ? 'bg-egrem-red text-white'
+                : 'border border-egrem-gray/30 text-egrem-black hover:bg-egrem-gray-light',
+            ]}
+          >
+            {p}
+          </a>
+        ))}
+        {currentPage < totalPages && (
+          <a
+            href={pageHref(currentPage + 1)}
+            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            aria-label={tr('artistas.pagination.next')}
+          >
+            <span style="font-family: 'Material Symbols Outlined';">chevron_right</span>
+          </a>
+        )}
+      </nav>
+    </div>
+  )
+}

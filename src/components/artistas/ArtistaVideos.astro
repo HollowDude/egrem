@@ -1,0 +1,65 @@
+---
+import { extractYouTubeId } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  videos: { id: string; url: string }[];
+}
+
+const { videos } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+
+const resolved = videos
+  .map((v) => {
+    const youtubeId = extractYouTubeId(v.url);
+    return { ...v, youtubeId, thumbnail: youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : null };
+  })
+  .filter((v) => v.youtubeId);
+---
+
+<div data-artista-tab-content="videos">
+  {
+    resolved.length === 0 ? (
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <span
+          class="text-5xl text-egrem-gray/40 mb-4"
+          style="font-family: 'Material Symbols Outlined';"
+        >
+          videocam
+        </span>
+        <p class="text-egrem-gray text-body">{tr('artistas.no_results')}</p>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {resolved.map((v) => (
+          <a
+            href={v.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="card card--no-zoom group overflow-hidden block no-underline"
+          >
+            <div class="relative aspect-video bg-egrem-gray-light overflow-hidden">
+              {v.thumbnail && (
+                <img
+                  src={v.thumbnail}
+                  alt=""
+                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span
+                  class="text-5xl text-white/80 group-hover:text-egrem-red transition-colors"
+                  style="font-family: 'Material Symbols Outlined'; font-size: 48px;"
+                >
+                  play_circle
+                </span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    )
+  }
+</div>

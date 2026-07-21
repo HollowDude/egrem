@@ -1,0 +1,116 @@
+---
+import type { NhAlbumDiscografia } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  albums: NhAlbumDiscografia[];
+}
+
+const { albums } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+---
+
+<div data-artista-tab-content="discografia">
+  {
+    albums.length === 0 ? (
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <span
+          class="text-5xl text-egrem-gray/40 mb-4"
+          style="font-family: 'Material Symbols Outlined';"
+        >
+          library_music
+        </span>
+        <p class="text-egrem-gray text-body">{tr('artistas.detail.discografia.empty')}</p>
+      </div>
+    ) : (
+      <div class="flex flex-col gap-6">
+        {albums.map((album) => (
+          <article class="card card--no-zoom card--horizontal grid grid-cols-1 md:grid-cols-[200px_1fr] gap-0 overflow-hidden">
+            <div class="aspect-square md:aspect-auto md:h-full bg-egrem-gray-light overflow-hidden">
+              {album.cover?.url ? (
+                <img
+                  src={album.cover.url}
+                  alt={album.cover.alt || album.title}
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div class="w-full h-full flex items-center justify-center bg-egrem-gray-light">
+                  <span
+                    class="text-4xl text-egrem-gray/40"
+                    style="font-family: 'Material Symbols Outlined';"
+                  >
+                    album
+                  </span>
+                </div>
+              )}
+            </div>
+            <div class="card-body flex flex-col gap-3">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <h3 class="font-display font-bold text-xl text-egrem-black m-0">
+                    {album.title}
+                  </h3>
+                  {album.year && (
+                    <span class="text-egrem-gray text-small">{album.year}</span>
+                  )}
+                </div>
+                {album.albumNumber && (
+                  <span class="badge whitespace-nowrap shrink-0">
+                    {album.albumNumber === 1 ? 'Álbum' : `Vol. ${album.albumNumber}`}
+                  </span>
+                )}
+              </div>
+
+              {album.sello && (
+                <p class="text-egrem-gray text-small m-0">
+                  {album.sello.name}
+                </p>
+              )}
+
+              {album.body && (
+                <div
+                  class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3"
+                  style="color: var(--color-text-secondary);"
+                  set:html={album.body}
+                />
+              )}
+
+              {album.tracks.length > 0 && (
+                <div>
+                  <h4 class="font-display font-bold text-sm text-egrem-black uppercase tracking-wider mb-2">
+                    Pistas
+                  </h4>
+                  <ol class="list-decimal list-inside font-display text-[0.9rem] m-0 flex flex-col gap-1">
+                    {album.tracks.map((track) => (
+                      <li style="color: var(--color-text-secondary);">{track}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {album.externalApps.length > 0 && (
+                <div class="flex flex-wrap gap-2 mt-2">
+                  {album.externalApps.map((app) => (
+                    <a
+                      href={app.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-egrem-gray/30 text-egrem-black hover:bg-egrem-gray-light hover:border-egrem-red hover:text-egrem-red transition-all duration-200 no-underline text-small font-display font-bold"
+                    >
+                      <span style="font-family: 'Material Symbols Outlined'; font-size: 14px;">
+                        open_in_new
+                      </span>
+                      {app.title}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    )
+  }
+</div>
