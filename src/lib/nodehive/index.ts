@@ -51,9 +51,10 @@ export {
   extractYouTubeId,
   fetchOEmbed,
   resolveVideoLink,
+  fetchVideoDetail,
   clearCache as clearYoutubeCache,
 } from './youtube';
-export type { OEmbedResult as YoutubeOEmbedResult, ResolvedVideo } from './youtube';
+export type { OEmbedResult as YoutubeOEmbedResult, ResolvedVideo, NhVideoDetail } from './youtube';
 
 // Spotify
 export {
@@ -71,3 +72,12 @@ export { fetchArtistas, fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArti
 // Música (catálogo)
 export type { CatalogoMusicaParams, CatalogoMusicaResult } from './musica';
 export { fetchAlbumesCatalogo, fetchAlbumByPath, fetchAlbumByNid, parseAlbumResource } from './musica';
+
+// Videos (catálogo)
+export type {
+  NhCatalogoVideo,
+  NhVideoDestacado,
+  CatalogoVideosParams,
+  CatalogoVideosResult,
+} from './entities';
+export { fetchAllArtistVideos, fetchVideosCatalogo, fetchVideoDestacado } from './videos';

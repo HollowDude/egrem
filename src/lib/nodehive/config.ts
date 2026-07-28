@@ -15,6 +15,7 @@ const LOCAL = {
   actualidad: '447c24f6-6bc7-4bda-af5a-21824bc5c020',
   artistas: 'fe119ad9-68bb-45e3-b6ab-1e84a9400f42',
   musica: '30fbf03c-5539-42c6-886c-ea40a776c52c',
+  videos: 'fe9e5209-55f7-460e-8e37-d7634709d8f8',
 } as const;
 
 const REMOTE = {
@@ -24,6 +25,7 @@ const REMOTE = {
   actualidad: '',
   artistas: '',
   musica: '',
+  videos: '',
 } as const;
 
 function getEnv(): 'local' | 'remote' {
@@ -44,5 +46,6 @@ export const NODEHIVE_CONFIG = {
     actualidad: UUID.actualidad,
     artistas: UUID.artistas,
     musica: UUID.musica,
+    videos: UUID.videos,
   },
 };

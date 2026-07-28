@@ -1,0 +1,39 @@
+---
+import type { NhCatalogoVideo } from '@/lib/nodehive';
+
+interface Props {
+  video: NhCatalogoVideo;
+}
+
+const { video } = Astro.props;
+---
+
+<a
+  href="#"
+  data-youtube-id={video.youtubeId ?? undefined}
+  class="group no-underline cursor-pointer"
+  aria-label={video.title}
+>
+  <div class="aspect-video relative overflow-hidden rounded-2xl border border-egrem-gray/20 bg-egrem-dark group-hover:border-egrem-red transition-all duration-300 mb-3">
+    {video.thumbnail ? (
+      <img
+        src={video.thumbnail}
+        alt={video.title}
+        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        loading="lazy"
+        decoding="async"
+      />
+    ) : (
+      <div class="w-full h-full flex items-center justify-center bg-egrem-dark">
+        <span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">videocam</span>
+      </div>
+    )}
+    <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors">
+      <span class="text-white text-5xl opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-lg" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_circle</span>
+    </div>
+  </div>
+  {video.artistName && (
+    <p class="font-display font-bold text-[11px] text-egrem-gold uppercase tracking-widest mb-0.5">{video.artistName}</p>
+  )}
+  <h3 class="font-display font-bold text-[16px] text-egrem-black group-hover:text-egrem-red transition-colors leading-tight mb-0.5">{video.title}</h3>
+</a>

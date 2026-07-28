@@ -51,6 +51,44 @@ export interface ResolvedVideo {
   thumbnail: { url: string; alt: string; filename: string } | null;
 }
 
+export interface NhVideoDetail {
+  youtubeId: string;
+  title: string;
+  description: string;
+  channelTitle: string;
+  publishedAt: string | null;
+  viewCount: number | null;
+  thumbnail: string | null;
+}
+
+export async function fetchVideoDetail(videoId: string): Promise<NhVideoDetail | null> {
+  const apiKey = import.meta.env.YOUTUBE_API_KEY ?? '';
+  if (!apiKey) return null;
+
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const item = data.items?.[0];
+    if (!item) return null;
+
+    const s = item.snippet;
+    const stats = item.statistics ?? {};
+    return {
+      youtubeId: videoId,
+      title: s.title ?? '',
+      description: s.description ?? '',
+      channelTitle: s.channelTitle ?? '',
+      publishedAt: s.publishedAt ?? null,
+      viewCount: stats.viewCount ? parseInt(stats.viewCount, 10) : null,
+      thumbnail: s.thumbnails?.maxres?.url ?? s.thumbnails?.high?.url ?? s.thumbnails?.medium?.url ?? s.thumbnails?.default?.url ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveVideoLink(title: string, url: string): Promise<ResolvedVideo> {
   const videoId = extractYouTubeId(url);
   if (!videoId) return { title, youtubeId: null, thumbnail: null };

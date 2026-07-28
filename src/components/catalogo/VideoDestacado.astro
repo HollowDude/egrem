@@ -1,0 +1,70 @@
+---
+import type { NhVideoDestacado } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+import Button from '@/components/ui/Button.astro';
+
+interface Props {
+  video: NhVideoDestacado | null;
+}
+
+const { video } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+
+if (!video?.youtubeId) return;
+---
+
+<section class="section-py bg-egrem-dark">
+  <div class="container-site">
+    <p class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest mb-2">
+      {tr('videos.destacado.label')}
+    </p>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      <div>
+        <h2 class="text-h2 text-white mb-4">{video.title}</h2>
+        {video.detail?.description && (
+          <p class="text-body text-egrem-footer-text line-clamp-3 mb-6">{video.detail.description}</p>
+        )}
+        {video.detail?.channelTitle && (
+          <p class="font-display text-small text-egrem-gold mb-1">{video.detail.channelTitle}</p>
+        )}
+        {video.detail?.viewCount !== null && video.detail?.viewCount !== undefined && (
+          <p class="font-display text-small text-egrem-gray mb-6">
+            {tr('videos.detail.views').replace('{count}', video.detail.viewCount.toLocaleString(Astro.locals.lang))}
+          </p>
+        )}
+        <div class="flex flex-wrap gap-4">
+          <Button variant="primary" size="lg" href={`#`} data-youtube-id={video.youtubeId}>
+            {tr('videos.watch')}
+          </Button>
+        </div>
+      </div>
+      <div class="relative">
+        <a
+          href="#"
+          data-youtube-id={video.youtubeId}
+          class="group block no-underline cursor-pointer"
+          aria-label={video.title}
+        >
+          <div class="aspect-video relative overflow-hidden rounded-2xl border border-egrem-gray/20 bg-egrem-dark-card">
+            {video.thumbnail ? (
+              <img
+                src={video.thumbnail}
+                alt={video.title}
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <div class="w-full h-full flex items-center justify-center">
+                <span class="text-6xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">videocam</span>
+              </div>
+            )}
+            <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors rounded-2xl">
+              <span class="text-white text-6xl opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-lg" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_circle</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

@@ -165,3 +165,45 @@ export interface NhAlbumDiscografia extends NhBase {
   href: string;
   artistName?: string;
 }
+
+export interface NhCatalogoVideo {
+  id: string;
+  url: string;
+  youtubeId: string | null;
+  title: string;
+  thumbnail: string | null;
+  artistName: string;
+  artistHref: string;
+}
+
+export interface NhVideoDetail {
+  youtubeId: string;
+  title: string;
+  description: string;
+  channelTitle: string;
+  publishedAt: string | null;
+  viewCount: number | null;
+  thumbnail: string | null;
+}
+
+export interface NhVideoDestacado {
+  url: string;
+  youtubeId: string | null;
+  title: string;
+  thumbnail: string | null;
+  detail: NhVideoDetail | null;
+}
+
+export interface CatalogoVideosParams {
+  artista?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CatalogoVideosResult {
+  videos: NhCatalogoVideo[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  availableArtistas: { name: string; slug: string; nid: number }[];
+}
