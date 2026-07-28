@@ -45,6 +45,31 @@ export async function checkEmailExists(mail: string): Promise<CheckEmailResult> 
   }
 }
 
+export async function resolveEmailToUsername(
+  mail: string,
+): Promise<{ exists: boolean; name?: string; error?: string }> {
+  try {
+    const url = `${getBaseUrl()}/api/nodehive/check-email?mail=${encodeURIComponent(mail)}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (res.ok && data?.exists) {
+      return { exists: true, name: data?.name as string | undefined };
+    }
+
+    return {
+      exists: false,
+      error: (data?.message as string) ?? 'Email not found.',
+    };
+  } catch (err) {
+    console.error('[resolveEmailToUsername] Exception:', err);
+    return { exists: false, error: 'Could not connect to server.' };
+  }
+}
+
 export async function requestPasswordReset(
   mail: string,
   lang: Lang,

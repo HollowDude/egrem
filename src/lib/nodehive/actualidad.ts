@@ -6,8 +6,8 @@ import type {
 } from './client';
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds, slugify } from './helpers';
-import { parseMediaImage, parseMediaDocument, resolveFileUrl } from './parsers';
-import type { NhMediaImage, NhMediaFile, NhEntityMeta } from './parsers';
+import { parseMediaImage, parseMediaDocument, parseMediaVideo, resolveFileUrl } from './parsers';
+import type { NhMediaImage, NhMediaFile, NhMediaVideo, NhRemoteVideo, NhEntityMeta } from './parsers';
 import type {
   NhActualidadItem,
   NhActualidadBundle,
@@ -112,6 +112,8 @@ export function parseActualidadNode(
   if (!bundle) return null;
 
   let image: NhMediaImage | null = null;
+  let video: NhMediaVideo | null = null;
+  let remoteVideo: NhRemoteVideo | null = null;
   let attachment: NhMediaFile | null = null;
   if (bundle === 'boletin_archivo') {
     const fileRel = resource.relationships?.field_boletin;
@@ -143,11 +145,28 @@ export function parseActualidadNode(
     const imageIds = resolveRelIds(imageRel);
     if (imageIds.length > 0) {
       const ref = imageIds[0];
-      if (ref.type === 'media--document') {
+        if (ref.type === 'media--document') {
         const mediaRes = findIncluded(included, 'media--document', ref.id);
         if (mediaRes) {
           attachment = parseMediaDocument(mediaRes, included);
           if (attachment?.url) attachment.url = resolveFileUrl(attachment.url);
+        }
+      } else if (ref.type === 'media--video') {
+        const mediaRes = findIncluded(included, 'media--video', ref.id);
+        if (mediaRes) {
+          video = parseMediaVideo(mediaRes, included);
+          if (video?.url) video.url = resolveFileUrl(video.url);
+        }
+      } else if (ref.type === 'media--remote_video') {
+        const mediaRes = findIncluded(included, 'media--remote_video', ref.id);
+        if (mediaRes) {
+          const attrs = mediaRes.attributes as Record<string, unknown>;
+          const url = (attrs.field_media_oembed_video as string) ?? '';
+          if (url) {
+            const youtubeId = extractYouTubeId(url);
+            const title = (attrs.name as string) ?? '';
+            remoteVideo = { url, youtubeId, thumbnail: null, title };
+          }
         }
       } else {
         const mediaRes = findIncluded(included, 'media--image', ref.id);
@@ -176,6 +195,8 @@ export function parseActualidadNode(
     author: a.field_autor ?? '',
     patrimonio: a.field_patrimonio ?? false,
     image,
+    video,
+    remoteVideo,
     attachment,
     path: a.path?.alias ?? '',
     tags: parseTags(resource, included),
@@ -406,9 +427,9 @@ const ARTIST_INCLUDES =
 
 export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadItem[]> {
   const bundleIncludes: Record<string, string> = {
-    noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
-    article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
-    blog: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_tags,${ARTIST_INCLUDES}`,
+    noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES}`,
+    article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES}`,
+    blog: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES}`,
     boletin_archivo: 'field_boletin',
   };
 

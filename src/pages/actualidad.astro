@@ -18,6 +18,7 @@ import {
   fetchPatrimonioSection,
   fetchActualidadHero,
   extractYouTubeId,
+  stripHtml,
 } from '@/lib/nodehive';
 import type {
   NhActualidadItem,
@@ -111,6 +112,12 @@ function itemHref(item: NhActualidadItem): string {
   return item.path || `/actualidad/${item.bundle}/${item.nid}`;
 }
 
+function cardImage(item: NhActualidadItem): { url: string; alt: string } | undefined {
+  if (item.image?.url) return { url: item.image.url, alt: item.image.alt };
+  if (item.remoteVideo?.youtubeId) return { url: `https://img.youtube.com/vi/${item.remoteVideo.youtubeId}/mqdefault.jpg`, alt: item.remoteVideo.title };
+  return undefined;
+}
+
 function sliceItems<T>(all: T[], section: string): T[] {
   const page = getSectionPage(section);
   const limit = perPage[section as keyof typeof perPage];
@@ -123,9 +130,9 @@ function sectionTotalPages(items: unknown[], section: string): number {
 }
 
 const noticiasPageItems = sliceItems(noticias, 'noticias');
-const articulosPageItems = sliceItems(articulos, 'articulos');
+const articulosPageItems = sliceItems(articulos, 'articulos').map((item) => ({ item, img: cardImage(item) }));
 const blogsPageItems = sliceItems(blogs, 'blogs');
-const patrimonioPageItems = sliceItems(filteredPatrimonioItems, 'patrimonio');
+const patrimonioPageItems = sliceItems(filteredPatrimonioItems, 'patrimonio').map((item) => ({ item, img: cardImage(item) }));
 
 function formatDate(d: string): string {
   if (!d) return '';
@@ -230,14 +237,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                     nid={noticiasPageItems[0].nid}
                     date={noticiasPageItems[0].date}
                     summary={noticiasPageItems[0].summary}
-                    image={
-                      noticiasPageItems[0].image
-                        ? {
-                            url: noticiasPageItems[0].image.url,
-                            alt: noticiasPageItems[0].image.alt,
-                          }
-                        : undefined
-                    }
+                    image={cardImage(noticiasPageItems[0])}
                     path={noticiasPageItems[0].path}
                     featured={true}
                     lang={lang}
@@ -251,14 +251,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                     nid={noticiasPageItems[1].nid}
                     date={noticiasPageItems[1].date}
                     summary={noticiasPageItems[1].summary}
-                    image={
-                      noticiasPageItems[1].image
-                        ? {
-                            url: noticiasPageItems[1].image.url,
-                            alt: noticiasPageItems[1].image.alt,
-                          }
-                        : undefined
-                    }
+                    image={cardImage(noticiasPageItems[1])}
                     path={noticiasPageItems[1].path}
                     lang={lang}
                     ctaLabel={ctaLabel(noticiasPageItems[1].bundle)}
@@ -271,14 +264,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                     nid={noticiasPageItems[2].nid}
                     date={noticiasPageItems[2].date}
                     summary={noticiasPageItems[2].summary}
-                    image={
-                      noticiasPageItems[2].image
-                        ? {
-                            url: noticiasPageItems[2].image.url,
-                            alt: noticiasPageItems[2].image.alt,
-                          }
-                        : undefined
-                    }
+                    image={cardImage(noticiasPageItems[2])}
                     path={noticiasPageItems[2].path}
                     lang={lang}
                     ctaLabel={ctaLabel(noticiasPageItems[2].bundle)}
@@ -291,14 +277,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                     nid={noticiasPageItems[3].nid}
                     date={noticiasPageItems[3].date}
                     summary={noticiasPageItems[3].summary}
-                    image={
-                      noticiasPageItems[3].image
-                        ? {
-                            url: noticiasPageItems[3].image.url,
-                            alt: noticiasPageItems[3].image.alt,
-                          }
-                        : undefined
-                    }
+                    image={cardImage(noticiasPageItems[3])}
                     path={noticiasPageItems[3].path}
                     lang={lang}
                     ctaLabel={ctaLabel(noticiasPageItems[3].bundle)}
@@ -346,17 +325,17 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
               class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 scroll-smooth"
               style="scrollbar-width:thin;"
             >
-              {articulosPageItems.map((item) => (
+                  {articulosPageItems.map(({ item, img }) => (
                 <article class="min-w-[300px] md:min-w-[calc(33.333%-16px)] snap-start card card--hover-red card--no-zoom group flex flex-col shrink-0">
                   <a
                     href={itemHref(item)}
                     class="block overflow-hidden no-underline shrink-0 relative"
                     style="height: 12rem;"
                   >
-                    {item.image?.url ? (
+                    {img?.url ? (
                       <img
-                        src={item.image.url}
-                        alt={item.image.alt}
+                        src={img.url}
+                        alt={img.alt}
                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
                         loading="lazy"
                         decoding="async"
@@ -650,17 +629,17 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
             filteredPatrimonioItems.length > 0 ? (
               <>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {patrimonioPageItems.map((item) => (
+                  {patrimonioPageItems.map(({ item, img }) => (
                     <article class="card card--hover-red card--no-zoom group flex flex-col">
                       <a
                         href={itemHref(item)}
                         class="block overflow-hidden no-underline shrink-0"
                         style="height: 11rem;"
                       >
-                        {item.image?.url ? (
+                        {img?.url ? (
                           <img
-                            src={item.image.url}
-                            alt={item.image.alt}
+                            src={img.url}
+                            alt={img.alt}
                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
                             loading="lazy"
                             decoding="async"
@@ -682,7 +661,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                           class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1"
                           style="color:var(--color-text-secondary);"
                         >
-                          {item.summary}
+                          {stripHtml(item.body || item.summary)}
                         </p>
                         <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
                           <span

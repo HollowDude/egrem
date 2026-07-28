@@ -77,6 +77,58 @@ function bundleLabel(bundle: string): string {
         )
       }
 
+      {
+        !isBlog && item.video?.url && (
+          <div class="card card--no-zoom overflow-hidden mb-8 bg-black">
+            <video
+              controls
+              class="w-full aspect-[16/9] object-contain max-h-[70vh]"
+              preload="metadata"
+            >
+              <source src={item.video.url} type={item.video.mime} />
+            </video>
+          </div>
+        )
+      }
+
+      {
+        !isBlog && item.remoteVideo?.youtubeId && (
+          <div
+            class="card card--no-zoom overflow-hidden mb-8 bg-black relative group cursor-pointer"
+            data-youtube-id={item.remoteVideo.youtubeId}
+            role="button"
+            tabindex={0}
+            aria-label="Reproducir video"
+          >
+            <img
+              src={`https://img.youtube.com/vi/${item.remoteVideo.youtubeId}/maxresdefault.jpg`}
+              alt=""
+              class="w-full aspect-[16/9] object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+              <span class="w-16 h-16 rounded-full bg-egrem-red flex items-center justify-center shadow-2xl group-hover:scale-110 active:scale-95 transition-transform">
+                <span class="text-white text-[32px]" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_arrow</span>
+              </span>
+            </div>
+            {item.remoteVideo.title && (
+              <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pointer-events-none">
+                <h3 class="font-display font-bold text-[22px] md:text-[26px] text-white uppercase leading-none m-0">{item.remoteVideo.title}</h3>
+              </div>
+            )}
+          </div>
+        )
+      }
+
+      {
+        !isBlog && !item.image?.url && !item.video?.url && !item.remoteVideo?.youtubeId && (
+          <div class="card card--no-zoom p-6 mb-8 bg-egrem-gray-light/50">
+            <h2 class="text-h2 text-egrem-black m-0">{item.title}</h2>
+          </div>
+        )
+      }
+
       <NodeHiveEntity
         entityType="node"
         bundle={item.bundle}

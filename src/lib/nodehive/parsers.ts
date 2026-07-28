@@ -2,6 +2,21 @@ import type { JsonApiResource } from './client';
 import { findIncluded, resolveRelIds } from './helpers';
 import { getBaseUrlValue } from './client';
 
+export function normalizeDrupalUri(uri: string | undefined | null): string {
+  if (!uri) return '#';
+  if (uri.startsWith('internal:/')) {
+    return uri.slice('internal:'.length);
+  }
+  if (uri.startsWith('entity:')) {
+    const rest = uri.slice('entity:'.length);
+    return `/${rest.replace(/:/g, '/')}`;
+  }
+  if (uri.startsWith('route:') || uri.startsWith('<')) {
+    return '#';
+  }
+  return uri;
+}
+
 export interface NhLink {
   uri: string;
   title: string;
@@ -40,7 +55,7 @@ export function parseButton(res: JsonApiResource): NhButton {
     style:
       ((a.field_style === 'secundary' ? 'secondary' : a.field_style) as 'primary' | 'secondary') ??
       'primary',
-    link: link ? { uri: link.uri, title: link.title ?? '' } : null,
+    link: link ? { uri: normalizeDrupalUri(link.uri), title: link.title ?? '' } : null,
   };
 }
 
@@ -83,6 +98,37 @@ export function parseMediaDocument(
     url: uri?.url ?? '',
     filename: (attrs.filename as string) ?? '',
     title: ((mediaRes.attributes as Record<string, unknown>).name as string) ?? '',
+  };
+}
+
+export interface NhMediaVideo {
+  url: string;
+  filename: string;
+  mime: string;
+}
+
+export interface NhRemoteVideo {
+  url: string;
+  youtubeId: string | null;
+  thumbnail: string | null;
+  title: string;
+}
+
+export function parseMediaVideo(
+  mediaRes: JsonApiResource,
+  included: JsonApiResource[] | undefined,
+): NhMediaVideo | null {
+  const fileRel = mediaRes.relationships?.field_media_video_file;
+  const fileIds = resolveRelIds(fileRel);
+  if (!fileIds.length) return null;
+  const fileRes = findIncluded(included, 'file--file', fileIds[0].id);
+  if (!fileRes) return null;
+  const attrs = fileRes.attributes as Record<string, unknown>;
+  const uri = attrs.uri as { url?: string } | undefined;
+  return {
+    url: uri?.url ?? '',
+    filename: (attrs.filename as string) ?? '',
+    mime: (attrs.filemime as string) ?? '',
   };
 }
 

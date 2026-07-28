@@ -91,7 +91,7 @@ export default function LoginForm({ lang = 'es' }: Props) {
             type="text"
             value={username}
             onChange={e => setUsername(e.currentTarget.value)}
-            placeholder="Username"
+            placeholder="Usuario o correo"
             autoComplete="username"
             aria-invalid={fieldErrors.username ? 'true' : undefined}
             aria-describedby={fieldErrors.username ? 'login-username-error' : undefined}

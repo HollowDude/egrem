@@ -1,20 +1,33 @@
 import type { APIRoute } from 'astro';
 import { loginWithDrupal } from '@/lib/auth/drupal-auth';
 import { setSession } from '@/lib/auth/session';
+import { resolveEmailToUsername } from '@/lib/nodehive/forgotPassword';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { username: input, password } = body;
 
-    if (!username || !password) {
+    if (!input || !password) {
       return new Response(JSON.stringify({ error: 'Username and password are required.' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const { user } = await loginWithDrupal(username, password);
+    let loginName = input.trim();
+    if (loginName.includes('@')) {
+      const resolved = await resolveEmailToUsername(loginName);
+      if (!resolved.exists || !resolved.name) {
+        return new Response(JSON.stringify({ error: 'Usuario o contraseña incorrectos.' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      loginName = resolved.name;
+    }
+
+    const { user } = await loginWithDrupal(loginName, password);
 
     await setSession(cookies, user);
 

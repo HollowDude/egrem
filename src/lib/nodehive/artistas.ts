@@ -1,7 +1,7 @@
 import type { JsonApiResource, JsonApiRelationship } from './client';
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds } from './helpers';
-import { parseMediaImage, resolveFileUrl } from './parsers';
+import { parseMediaImage, resolveFileUrl, normalizeDrupalUri } from './parsers';
 import type { NhMediaImage } from './parsers';
 import { resolveVideoLink } from './youtube';
 import type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia, NhArtistaVideo } from './entities';
@@ -91,7 +91,7 @@ export async function fetchArtistaByPath(
       return {
         id: ref.id,
         platform: (pa?.field_icon as string) ?? '',
-        url: enlace?.uri ?? '',
+        url: enlace?.uri ? normalizeDrupalUri(enlace.uri) : '',
         label: enlace?.title ?? '',
       };
     }).filter((s) => s.url);
@@ -103,7 +103,7 @@ export async function fetchArtistaByPath(
         const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
         const pa = p?.attributes as Record<string, unknown> | undefined;
         const urlField = pa?.field_url_video as { uri?: string } | undefined;
-        const url = urlField?.uri ?? '';
+        const url = urlField?.uri ? normalizeDrupalUri(urlField.uri) : '';
         if (!url) return null;
         const resolved = await resolveVideoLink('', url);
         return { id: ref.id, url, youtubeId: resolved.youtubeId, title: resolved.title, thumbnail: resolved.thumbnail?.url ?? null };
@@ -153,7 +153,7 @@ export async function fetchArtistaByNid(
       return {
         id: ref.id,
         platform: (pa?.field_icon as string) ?? '',
-        url: enlace?.uri ?? '',
+        url: enlace?.uri ? normalizeDrupalUri(enlace.uri) : '',
         label: enlace?.title ?? '',
       };
     }).filter((s) => s.url);
@@ -165,7 +165,7 @@ export async function fetchArtistaByNid(
         const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
         const pa = p?.attributes as Record<string, unknown> | undefined;
         const urlField = pa?.field_url_video as { uri?: string } | undefined;
-        const url = urlField?.uri ?? '';
+        const url = urlField?.uri ? normalizeDrupalUri(urlField.uri) : '';
         if (!url) return null;
         const resolved = await resolveVideoLink('', url);
         return { id: ref.id, url, youtubeId: resolved.youtubeId, title: resolved.title, thumbnail: resolved.thumbnail?.url ?? null };

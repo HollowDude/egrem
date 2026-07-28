@@ -1,6 +1,6 @@
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds } from './helpers';
-import { parseButton, parseMediaImage, resolveFileUrl } from './parsers';
+import { parseButton, parseMediaImage, resolveFileUrl, normalizeDrupalUri } from './parsers';
 import type { NhButton, NhMediaImage, NhEntityMeta } from './parsers';
 import type { JsonApiResource } from './client';
 import { NODEHIVE_CONFIG } from './config';
@@ -115,7 +115,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
           parentId: (aAttrs.parent_id as string) ?? '',
           bundle: 'homepage_lanzamiento_spotify',
           title: link?.title ?? '',
-          url: link?.uri ?? '',
+          url: link ? normalizeDrupalUri(link.uri) : '',
         });
       }
       sections.push({
@@ -139,7 +139,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
           parentId: (vAttrs.parent_id as string) ?? '',
           bundle: 'catalogo_video_yt',
           title: link?.title ?? '',
-          url: link?.uri ?? '',
+          url: link ? normalizeDrupalUri(link.uri) : '',
         });
       }
       sections.push({

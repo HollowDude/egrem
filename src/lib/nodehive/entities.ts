@@ -1,4 +1,4 @@
-import type { NhBase, NhMediaImage, NhMediaFile, NhEntityMeta } from './parsers';
+import type { NhBase, NhMediaImage, NhMediaFile, NhMediaVideo, NhRemoteVideo, NhEntityMeta } from './parsers';
 
 export interface NhLoginRight extends NhBase, NhEntityMeta {
   title: string;
@@ -107,6 +107,8 @@ export interface NhActualidadItem extends NhBase {
   author: string;
   patrimonio: boolean;
   image: NhMediaImage | null;
+  video?: NhMediaVideo | null;
+  remoteVideo?: NhRemoteVideo | null;
   path: string;
   tags: NhActualidadTag[];
   relatedArtists?: NhArtist[];

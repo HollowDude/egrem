@@ -2,7 +2,7 @@
 export type { JsonApiResource, JsonApiResponse } from './client';
 
 // Parsers — primitives
-export type { NhLink, NhMediaImage, NhMediaFile, NhButton, NhEntityMeta, NhBase } from './parsers';
+export type { NhLink, NhMediaImage, NhMediaFile, NhMediaVideo, NhRemoteVideo, NhButton, NhEntityMeta, NhBase } from './parsers';
 
 // Fragments
 export type { NhRed, NhContacto, NhHeaderFragment, NhFooterFragment } from './fragments';
@@ -43,7 +43,7 @@ export {
 export { getRelatedItems } from './related';
 
 // Utilities
-export { resolveFileUrl } from './parsers';
+export { resolveFileUrl, normalizeDrupalUri } from './parsers';
 export { slugify, stripHtml, estimateReadingTime } from './helpers';
 
 // YouTube

@@ -1,7 +1,7 @@
 import type { JsonApiResource, JsonApiRelationship, JsonApiResourceIdentifier } from './client';
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds } from './helpers';
-import { parseMediaImage, resolveFileUrl } from './parsers';
+import { parseMediaImage, resolveFileUrl, normalizeDrupalUri } from './parsers';
 import type { NhMediaImage } from './parsers';
 import type { NhAlbumDiscografia } from './entities';
 
@@ -52,7 +52,7 @@ export function parseAlbumResource(
     const link = pa?.field_app_link as { uri?: string; title?: string } | undefined;
     return {
       title: (pa?.field_titulo as string) ?? '',
-      url: link?.uri ?? '',
+      url: link ? normalizeDrupalUri(link.uri) : '',
     };
   }).filter((e) => e.url);
 

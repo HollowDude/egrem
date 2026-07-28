@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseButton, parseMediaDocument } from '../parsers';
+import { parseButton, parseMediaDocument, normalizeDrupalUri } from '../parsers';
 import type { JsonApiResource } from '../client';
 
 function mockButtonResource(overrides: Record<string, unknown> = {}): JsonApiResource {
@@ -15,6 +15,40 @@ function mockButtonResource(overrides: Record<string, unknown> = {}): JsonApiRes
   };
 }
 
+describe('normalizeDrupalUri', () => {
+  it('strips internal: prefix', () => {
+    expect(normalizeDrupalUri('internal:/catalogo')).toBe('/catalogo');
+    expect(normalizeDrupalUri('internal:/node/123')).toBe('/node/123');
+    expect(normalizeDrupalUri('internal:/actualidad/noticias/test')).toBe('/actualidad/noticias/test');
+  });
+
+  it('leaves external URLs unchanged', () => {
+    expect(normalizeDrupalUri('https://example.com')).toBe('https://example.com');
+    expect(normalizeDrupalUri('http://spotify.com/album/123')).toBe('http://spotify.com/album/123');
+  });
+
+  it('leaves relative paths unchanged', () => {
+    expect(normalizeDrupalUri('/catalogo')).toBe('/catalogo');
+    expect(normalizeDrupalUri('/node/123')).toBe('/node/123');
+  });
+
+  it('converts entity: URIs', () => {
+    expect(normalizeDrupalUri('entity:node/123')).toBe('/node/123');
+    expect(normalizeDrupalUri('entity:taxonomy_term/5')).toBe('/taxonomy_term/5');
+  });
+
+  it('returns # for route: URIs', () => {
+    expect(normalizeDrupalUri('route:<front>')).toBe('#');
+    expect(normalizeDrupalUri('route:user.page')).toBe('#');
+  });
+
+  it('returns # for empty/undefined/null', () => {
+    expect(normalizeDrupalUri('')).toBe('#');
+    expect(normalizeDrupalUri(undefined)).toBe('#');
+    expect(normalizeDrupalUri(null)).toBe('#');
+  });
+});
+
 describe('parseButton', () => {
   it('parses a button with all fields', () => {
     const res = mockButtonResource();
@@ -23,6 +57,11 @@ describe('parseButton', () => {
     expect(btn.title).toBe('Click me');
     expect(btn.style).toBe('primary');
     expect(btn.link).toEqual({ uri: '/catalogo', title: 'Ver catálogo' });
+  });
+
+  it('strips internal: prefix from button link', () => {
+    const res = mockButtonResource({ field_link: { uri: 'internal:/catalogo', title: 'Ir' } });
+    expect(parseButton(res).link?.uri).toBe('/catalogo');
   });
 
   it('parses a secondary button', () => {
