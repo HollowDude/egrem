@@ -81,3 +81,13 @@ export type {
   CatalogoVideosResult,
 } from './entities';
 export { fetchAllArtistVideos, fetchVideosCatalogo, fetchVideoDestacado } from './videos';
+
+// Search
+export type { NhSearchResult, NhSearchResponse } from './search';
+export { searchContent, searchAlbums, searchArtistas, searchActualidad, searchVideos, clearSearchCache } from './search';
+
+// About
+export type { NhAboutHero } from './about';
+export type { NhSede, NhSedeAddress, NhSedePhone, NhMisionVision, NhAboutFormHeader } from './entities';
+export { fetchAboutHero, fetchAboutMisionVision, fetchAboutFormHeader } from './about';
+export { fetchSedes } from './sedes';

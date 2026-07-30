@@ -1,7 +1,6 @@
 ---
 import type { NhVideoDestacado } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
-import Button from '@/components/ui/Button.astro';
 
 interface Props {
   video: NhVideoDestacado | null;
@@ -13,57 +12,61 @@ const tr = useTranslations(Astro.locals.lang);
 if (!video?.youtubeId) return;
 ---
 
-<section class="section-py bg-egrem-dark">
+<section class="section-py">
   <div class="container-site">
-    <p class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest mb-2">
-      {tr('videos.destacado.label')}
-    </p>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-      <div>
-        <h2 class="text-h2 text-white mb-4">{video.title}</h2>
-        {video.detail?.description && (
-          <p class="text-body text-egrem-footer-text line-clamp-3 mb-6">{video.detail.description}</p>
-        )}
+    <a
+      href="#"
+      data-youtube-id={video.youtubeId}
+      class="group relative block w-full aspect-video rounded-2xl overflow-hidden border border-egrem-gray/20 shadow-lg no-underline"
+      aria-label={video.title}
+    >
+      {video.thumbnail ? (
+        <img
+          src={video.thumbnail}
+          alt={video.title}
+          class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="eager"
+          decoding="async"
+        />
+      ) : (
+        <div class="absolute inset-0 flex items-center justify-center bg-egrem-dark">
+          <span class="text-6xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">videocam</span>
+        </div>
+      )}
+      <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span class="w-20 h-20 rounded-full bg-egrem-red/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-5xl" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_arrow</span>
+        </span>
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 p-6 md:p-10">
+        <span class="inline-block px-3 py-1 bg-egrem-red text-white text-[11px] uppercase tracking-wider font-display font-bold rounded mb-3">
+          {tr('videos.destacado.label')}
+        </span>
+        <h2 class="text-h2 text-white mb-1">{video.title}</h2>
         {video.detail?.channelTitle && (
-          <p class="font-display text-small text-egrem-gold mb-1">{video.detail.channelTitle}</p>
+          <p class="font-display text-small text-egrem-gold">{video.detail.channelTitle}</p>
         )}
-        {video.detail?.viewCount !== null && video.detail?.viewCount !== undefined && (
-          <p class="font-display text-small text-egrem-gray mb-6">
+      </div>
+    </a>
+
+    <div class="mt-6 max-w-4xl">
+      {video.detail?.description && (
+        <p class="text-body text-egrem-black/80 whitespace-pre-line leading-relaxed">
+          {video.detail.description}
+        </p>
+      )}
+      <div class="flex flex-wrap gap-4 mt-4">
+        {video.detail?.viewCount != null && (
+          <p class="font-display text-small text-egrem-gray">
             {tr('videos.detail.views').replace('{count}', video.detail.viewCount.toLocaleString(Astro.locals.lang))}
           </p>
         )}
-        <div class="flex flex-wrap gap-4">
-          <Button variant="primary" size="lg" href={`#`} data-youtube-id={video.youtubeId}>
-            {tr('videos.watch')}
-          </Button>
-        </div>
-      </div>
-      <div class="relative">
-        <a
-          href="#"
-          data-youtube-id={video.youtubeId}
-          class="group block no-underline cursor-pointer"
-          aria-label={video.title}
-        >
-          <div class="aspect-video relative overflow-hidden rounded-2xl border border-egrem-gray/20 bg-egrem-dark-card">
-            {video.thumbnail ? (
-              <img
-                src={video.thumbnail}
-                alt={video.title}
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                loading="eager"
-                decoding="async"
-              />
-            ) : (
-              <div class="w-full h-full flex items-center justify-center">
-                <span class="text-6xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">videocam</span>
-              </div>
-            )}
-            <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors rounded-2xl">
-              <span class="text-white text-6xl opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-lg" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_circle</span>
-            </div>
-          </div>
-        </a>
+        {video.detail?.publishedAt && (
+          <p class="font-display text-small text-egrem-gray">
+            {tr('videos.detail.published')}: {new Date(video.detail.publishedAt).toLocaleDateString(Astro.locals.lang, { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        )}
       </div>
     </div>
   </div>

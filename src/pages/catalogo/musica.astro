@@ -84,11 +84,11 @@ for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
             </select>
           </div>
           <button type="submit" class="hidden md:inline-flex px-5 py-1.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red-dark transition-colors">
-            Filtrar
+            {tr('musica.filter.submit')}
           </button>
           {(sello || search) && (
             <a href="/catalogo/musica" class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline">
-              Limpiar
+              {tr('musica.filter.clear')}
             </a>
           )}
         </form>

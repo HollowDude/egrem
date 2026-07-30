@@ -32,6 +32,9 @@ export const nav: Record<Lang, Record<string, string>> = {
     'search.placeholder': '¿Qué estás buscando?',
     'search.popular': 'Búsquedas populares',
     'search.hint': 'Presiona Enter para buscar · Esc para cerrar',
+    'search.loading': 'Buscando…',
+    'search.no_results': 'No encontramos resultados para "{query}"',
+    'search.error': 'Ocurrió un error al buscar. Intenta de nuevo.',
   },
   en: {
     'nav.store': 'Store',
@@ -64,5 +67,8 @@ export const nav: Record<Lang, Record<string, string>> = {
     'search.placeholder': 'What are you looking for?',
     'search.popular': 'Popular searches',
     'search.hint': 'Press Enter to search · Esc to close',
+    'search.loading': 'Searching…',
+    'search.no_results': 'No results found for "{query}"',
+    'search.error': 'An error occurred. Please try again.',
   },
 };

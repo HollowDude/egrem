@@ -1,0 +1,42 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HeroAbout from '@/components/about/HeroAbout.astro';
+import MisionVisionSection from '@/components/about/MisionVisionSection.astro';
+import SedesSection from '@/components/about/SedesSection.astro';
+import { fetchAboutHero, fetchAboutMisionVision, fetchAboutFormHeader } from '@/lib/nodehive/about';
+import { fetchSedes } from '@/lib/nodehive/sedes';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+
+const [hero, misionVision, formHeader, sedes] = await Promise.all([
+  fetchAboutHero(lang),
+  fetchAboutMisionVision(lang),
+  fetchAboutFormHeader(lang),
+  fetchSedes(lang),
+]);
+
+const tr = useTranslations(lang);
+
+const title = hero?.title ?? tr('about.hero.title');
+const subtitle = hero?.subtitle ?? tr('about.hero.subtitle');
+const tag = hero?.tag ?? tr('about.hero.tag');
+---
+
+<BaseLayout
+  title={tr('about.page_title')}
+  description={tr('about.page_description')}
+  lang={lang}
+>
+  <HeroAbout
+    title={title}
+    subtitle={subtitle}
+    tag={tag}
+    photo={hero?.photo}
+    nhEntity={hero ?? undefined}
+  />
+
+  <MisionVisionSection misionVision={misionVision} />
+
+  <SedesSection formHeader={formHeader} sedes={sedes} />
+</BaseLayout>

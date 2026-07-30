@@ -1,0 +1,40 @@
+---
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhAboutFormHeader } from '@/lib/nodehive/entities';
+import type { NhSede } from '@/lib/nodehive/entities';
+import SedesMap from './SedesMap';
+
+interface Props {
+  formHeader: NhAboutFormHeader | null;
+  sedes: NhSede[];
+}
+
+const { formHeader, sedes } = Astro.props;
+
+const title = formHeader?.title ?? 'Sedes y Ubicaciones';
+const subtitle = formHeader?.subtitle ?? 'Directorio de nuestras instalaciones en todo el país.';
+---
+
+<section id="sedes" class="py-20 bg-white border-y border-[#ebbbb4]">
+  <div class="max-w-[1280px] mx-auto px-4 md:px-16">
+    <NodeHiveEntity
+      entityType="paragraph"
+      bundle={formHeader?.bundle ?? '_component_about_form'}
+      id={formHeader?.id}
+      internalId={formHeader?.internalId}
+      parentId={formHeader?.parentId}
+      lang={Astro.locals.lang}
+      tag="div"
+      editLabel="Editar Encabezado"
+      editField="field_title"
+    >
+      <div class="text-center mb-20">
+        <h2 class="text-h1 text-[#FF0000] uppercase" data-nodehive-field="field_title">{title}</h2>
+        <div class="w-24 h-1 bg-[#CC9933] mx-auto mt-4" />
+        <p class="text-body text-[#603e39] max-w-2xl mx-auto mt-4" data-nodehive-field="field_subtitle">{subtitle}</p>
+      </div>
+    </NodeHiveEntity>
+
+    <SedesMap client:only="react" sedes={sedes} />
+  </div>
+</section>

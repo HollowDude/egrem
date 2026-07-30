@@ -1,0 +1,62 @@
+---
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import type { NhMisionVision } from '@/lib/nodehive/entities';
+
+interface Props {
+  misionVision: NhMisionVision | null;
+}
+
+const { misionVision } = Astro.props;
+
+const mision = misionVision?.mision ?? {
+  title: 'Nuestra Misión',
+  body: 'Gestionar integralmente el patrimonio musical cubano, ofreciendo productos y servicios culturales de excelencia que satisfagan las demandas de nuestro público, promoviendo el talento nacional con un enfoque de innovación y preservación de nuestras raíces.',
+};
+
+const vision = misionVision?.vision ?? {
+  title: 'Nuestra Visión',
+  body: 'Ser la empresa líder y referente indiscutible de la industria musical cubana a nivel internacional, reconocida por la calidad, autenticidad e innovación en la gestión cultural y la proyección global de nuestro catálogo sonoro.',
+};
+---
+
+<section class="py-20 bg-[#f9f9f9]">
+  <div class="px-4 md:px-16 max-w-[1280px] mx-auto">
+  <NodeHiveEntity
+    entityType="paragraph"
+    bundle={misionVision?.bundle ?? '_component_about_mision_vision'}
+    id={misionVision?.id}
+    internalId={misionVision?.internalId}
+    parentId={misionVision?.parentId}
+    lang={Astro.locals.lang}
+    tag="div"
+    editLabel="Editar Misión y Visión"
+    editField="field_title"
+  >
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Misión -->
+      <div class="bg-white p-8 border border-[#ebbbb4] rounded-lg relative overflow-hidden group hover:border-[#CC9933] transition-colors duration-300">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-[#FF0000]/5 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-[#FF0000]/10 rounded-full flex items-center justify-center mb-6">
+            <span class="icon icon-filled text-[#FF0000]">flag</span>
+          </div>
+          <h2 class="text-h2 text-[#1b1b1b] mb-4" data-nodehive-field="field_mision_title">{mision.title}</h2>
+          <p class="text-body text-[#603e39] leading-relaxed" data-nodehive-field="field_mision_body">{mision.body}</p>
+        </div>
+      </div>
+
+      <!-- Visión -->
+      <div class="bg-white p-8 border border-[#ebbbb4] rounded-lg relative overflow-hidden group hover:border-[#CC9933] transition-colors duration-300">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-[#CC9933]/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-[#CC9933]/20 rounded-full flex items-center justify-center mb-6">
+            <span class="icon icon-filled text-[#CC9933]">visibility</span>
+          </div>
+          <h2 class="text-h2 text-[#1b1b1b] mb-4" data-nodehive-field="field_vision_title">{vision.title}</h2>
+          <p class="text-body text-[#603e39] leading-relaxed" data-nodehive-field="field_vision_body">{vision.body}</p>
+        </div>
+      </div>
+    </div>
+  </NodeHiveEntity>
+  </div>
+</section>

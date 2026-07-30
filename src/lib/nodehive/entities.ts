@@ -174,6 +174,7 @@ export interface NhCatalogoVideo {
   thumbnail: string | null;
   artistName: string;
   artistHref: string;
+  artistNid: number;
 }
 
 export interface NhVideoDetail {
@@ -206,4 +207,42 @@ export interface CatalogoVideosResult {
   totalPages: number;
   currentPage: number;
   availableArtistas: { name: string; slug: string; nid: number }[];
+}
+
+/* ─── About / Quiénes Somos ────────────────────────────────────── */
+
+export interface NhSedeAddress {
+  address_line1: string;
+  locality: string;
+  administrative_area: string;
+  country_code: string;
+}
+
+export interface NhSedePhone {
+  phone_number: string;
+  country_code: string;
+  local_number: string;
+}
+
+export interface NhSede extends NhBase {
+  title: string;
+  direccion: NhSedeAddress | null;
+  location: { lat: number; lon: number } | null;
+  telefono: NhSedePhone[];
+  correo: string;
+  horario: { value: string; end_value: string } | null;
+  imagen: NhMediaImage | null;
+  tipo: { name: string; tid: number } | null;
+}
+
+export interface NhMisionVision extends NhEntityMeta {
+  title: string;
+  subtitle: string;
+  mision: { title: string; body: string } | null;
+  vision: { title: string; body: string } | null;
+}
+
+export interface NhAboutFormHeader extends NhEntityMeta {
+  title: string;
+  subtitle: string;
 }

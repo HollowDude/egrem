@@ -465,6 +465,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
     </section>
 
     <!-- ─── PATRIMONIO CULTURAL ──────────────────────────────────── -->
+    <div id="patrimonio">
     <NodeHiveEntity
       entityType="paragraph"
       bundle={patrimonioSection?.bundle ?? 'component_patrimonio_section'}
@@ -704,6 +705,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
         </div>
       </div>
     </NodeHiveEntity>
+    </div>
     <YouTubePlayer client:load />
     <BoletinesModal client:load boletines={boletinesModalData} />
   </main>

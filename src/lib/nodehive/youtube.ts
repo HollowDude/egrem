@@ -63,7 +63,10 @@ export interface NhVideoDetail {
 
 export async function fetchVideoDetail(videoId: string): Promise<NhVideoDetail | null> {
   const apiKey = import.meta.env.YOUTUBE_API_KEY ?? '';
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn('[NodeHive] YOUTUBE_API_KEY no configurada — el video destacado no mostrará descripción');
+    return null;
+  }
 
   try {
     const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`;

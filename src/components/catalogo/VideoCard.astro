@@ -32,8 +32,8 @@ const { video } = Astro.props;
       <span class="text-white text-5xl opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-lg" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_circle</span>
     </div>
   </div>
+  <h3 class="font-display font-bold text-[18px] text-egrem-black group-hover:text-egrem-red transition-colors leading-tight mb-0.5">{video.title}</h3>
   {video.artistName && (
-    <p class="font-display font-bold text-[11px] text-egrem-gold uppercase tracking-widest mb-0.5">{video.artistName}</p>
+    <p class="font-display text-small text-egrem-gray">{video.artistName}</p>
   )}
-  <h3 class="font-display font-bold text-[16px] text-egrem-black group-hover:text-egrem-red transition-colors leading-tight mb-0.5">{video.title}</h3>
 </a>

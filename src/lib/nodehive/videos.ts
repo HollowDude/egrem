@@ -1,6 +1,6 @@
 import type { JsonApiResource, JsonApiRelationship } from './client';
 import { jsonApiFetch } from './client';
-import { findIncluded, resolveRelIds } from './helpers';
+import { findIncluded, resolveRelIds, slugify } from './helpers';
 import { normalizeDrupalUri } from './parsers';
 import { resolveVideoLink, fetchVideoDetail } from './youtube';
 import type {
@@ -25,7 +25,8 @@ export async function fetchAllArtistVideos(lang = 'es'): Promise<NhCatalogoVideo
       const a = resource.attributes as Record<string, unknown>;
       const rels = resource.relationships as Record<string, JsonApiRelationship> | undefined;
       const artistName = (a.title as string) ?? '';
-      const artistHref = (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
+      const artistNid = (a.drupal_internal__nid as number) ?? 0;
+      const artistHref = (a.path as { alias?: string | null })?.alias ?? `/artista/${artistNid}`;
       const artistPath = artistHref.startsWith('/') ? artistHref : `/${artistHref}`;
 
       const vidRefs = resolveRelIds(rels?.field_videos_artista);
@@ -49,6 +50,7 @@ export async function fetchAllArtistVideos(lang = 'es'): Promise<NhCatalogoVideo
           thumbnail: resolved.thumbnail?.url ?? null,
           artistName,
           artistHref: artistPath,
+          artistNid,
         });
       }
     }
@@ -72,17 +74,14 @@ export async function fetchVideosCatalogo(
     let videos = await fetchAllArtistVideos(lang);
 
     for (const v of videos) {
-      const slug = v.artistName.toLowerCase().replace(/\s+/g, '-');
-      if (!allArtistas.has(slug)) {
-        allArtistas.set(slug, { name: v.artistName, slug, nid: 0 });
+      const s = slugify(v.artistName);
+      if (!allArtistas.has(s)) {
+        allArtistas.set(s, { name: v.artistName, slug: s, nid: v.artistNid });
       }
     }
 
     if (params.artista) {
-      videos = videos.filter((v) => {
-        const slug = v.artistName.toLowerCase().replace(/\s+/g, '-');
-        return slug === params.artista;
-      });
+      videos = videos.filter((v) => slugify(v.artistName) === params.artista);
     }
 
     const total = videos.length;

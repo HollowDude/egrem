@@ -13,7 +13,7 @@ export const accessibility: Record<Lang, Record<string, string>> = {
     'a11y.color_deuteranopia': 'Deuteranopía (verde)',
     'a11y.color_tritanopia': 'Tritanopía (azul)',
     'a11y.color_achromatopsia': 'Monocromático',
-    'a11y.reset_all': 'Restablecer todo',
+    'a11y.reset_all': 'Deshacer',
     'a11y.close': 'Cerrar controles de accesibilidad',
     'a11y.open': 'Abrir controles de accesibilidad',
   },
