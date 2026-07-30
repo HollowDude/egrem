@@ -1,0 +1,150 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ContactForm from '@/components/ui/ContactForm';
+import { fetchContactoPage, fetchTipoConsultaOptions } from '@/lib/nodehive/contacto';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+
+const [contacto, tipoConsultaOptions] = await Promise.all([
+  fetchContactoPage(lang),
+  Promise.resolve(fetchTipoConsultaOptions()),
+]);
+
+const tr = useTranslations(lang);
+
+const heroTitle = contacto?.title ?? tr('contacto.hero.title');
+const heroSubtitle = contacto?.subtitle ?? tr('contacto.hero.subtitle');
+
+const sede = contacto?.sede;
+const dir = sede?.direccion;
+const address = dir
+  ? [dir.address_line1, dir.locality, dir.administrative_area, dir.country_code].filter(Boolean).join(', ')
+  : 'Calle 3ra No. 1008 e/ 10 y 12, Miramar, Playa, La Habana, Cuba';
+const phones = sede?.telefono?.length
+  ? sede.telefono.map((p) => p.phone_number).filter(Boolean)
+  : ['+53 7 204 9822', '+53 7 204 9823'];
+const email = sede?.correo || 'info@egrem.co.cu';
+
+const mapQuery = encodeURIComponent(address);
+const mapUrl = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
+---
+
+<BaseLayout
+  title={tr('contacto.page_title')}
+  description={tr('contacto.page_description')}
+  lang={lang}
+>
+  <main class="max-w-[1000px] mx-auto px-margin-mobile md:px-margin-desktop py-xl space-y-xl">
+    <div class="mb-12">
+      <h1 class="text-h1 text-egrem-black uppercase font-bold mb-2 border-l-4 border-egrem-red pl-6">
+        {heroTitle}
+      </h1>
+      <p class="text-body text-egrem-gray max-w-2xl">
+        {heroSubtitle}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+      <div class="lg:col-span-7">
+        <h2 class="text-h2 text-egrem-black uppercase font-bold mb-6">
+          {tr('contacto.form.title')}
+        </h2>
+        <ContactForm
+          idPrefix="page"
+          lang={lang}
+          tipoConsultaOptions={tipoConsultaOptions}
+          client:load
+        />
+      </div>
+
+      <div class="lg:col-span-5 flex flex-col gap-5">
+        <h2 class="text-h2 text-egrem-black uppercase font-bold border-l-4 border-egrem-gold pl-4">
+          {tr('contacto.info.title')}
+        </h2>
+
+        <div class="flex flex-col gap-4">
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+            <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
+              <span class="icon icon-filled text-egrem-red text-[20px]">location_on</span>
+            </div>
+            <div>
+              <h3 class="text-small text-egrem-gray uppercase font-bold mb-1">{tr('contacto.info.sede_label')}</h3>
+              <p class="text-body text-egrem-black">
+                {address.replace(', ', ',<br />')}
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+            <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
+              <span class="icon icon-filled text-egrem-red text-[20px]">call</span>
+            </div>
+            <div>
+              <h3 class="text-small text-egrem-gray uppercase font-bold mb-1">{tr('contacto.info.phone_label')}</h3>
+              {
+                phones.map((p) => (
+                  <p class="text-body text-egrem-black">{p}</p>
+                ))
+              }
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+            <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
+              <span class="icon icon-filled text-egrem-red text-[20px]">mail</span>
+            </div>
+            <div>
+              <h3 class="text-small text-egrem-gray uppercase font-bold mb-1">{tr('contacto.info.email_label')}</h3>
+              <a href={`mailto:${email}`} class="text-body text-egrem-red no-underline hover:underline">
+                {email}
+              </a>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+            <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
+              <span class="icon icon-filled text-egrem-red text-[20px]">schedule</span>
+            </div>
+            <div>
+              <h3 class="text-small text-egrem-gray uppercase font-bold mb-1">{tr('contacto.info.hours_label')}</h3>
+              <p class="text-body text-egrem-black">Lunes a Viernes: 8:30 &ndash; 17:00</p>
+              <p class="text-body text-egrem-gray">S&aacute;bados: 9:00 &ndash; 13:00</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10 relative rounded-2xl overflow-hidden border border-egrem-gray shadow-md" style="height: 380px;">
+      <iframe
+        src={mapUrl}
+        width="100%"
+        height="100%"
+        style="border:0; display:block;"
+        allowfullscreen
+        loading="lazy"
+        title="Mapa EGREM"
+      ></iframe>
+      <div class="absolute top-4 left-4 bg-white/96 backdrop-blur-sm rounded-xl px-4 py-3 shadow-xl max-w-[260px] border border-egrem-gray/40">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="icon icon-filled text-egrem-red text-[16px]">location_on</span>
+          <span class="text-small text-egrem-red uppercase font-bold">{tr('contacto.info.sede_label')}</span>
+        </div>
+        <p class="text-body text-egrem-black">
+          {address.replace(', ', ',<br />')}
+        </p>
+        <a
+          href={mapLink}
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-1 mt-2 text-small text-egrem-red hover:underline no-underline font-medium"
+        >
+          <span class="icon text-[14px]">open_in_new</span>
+          {tr('contacto.map.open')}
+        </a>
+      </div>
+    </div>
+  </main>
+</BaseLayout>

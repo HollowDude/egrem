@@ -91,3 +91,7 @@ export type { NhAboutHero } from './about';
 export type { NhSede, NhSedeAddress, NhSedePhone, NhMisionVision, NhAboutFormHeader } from './entities';
 export { fetchAboutHero, fetchAboutMisionVision, fetchAboutFormHeader } from './about';
 export { fetchSedes } from './sedes';
+
+// Contacto
+export type { NhContactoPage, NhTipoConsultaOption } from './entities';
+export { fetchContactoPage, fetchTipoConsultaOptions } from './contacto';

@@ -23,6 +23,7 @@ import type { NhHeaderFragment, NhFooterFragment } from '@/lib/nodehive';
 
 import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
 import YouTubePlayer from '@/components/ui/YouTubePlayer';
+import ContactModal from '@/components/ui/ContactModal';
 
 interface Props {
   /** Título de la página (se añade "| EGREM" al final) */
@@ -145,6 +146,7 @@ try {
     <Footer nhFooter={nhFooter} lang={lang} />
 
     <YouTubePlayer client:only="react" />
+    <ContactModal client:only="react" />
     <NodeHiveConnector />
   </body>
 </html>

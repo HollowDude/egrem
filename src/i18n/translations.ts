@@ -22,10 +22,11 @@ import { artistas } from './artistas';
 import { musica } from './musica';
 import { videos } from './videos';
 import { about } from './about';
+import { contacto } from './contacto';
 
 export const t: Record<Lang, Record<string, string>> = {
-  es: { ...nav.es, ...footer.es, ...home.es, ...accessibility.es, ...auth.es, ...actualidad.es, ...artistas.es, ...musica.es, ...videos.es, ...about.es },
-  en: { ...nav.en, ...footer.en, ...home.en, ...accessibility.en, ...auth.en, ...actualidad.en, ...artistas.en, ...musica.en, ...videos.en, ...about.en },
+  es: { ...nav.es, ...footer.es, ...home.es, ...accessibility.es, ...auth.es, ...actualidad.es, ...artistas.es, ...musica.es, ...videos.es, ...about.es, ...contacto.es },
+  en: { ...nav.en, ...footer.en, ...home.en, ...accessibility.en, ...auth.en, ...actualidad.en, ...artistas.en, ...musica.en, ...videos.en, ...about.en, ...contacto.en },
 };
 
 export function useTranslations(lang: Lang) {

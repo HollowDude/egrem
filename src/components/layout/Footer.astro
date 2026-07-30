@@ -16,7 +16,6 @@
 import type { NhFooterFragment } from '@/lib/nodehive';
 import { resolveFileUrl } from '@/lib/nodehive';
 import EgremLogo from '@/components/ui/EgremLogo.astro';
-import Button from '@/components/ui/Button.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
@@ -310,17 +309,14 @@ const navInfo = [
             {contacto?.telefono || '+53 7 204 9822 / +53 7 204 9823'}
           </a>
 
-          <Button
-            variant="primary"
-            size="sm"
-            href={contacto?.boton?.link?.uri || '/contacto'}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="self-start mt-1"
+          <button
+            type="button"
+            onclick="window.dispatchEvent(new CustomEvent('open-contact-modal',{detail:{variant:'full'}}))"
+            class="self-start mt-1 text-white font-display font-bold text-xs uppercase tracking-widest bg-egrem-red hover:bg-egrem-red-dark hover:scale-105 active:scale-[0.97] transition-all duration-300 flex items-center gap-2 px-5 py-2.5 rounded cursor-pointer border-none"
           >
             <span class="icon" style="font-size:0.95rem">mail</span>
             {contacto?.boton?.title || tr('nav.contact')}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

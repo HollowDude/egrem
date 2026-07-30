@@ -1,0 +1,58 @@
+import type { Lang } from './index';
+
+export const contacto: Record<Lang, Record<string, string>> = {
+  es: {
+    'contacto.page_title': 'Contacto | EGREM',
+    'contacto.page_description':
+      'Contacta con EGREM. Envíanos un mensaje para consultas sobre licencias, eventos, nuestro catálogo musical o soporte de tienda online.',
+    'contacto.hero.title': 'Contacto',
+    'contacto.hero.subtitle':
+      'Estamos aquí para escucharle. Comuníquese con nosotros para consultas sobre licencias, eventos o nuestro catálogo musical.',
+    'contacto.form.title': 'Envíenos un mensaje',
+    'contacto.form.inquiry_label': 'Tipo de Consulta',
+    'contacto.form.inquiry_placeholder': 'Seleccione una opción',
+    'contacto.form.name_label': 'Nombre Completo',
+    'contacto.form.name_placeholder': 'Ej. Juan Pérez',
+    'contacto.form.email_label': 'Correo Electrónico',
+    'contacto.form.email_placeholder': 'correo@ejemplo.com',
+    'contacto.form.message_label': 'Mensaje',
+    'contacto.form.message_placeholder': 'Escriba su mensaje aquí...',
+    'contacto.form.submit': 'Enviar Mensaje',
+    'contacto.form.success': 'Mensaje enviado con éxito. Nos pondremos en contacto pronto.',
+    'contacto.form.error': 'Ocurrió un error al enviar el mensaje. Inténtelo de nuevo.',
+    'contacto.info.title': 'Información Directa',
+    'contacto.info.sede_label': 'Sede Principal',
+    'contacto.info.phone_label': 'Teléfonos',
+    'contacto.info.email_label': 'Correo Electrónico',
+    'contacto.info.hours_label': 'Horario de Atención',
+    'contacto.map.open': 'Abrir en Google Maps',
+    'contacto.modal.title': 'Contacto',
+  },
+  en: {
+    'contacto.page_title': 'Contact | EGREM',
+    'contacto.page_description':
+      'Contact EGREM. Send us a message for inquiries about licensing, events, our music catalog, or online store support.',
+    'contacto.hero.title': 'Contact',
+    'contacto.hero.subtitle':
+      'We are here to listen. Get in touch with us for inquiries about licensing, events, or our music catalog.',
+    'contacto.form.title': 'Send us a message',
+    'contacto.form.inquiry_label': 'Inquiry Type',
+    'contacto.form.inquiry_placeholder': 'Select an option',
+    'contacto.form.name_label': 'Full Name',
+    'contacto.form.name_placeholder': 'e.g. John Doe',
+    'contacto.form.email_label': 'Email Address',
+    'contacto.form.email_placeholder': 'email@example.com',
+    'contacto.form.message_label': 'Message',
+    'contacto.form.message_placeholder': 'Write your message here...',
+    'contacto.form.submit': 'Send Message',
+    'contacto.form.success': 'Message sent successfully. We will get in touch soon.',
+    'contacto.form.error': 'An error occurred while sending the message. Please try again.',
+    'contacto.info.title': 'Direct Information',
+    'contacto.info.sede_label': 'Main Office',
+    'contacto.info.phone_label': 'Phone',
+    'contacto.info.email_label': 'Email',
+    'contacto.info.hours_label': 'Office Hours',
+    'contacto.map.open': 'Open in Google Maps',
+    'contacto.modal.title': 'Contact',
+  },
+};

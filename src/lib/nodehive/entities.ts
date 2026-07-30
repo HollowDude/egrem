@@ -246,3 +246,17 @@ export interface NhAboutFormHeader extends NhEntityMeta {
   title: string;
   subtitle: string;
 }
+
+/* ─── Contacto ──────────────────────────────────────────────────── */
+
+export interface NhContactoPage extends NhEntityMeta {
+  title: string;
+  subtitle: string;
+  sede: NhSede | null;
+}
+
+export interface NhTipoConsultaOption {
+  value: string;
+  label_es: string;
+  label_en: string;
+}
