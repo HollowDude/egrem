@@ -4,11 +4,13 @@ export const prerender = false;
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Breadcrumb from '@/components/ui/Breadcrumb.astro';
 import Button from '@/components/ui/Button.astro';
-import SpotifyPlayer from '@/components/ui/SpotifyPlayer';
+import MusicEmbedPlayer from '@/components/ui/MusicEmbedPlayer';
+import AlbumTracklist from '@/components/musica/AlbumTracklist.astro';
+import SpotifyIcon from '@/components/icons/SpotifyIcon.astro';
+import AppleMusicIcon from '@/components/icons/AppleMusicIcon.astro';
 import { fetchAlbumByPath, fetchAlbumByNid } from '@/lib/nodehive';
 import type { NhAlbumDiscografia } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
-import { extractSpotifyId } from '@/lib/nodehive/spotify';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
@@ -37,14 +39,6 @@ try {
 }
 
 const pageTitle = `${album.title} | EGREM`;
-
-const spotifyApp = album.externalApps.find((a) => {
-  const id = extractSpotifyId(a.url);
-  return id !== null;
-});
-const spotifyEmbedUrl = spotifyApp?.url ? spotifyApp.url : null;
-
-const otherApps = album.externalApps.filter((a) => a !== spotifyApp);
 ---
 
 <BaseLayout
@@ -121,30 +115,28 @@ const otherApps = album.externalApps.filter((a) => a !== spotifyApp);
         )}
 
         <div class="flex flex-wrap gap-3 pt-2">
-          {spotifyEmbedUrl && (
-            <button
-              data-spotify-embed={spotifyEmbedUrl}
-              class="inline-flex items-center gap-2 px-5 py-2.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red-dark hover:scale-105 active:scale-[0.97] transition-all duration-200"
-            >
-              <span style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1; font-size: 18px;">play_arrow</span>
-              {tr('musica.detail.listen')}
-            </button>
-          )}
-
           <span class="inline-flex items-center gap-2 px-5 py-2.5 border border-egrem-gray/30 text-egrem-gray/50 font-display font-bold text-[11px] uppercase tracking-wider rounded-xl cursor-not-allowed">
             <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">shopping_bag</span>
             {tr('musica.detail.visit_store')}
           </span>
 
-          {otherApps.map((app) => {
-            const isSpotify = extractSpotifyId(app.url) !== null;
+          {album.externalApps.map((app) => {
+            const isSpotifyEmbed = app.platform === 'spotify' && Boolean(app.embedUrl);
             return (
               <button
-                {...(isSpotify ? { 'data-spotify-embed': app.url } : {})}
+                {...(isSpotifyEmbed
+                  ? { 'data-embed-url': app.embedUrl!, 'data-embed-platform': app.platform }
+                  : {})}
                 class="inline-flex items-center gap-2 px-5 py-2.5 border border-egrem-red text-egrem-red font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red hover:text-white hover:scale-105 active:scale-[0.97] transition-all duration-200"
-                {...(!isSpotify ? { onclick: `window.open('${app.url}', '_blank')` } : {})}
+                {...(!isSpotifyEmbed ? { onclick: `window.open('${app.url}', '_blank')` } : {})}
               >
-                <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">{isSpotify ? 'podcasts' : 'music_note'}</span>
+                {app.platform === 'apple_music' ? (
+                  <AppleMusicIcon class="w-[18px] h-[18px]" />
+                ) : app.platform === 'spotify' ? (
+                  <SpotifyIcon class="w-[18px] h-[18px]" />
+                ) : (
+                  <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">music_note</span>
+                )}
                 {app.title}
               </button>
             );
@@ -156,20 +148,7 @@ const otherApps = album.externalApps.filter((a) => a !== spotifyApp);
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12 md:mt-16">
       <div class="lg:col-span-2">
         <h3 class="text-h4 text-egrem-black mb-5 border-b-2 border-egrem-red pb-2 inline-block">{tr('musica.detail.tracklist_title')}</h3>
-        {album.tracks.length > 0 ? (
-          <div class="bg-white border border-egrem-gray/20 rounded-xl overflow-hidden">
-            <ul class="divide-y divide-egrem-gray/10">
-              {album.tracks.map((track, idx) => (
-                <li class="flex items-center gap-4 px-5 py-3.5 group hover:bg-egrem-gray-light transition-colors">
-                  <span class="font-display font-bold text-[11px] text-egrem-gray w-6 text-center">{String(idx + 1).padStart(2, '0')}</span>
-                  <span class="font-display font-semibold text-[0.95rem] text-egrem-black">{track}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <p class="font-display text-body text-egrem-gray">{tr('musica.detail.tracklist_title')} —</p>
-        )}
+        <AlbumTracklist tracks={album.tracks} lang={lang} />
       </div>
 
       <div class="flex flex-col gap-6">
@@ -207,4 +186,4 @@ const otherApps = album.externalApps.filter((a) => a !== spotifyApp);
   </main>
 </BaseLayout>
 
-<SpotifyPlayer client:load />
+<MusicEmbedPlayer client:load />

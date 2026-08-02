@@ -39,6 +39,14 @@ export const actualidad: Record<Lang, Record<string, string>> = {
     'actualidad.detail.comments_submit': 'Publicar',
     'actualidad.detail.comments_login_required': 'Inicia sesión para comentar',
     'actualidad.detail.comments_reply': 'Responder',
+    'actualidad.detail.comments_confirmation':
+      'Comentario recibido. Está pendiente de aprobación y se publicará cuando un moderador lo apruebe.',
+    'actualidad.detail.newsletter_title': 'Boletín',
+    'actualidad.detail.newsletter_subtitle':
+      'Recibe en tu correo las novedades del blog de EGREM.',
+    'actualidad.detail.newsletter_email_label': 'Tu correo',
+    'actualidad.detail.newsletter_subscribe': 'Suscribirme',
+    'actualidad.detail.newsletter_login_required': 'Inicia sesión para suscribirte',
   },
   en: {
     'actualidad.page_title': 'News | EGREM',
@@ -78,5 +86,13 @@ export const actualidad: Record<Lang, Record<string, string>> = {
     'actualidad.detail.comments_submit': 'Publish',
     'actualidad.detail.comments_login_required': 'Log in to comment',
     'actualidad.detail.comments_reply': 'Reply',
+    'actualidad.detail.comments_confirmation':
+      'Comment received. It is pending approval and will be published once a moderator approves it.',
+    'actualidad.detail.newsletter_title': 'Newsletter',
+    'actualidad.detail.newsletter_subtitle':
+      'Get EGREM blog news delivered to your inbox.',
+    'actualidad.detail.newsletter_email_label': 'Your email',
+    'actualidad.detail.newsletter_subscribe': 'Subscribe',
+    'actualidad.detail.newsletter_login_required': 'Log in to subscribe',
   },
 };

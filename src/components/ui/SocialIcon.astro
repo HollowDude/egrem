@@ -1,0 +1,26 @@
+---
+import { detectSocialNetwork, socialIconPath } from '@/lib/social';
+
+interface Props {
+  platform?: string;
+  url?: string;
+  size?: number;
+}
+
+const { platform = '', url = '', size = 18 } = Astro.props;
+const network = detectSocialNetwork(platform, url);
+const path = socialIconPath(network);
+const label = network.charAt(0).toUpperCase() + network.slice(1);
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  role="img"
+  aria-hidden="true"
+>
+  <title>{label}</title>
+  <path d={path} />
+</svg>

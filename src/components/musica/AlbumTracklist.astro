@@ -1,0 +1,81 @@
+---
+/**
+ * AlbumTracklist.astro — Lista de canciones estilo Spotify.
+ * Cada fila: índice, título, botón de preview (plataforma detectada) y duración.
+ * Si el track no tiene preview ni duración, se degrada a título simple.
+ */
+import type { NhTrack } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+import InlineTrackPlayer from '@/components/ui/InlineTrackPlayer';
+
+interface Props {
+  tracks: NhTrack[];
+  lang?: Lang;
+}
+
+const { tracks, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+---
+
+{
+  tracks.length > 0 ? (
+    <div class="bg-white border border-egrem-gray/20 rounded-xl overflow-hidden">
+      <ul class="divide-y divide-egrem-gray/10">
+        {tracks.map((track, idx) => (
+          <li class="flex flex-wrap items-center gap-3 md:gap-4 px-4 md:px-5 py-3.5 group hover:bg-egrem-gray-light transition-colors">
+            <span class="font-display font-bold text-[11px] text-egrem-gray w-6 text-center shrink-0 group-hover:hidden">
+              {String(idx + 1).padStart(2, '0')}
+            </span>
+            <span
+              class="hidden group-hover:flex items-center justify-center w-6 text-egrem-red shrink-0 cursor-pointer"
+              style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1; font-size: 20px;"
+              aria-hidden="true"
+            >
+              play_arrow
+            </span>
+
+            <span class="font-display font-semibold text-[0.95rem] text-egrem-black flex-1 min-w-0 truncate">
+              {track.title}
+            </span>
+
+            {track.audioUrl || track.previewEmbedUrl ? (
+              <InlineTrackPlayer
+                client:load
+                audioUrl={track.audioUrl}
+                embedUrl={track.previewEmbedUrl}
+                embedPlatform={track.previewPlatform}
+                fixedDuration={track.durationSeconds}
+              />
+            ) : track.previewUrl ? (
+              <a
+                href={track.previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1.5 text-egrem-gold font-display font-bold text-[10px] uppercase tracking-wider hover:text-egrem-gold/70 transition-colors shrink-0"
+                aria-label={tr('musica.detail.preview')}
+              >
+                <span class="icon" style="font-size: 16px;">open_in_new</span>
+                <span class="hidden sm:inline">{tr('musica.detail.preview')}</span>
+              </a>
+            ) : null}
+
+            {!track.audioUrl && track.durationSeconds !== null && (
+              <span class="font-display text-small text-egrem-gray tabular-nums shrink-0">
+                {formatDuration(track.durationSeconds)}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : (
+    <p class="font-display text-body text-egrem-gray">{tr('musica.detail.tracklist_title')} —</p>
+  )
+}

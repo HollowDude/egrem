@@ -253,7 +253,7 @@ export async function fetchActualidadHero(lang = 'es'): Promise<NhActualidadHero
 export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioSection | null> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `paragraph/component_patrimonio_section?include=field_video_destacado,field_boletines_destacados,field_boletines_destacados.field_boletin,field_articulo_destacado,field_articulo_destacado.field_imagen_o_multimedia,field_articulo_destacado.field_imagen_o_multimedia.field_media_image,field_articulo_destacado.field_tags&page[limit]=1`,
+      `paragraph/component_patrimonio_section?include=field_video_yt,field_video_yt.field_artistas,field_boletines_destacados,field_boletines_destacados.field_boletin,field_articulo_destacado,field_articulo_destacado.field_imagen_o_multimedia,field_articulo_destacado.field_imagen_o_multimedia.field_media_image,field_articulo_destacado.field_tags&page[limit]=1`,
       lang,
     );
     const items = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
@@ -269,21 +269,28 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
     let videoThumbnail: string | null = null;
     let videoAuthor: string | null = null;
     let videoAvailable = false;
-    const videoRel = rels.field_video_destacado;
+    const videoRel = rels.field_video_yt;
     if (videoRel?.data && !Array.isArray(videoRel.data)) {
-      const videoRes = findIncluded(included, 'paragraph--videos_artista', videoRel.data.id);
+      const videoRes = findIncluded(included, 'node--video_yt', videoRel.data.id);
       if (videoRes) {
-        const urlAttr = (videoRes.attributes as Record<string, unknown>).field_url_video as
-          | { uri?: string; title?: string }
-          | undefined;
-        videoUrl = urlAttr?.uri ?? null;
+        const vAttrs = videoRes.attributes as Record<string, unknown>;
+        const linkAttr = vAttrs.field_link as { uri?: string; title?: string } | undefined;
+        videoUrl = linkAttr?.uri ?? null;
         const videoId = videoUrl ? extractYouTubeId(videoUrl) : null;
         videoAvailable = Boolean(videoId);
         if (videoId) {
           const oembed = await fetchOEmbed(videoId);
-          videoTitle = oembed?.title ?? urlAttr?.title ?? null;
+          videoTitle = oembed?.title ?? linkAttr?.title ?? (vAttrs.title as string) ?? null;
           videoThumbnail = oembed?.thumbnailUrl ?? null;
-          videoAuthor = oembed?.authorName ?? null;
+          const artistRefs = resolveRelIds(
+            (videoRes.relationships as Record<string, JsonApiRelationship> | undefined)?.field_artistas,
+          );
+          const firstArtist = artistRefs.length
+            ? findIncluded(included, 'node--artista', artistRefs[0].id)
+            : undefined;
+          videoAuthor = (firstArtist?.attributes as Record<string, unknown> | undefined)?.title as
+            | string
+            | null ?? oembed?.authorName ?? null;
         }
       }
     }

@@ -141,9 +141,9 @@ describe('searchVideos', () => {
 
   it('filters by title and artist name', async () => {
     mockFetchAllArtistVideos.mockResolvedValue([
-      { id: 'v1', title: 'Concierto Especial', youtubeId: 'abc123', thumbnail: 'thumb.jpg', artistName: 'Artist A', artistHref: '/artista/1', artistNid: 1, url: '' },
-      { id: 'v2', title: 'Entrevista', youtubeId: 'xyz789', thumbnail: null, artistName: 'Special Guest', artistHref: '/artista/2', artistNid: 2, url: '' },
-      { id: 'v3', title: 'Otro', youtubeId: 'def456', thumbnail: null, artistName: 'Nobody', artistHref: '/artista/3', artistNid: 3, url: '' },
+      { id: 'v1', title: 'Concierto Especial', youtubeId: 'abc123', thumbnail: 'thumb.jpg', url: '', artistas: [{ name: 'Artist A', href: '/artista/1', nid: 1 }] },
+      { id: 'v2', title: 'Entrevista', youtubeId: 'xyz789', thumbnail: null, url: '', artistas: [{ name: 'Special Guest', href: '/artista/2', nid: 2 }] },
+      { id: 'v3', title: 'Otro', youtubeId: 'def456', thumbnail: null, url: '', artistas: [{ name: 'Nobody', href: '/artista/3', nid: 3 }] },
     ]);
 
     const result = await searchVideos('special', 'es');
@@ -157,7 +157,7 @@ describe('searchVideos', () => {
   it('caches videos between calls', async () => {
     clearSearchCache();
     mockFetchAllArtistVideos.mockResolvedValue([
-      { id: 'v1', title: 'Cached Video', youtubeId: 'abc123', thumbnail: null, artistName: 'Artist', artistHref: '/artista/1', artistNid: 1, url: '' },
+      { id: 'v1', title: 'Cached Video', youtubeId: 'abc123', thumbnail: null, url: '', artistas: [{ name: 'Artist', href: '/artista/1', nid: 1 }] },
     ]);
 
     await searchVideos('cached', 'es');
@@ -189,7 +189,7 @@ describe('searchContent', () => {
       .mockResolvedValueOnce({ data: [] });
 
     mockFetchAllArtistVideos.mockResolvedValue([
-      { id: 'v1', title: 'Video Test', youtubeId: 'abc', thumbnail: null, artistName: 'V Artist', artistHref: '/artista/4', artistNid: 4, url: '' },
+      { id: 'v1', title: 'Video Test', youtubeId: 'abc', thumbnail: null, url: '', artistas: [{ name: 'V Artist', href: '/artista/4', nid: 4 }] },
     ]);
 
     const result = await searchContent('test', 'es');

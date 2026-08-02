@@ -33,7 +33,9 @@ const { video } = Astro.props;
     </div>
   </div>
   <h3 class="font-display font-bold text-[18px] text-egrem-black group-hover:text-egrem-red transition-colors leading-tight mb-0.5">{video.title}</h3>
-  {video.artistName && (
-    <p class="font-display text-small text-egrem-gray">{video.artistName}</p>
+  {video.artistas?.length > 0 && (
+    <p class="font-display text-small text-egrem-gray">
+      {video.artistas.map((a) => a.name).join(', ')}
+    </p>
   )}
 </a>

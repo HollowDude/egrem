@@ -12,6 +12,7 @@ import ActualidadEventosRelacionados from '@/components/actualidad/ActualidadEve
 import ActualidadFeaturedArtistCard from '@/components/actualidad/ActualidadFeaturedArtistCard.astro';
 import EventoMiniCard from '@/components/actualidad/EventoMiniCard.astro';
 import ActualidadComments from '@/components/actualidad/ActualidadComments.astro';
+import NewsletterCard from '@/components/actualidad/NewsletterCard.astro';
 import { useTranslations } from '@/i18n/translations';
 
 interface Props {
@@ -20,10 +21,11 @@ interface Props {
   eventos?: NhEvento[];
   isAuthenticated?: boolean;
   userName?: string;
+  userMail?: string;
   lang: Lang;
 }
 
-const { item, related, eventos = [], isAuthenticated = false, userName = '', lang } = Astro.props;
+const { item, related, eventos = [], isAuthenticated = false, userName = '', userMail = '', lang } = Astro.props;
 const tr = useTranslations(lang);
 const isBlog = item.bundle === 'blog';
 
@@ -147,6 +149,7 @@ function bundleLabel(bundle: string): string {
           <ActualidadComments
             nodeUuid={item.id}
             nodeNid={item.nid}
+            nodeType={`node--${item.bundle}`}
             isAuthenticated={isAuthenticated}
             userName={userName}
             lang={lang}
@@ -160,6 +163,15 @@ function bundleLabel(bundle: string): string {
     </article>
 
     <aside class="lg:col-span-4 flex flex-col gap-6">
+      {
+        isBlog && (
+          <NewsletterCard
+            isAuthenticated={isAuthenticated}
+            userMail={userMail}
+            lang={lang}
+          />
+        )
+      }
       {
         isBlog && item.relatedArtists && item.relatedArtists.length > 0 && (
           <ActualidadFeaturedArtistCard artist={item.relatedArtists[0]} lang={lang} />

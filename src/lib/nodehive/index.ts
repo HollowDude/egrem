@@ -65,9 +65,13 @@ export {
 } from './spotify';
 export type { OEmbedResult as SpotifyOEmbedResult, ResolvedAlbum } from './spotify';
 
+// Music embed (multiplataforma)
+export { detectPlatform, buildEmbedUrl, platformLabel } from './music-embed';
+export type { MusicPlatform } from './music-embed';
+
 // Artistas
-export type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia, NhArtistaVideo } from './entities';
-export { fetchArtistas, fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist } from './artistas';
+export type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia, NhArtistaVideo, NhExternalApp, NhTrack } from './entities';
+export { fetchArtistas, fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist, fetchVideosByArtista } from './artistas';
 
 // Música (catálogo)
 export type { CatalogoMusicaParams, CatalogoMusicaResult } from './musica';

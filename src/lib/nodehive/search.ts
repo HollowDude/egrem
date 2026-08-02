@@ -144,14 +144,15 @@ export async function searchVideos(q: string, lang = 'es'): Promise<NhSearchResu
   try {
     const needle = q.toLowerCase();
     const allVideos = await getCachedVideos(lang);
-    const filtered = allVideos.filter(
-      (v) => v.title.toLowerCase().includes(needle) || v.artistName.toLowerCase().includes(needle),
-    );
+    const filtered = allVideos.filter((v) => {
+      const artistNames = v.artistas.map((a) => a.name).join(' ').toLowerCase();
+      return v.title.toLowerCase().includes(needle) || artistNames.includes(needle);
+    });
     return filtered.slice(0, RESULTS_PER_TYPE).map((v) => ({
       type: 'video' as const,
       id: v.id,
       title: v.title,
-      subtitle: v.artistName,
+      subtitle: v.artistas.map((a) => a.name).join(', '),
       thumbnail: v.thumbnail,
       href: '',
       youtubeId: v.youtubeId,

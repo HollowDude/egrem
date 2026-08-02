@@ -8,7 +8,7 @@ const lang = Astro.locals.lang;
 
 const [contacto, tipoConsultaOptions] = await Promise.all([
   fetchContactoPage(lang),
-  Promise.resolve(fetchTipoConsultaOptions()),
+  fetchTipoConsultaOptions(lang),
 ]);
 
 const tr = useTranslations(lang);
@@ -18,15 +18,37 @@ const heroSubtitle = contacto?.subtitle ?? tr('contacto.hero.subtitle');
 
 const sede = contacto?.sede;
 const dir = sede?.direccion;
-const address = dir
-  ? [dir.address_line1, dir.locality, dir.administrative_area, dir.country_code].filter(Boolean).join(', ')
-  : 'Calle 3ra No. 1008 e/ 10 y 12, Miramar, Playa, La Habana, Cuba';
+const addressParts = dir
+  ? [dir.address_line1, dir.locality, dir.administrative_area, dir.country_code].filter(Boolean)
+  : [];
+const addressHtml = addressParts.length
+  ? (() => {
+      const first = [addressParts[0]];
+      const rest = addressParts.slice(1);
+      if (rest.length) first.push('<br />');
+      return first.concat(rest).join(', ');
+    })()
+  : 'Calle 3ra No. 1008 e/ 10 y 12,<br />Miramar, Playa, La Habana, Cuba';
+
 const phones = sede?.telefono?.length
   ? sede.telefono.map((p) => p.phone_number).filter(Boolean)
   : ['+53 7 204 9822', '+53 7 204 9823'];
 const email = sede?.correo || 'info@egrem.co.cu';
 
-const mapQuery = encodeURIComponent(address);
+function formatTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('es-CU', { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch {
+    return iso;
+  }
+}
+
+const horario = sede?.horario;
+const horarioDisplay = horario ? `${formatTime(horario.value)} – ${formatTime(horario.end_value)}` : null;
+
+const addressPlain = addressHtml.replace(/<br\s*\/?>/g, ', ');
+const mapQuery = encodeURIComponent(addressPlain);
 const mapUrl = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
 ---
@@ -36,9 +58,9 @@ const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
   description={tr('contacto.page_description')}
   lang={lang}
 >
-  <main class="max-w-[1000px] mx-auto px-margin-mobile md:px-margin-desktop py-xl space-y-xl">
-    <div class="mb-12">
-      <h1 class="text-h1 text-egrem-black uppercase font-bold mb-2 border-l-4 border-egrem-red pl-6">
+  <main class="container-site section-py space-y-12">
+    <div>
+      <h1 class="text-h1 text-egrem-black uppercase font-bold mb-2 border-b-4 border-egrem-red pb-2 inline-block">
         {heroTitle}
       </h1>
       <p class="text-body text-egrem-gray max-w-2xl">
@@ -60,24 +82,22 @@ const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
       </div>
 
       <div class="lg:col-span-5 flex flex-col gap-5">
-        <h2 class="text-h2 text-egrem-black uppercase font-bold border-l-4 border-egrem-gold pl-4">
+        <h2 class="text-h2 text-egrem-black uppercase font-bold border-b-4 border-egrem-gold pb-2 inline-block">
           {tr('contacto.info.title')}
         </h2>
 
         <div class="flex flex-col gap-4">
-          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray/20 hover:border-egrem-red/30 transition-colors">
             <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
               <span class="icon icon-filled text-egrem-red text-[20px]">location_on</span>
             </div>
             <div>
               <h3 class="text-small text-egrem-gray uppercase font-bold mb-1">{tr('contacto.info.sede_label')}</h3>
-              <p class="text-body text-egrem-black">
-                {address.replace(', ', ',<br />')}
-              </p>
+              <p class="text-body text-egrem-black" set:html={addressHtml}></p>
             </div>
           </div>
 
-          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray/20 hover:border-egrem-red/30 transition-colors">
             <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
               <span class="icon icon-filled text-egrem-red text-[20px]">call</span>
             </div>
@@ -91,7 +111,7 @@ const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
             </div>
           </div>
 
-          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray/20 hover:border-egrem-red/30 transition-colors">
             <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
               <span class="icon icon-filled text-egrem-red text-[20px]">mail</span>
             </div>
@@ -103,21 +123,27 @@ const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
             </div>
           </div>
 
-          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray hover:border-egrem-red/30 transition-colors">
+          <div class="flex items-start gap-4 p-4 bg-white rounded-xl border border-egrem-gray/20 hover:border-egrem-red/30 transition-colors">
             <div class="w-10 h-10 rounded-lg bg-egrem-red/10 flex items-center justify-center shrink-0">
               <span class="icon icon-filled text-egrem-red text-[20px]">schedule</span>
             </div>
             <div>
               <h3 class="text-small text-egrem-gray uppercase font-bold mb-1">{tr('contacto.info.hours_label')}</h3>
-              <p class="text-body text-egrem-black">Lunes a Viernes: 8:30 &ndash; 17:00</p>
-              <p class="text-body text-egrem-gray">S&aacute;bados: 9:00 &ndash; 13:00</p>
+              {
+                horarioDisplay
+                  ? <p class="text-body text-egrem-black">{horarioDisplay}</p>
+                  : <>
+                      <p class="text-body text-egrem-black">Lunes a Viernes: 8:30 &ndash; 17:00</p>
+                      <p class="text-body text-egrem-gray">S&aacute;bados: 9:00 &ndash; 13:00</p>
+                    </>
+              }
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="mt-10 relative rounded-2xl overflow-hidden border border-egrem-gray shadow-md" style="height: 380px;">
+    <div class="relative rounded-2xl overflow-hidden border border-egrem-gray/20 shadow-md" style="height: 380px;">
       <iframe
         src={mapUrl}
         width="100%"
@@ -132,9 +158,7 @@ const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
           <span class="icon icon-filled text-egrem-red text-[16px]">location_on</span>
           <span class="text-small text-egrem-red uppercase font-bold">{tr('contacto.info.sede_label')}</span>
         </div>
-        <p class="text-body text-egrem-black">
-          {address.replace(', ', ',<br />')}
-        </p>
+        <p class="text-body text-egrem-black" set:html={addressHtml}></p>
         <a
           href={mapLink}
           target="_blank"

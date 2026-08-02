@@ -5,6 +5,7 @@ import LoginForm from '@/components/auth/LoginForm';
 import LoginRightPanel from '@/components/auth/LoginRightPanel.astro';
 import { fetchLoginPage } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
+import { sanitizeRedirect } from '@/lib/auth/redirect';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
@@ -17,7 +18,7 @@ try {
 }
 
 if (Astro.locals.user) {
-  const redirectUrl = Astro.url.searchParams.get('redirect') || '/';
+  const redirectUrl = sanitizeRedirect(Astro.url.searchParams.get('redirect'));
   return Astro.redirect(redirectUrl);
 }
 ---

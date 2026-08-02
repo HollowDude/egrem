@@ -15,9 +15,10 @@ describe('contacto', () => {
   });
 
   describe('fetchTipoConsultaOptions', () => {
-    it('should return the expected options', async () => {
+    it('should return fallback options when Drupal fetch fails', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Timeout'));
       const { fetchTipoConsultaOptions } = await import('../contacto');
-      const options = fetchTipoConsultaOptions();
+      const options = await fetchTipoConsultaOptions('es');
 
       expect(options).toHaveLength(4);
       expect(options[0].value).toBe('general');
@@ -104,7 +105,13 @@ describe('contacto', () => {
       expect(result!.sede!.correo).toBe('info@egrem.co.cu');
     });
 
-    it('should return null when page UUID is not configured', async () => {
+    it('should handle page not found error gracefully', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+
       const { fetchContactoPage } = await import('../contacto');
       const result = await fetchContactoPage('es');
       expect(result).toBeNull();

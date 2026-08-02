@@ -3,7 +3,7 @@ export const prerender = false;
 
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import HeroCatalogo from '@/components/catalogo/HeroCatalogo.astro';
-import SpotifyPlayer from '@/components/ui/SpotifyPlayer';
+import MusicEmbedPlayer from '@/components/ui/MusicEmbedPlayer';
 import { fetchAlbumesCatalogo, fetchCatalogoHero } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
 import { NODEHIVE_CONFIG } from '@/lib/nodehive/config';
@@ -13,10 +13,27 @@ const tr = useTranslations(lang);
 
 const sello = Astro.url.searchParams.get('sello') ?? '';
 const search = Astro.url.searchParams.get('q') ?? '';
+const decada = Astro.url.searchParams.get('decada') ?? '';
+const disco = Astro.url.searchParams.get('disco') ?? '';
+const artista = Astro.url.searchParams.get('artista') ?? '';
+const agencia = Astro.url.searchParams.get('agencia') ?? '';
+const interprete = Astro.url.searchParams.get('interprete') ?? '';
 const currentPage = Math.max(1, parseInt(Astro.url.searchParams.get('page') ?? '1'));
 
-const result = await fetchAlbumesCatalogo({ sello: sello || undefined, search: search || undefined, page: currentPage }, lang);
-const { albums, total, totalPages, currentPage: page, availableSellos } = result;
+const result = await fetchAlbumesCatalogo(
+  {
+    sello: sello || undefined,
+    search: search || undefined,
+    decada: decada || undefined,
+    disco: disco || undefined,
+    artista: artista || undefined,
+    agencia: agencia || undefined,
+    interprete: interprete || undefined,
+    page: currentPage,
+  },
+  lang,
+);
+const { albums, total, totalPages, currentPage: page, availableSellos, availableDecadas, availableDiscos, availableArtistas, availableAgencias, availableInterpretes } = result;
 const showingEnd = Math.min(page * 24, total);
 const showingStart = total > 0 ? (page - 1) * 24 + 1 : 0;
 
@@ -31,6 +48,11 @@ function pageUrl(p: number): string {
   const params = new URLSearchParams();
   if (sello) params.set('sello', sello);
   if (search) params.set('q', search);
+  if (decada) params.set('decada', decada);
+  if (disco) params.set('disco', disco);
+  if (artista) params.set('artista', artista);
+  if (agencia) params.set('agencia', agencia);
+  if (interprete) params.set('interprete', interprete);
   if (p > 1) params.set('page', String(p));
   const qs = params.toString();
   return `/catalogo/musica${qs ? '?' + qs : ''}`;
@@ -83,10 +105,75 @@ for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
               ))}
             </select>
           </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('musica.filter.decada')}</label>
+            <select
+              name="decada"
+              class="bg-white border border-egrem-gray/30 text-egrem-black rounded-xl focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-3"
+              onchange="this.form.submit()"
+            >
+              <option value="">{tr('musica.filter.all')}</option>
+              {availableDecadas.map((d) => (
+                <option value={d} selected={d === decada}>{d}</option>
+              ))}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('musica.filter.disco')}</label>
+            <select
+              name="disco"
+              class="bg-white border border-egrem-gray/30 text-egrem-black rounded-xl focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-3"
+              onchange="this.form.submit()"
+            >
+              <option value="">{tr('musica.filter.all')}</option>
+              {availableDiscos.map((d) => (
+                <option value={d} selected={d === disco}>{d}</option>
+              ))}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('musica.filter.artista')}</label>
+            <select
+              name="artista"
+              class="bg-white border border-egrem-gray/30 text-egrem-black rounded-xl focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-3"
+              onchange="this.form.submit()"
+            >
+              <option value="">{tr('musica.filter.all')}</option>
+              {availableArtistas.map((a) => (
+                <option value={a.slug} selected={a.slug === artista}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('musica.filter.agencia')}</label>
+            <select
+              name="agencia"
+              class="bg-white border border-egrem-gray/30 text-egrem-black rounded-xl focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-3"
+              onchange="this.form.submit()"
+            >
+              <option value="">{tr('musica.filter.all')}</option>
+              {availableAgencias.map((a) => (
+                <option value={a.slug} selected={a.slug === agencia}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('musica.filter.interprete')}</label>
+            <select
+              name="interprete"
+              class="bg-white border border-egrem-gray/30 text-egrem-black rounded-xl focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-3"
+              onchange="this.form.submit()"
+            >
+              <option value="">{tr('musica.filter.all')}</option>
+              {availableInterpretes.map((i) => (
+                <option value={i.slug} selected={i.slug === interprete}>{i.name}</option>
+              ))}
+            </select>
+          </div>
           <button type="submit" class="hidden md:inline-flex px-5 py-1.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red-dark transition-colors">
             {tr('musica.filter.submit')}
           </button>
-          {(sello || search) && (
+          {(sello || search || decada || disco || artista || agencia || interprete) && (
             <a href="/catalogo/musica" class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline">
               {tr('musica.filter.clear')}
             </a>
@@ -168,4 +255,4 @@ for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
   </main>
 </BaseLayout>
 
-<SpotifyPlayer client:load />
+<MusicEmbedPlayer client:load />

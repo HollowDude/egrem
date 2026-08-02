@@ -5,12 +5,14 @@ import { useTranslations } from '@/i18n/translations';
 interface Props {
   nodeUuid: string;
   nodeNid: number;
+  nodeType?: string;
   isAuthenticated: boolean;
   userName?: string;
   lang?: Lang;
 }
 
-const { nodeUuid, nodeNid, isAuthenticated, userName = '', lang = 'es' } = Astro.props;
+const { nodeUuid, nodeNid, isAuthenticated, userName = '', lang = 'es', nodeType = 'node--blog' } =
+  Astro.props;
 const tr = useTranslations(lang);
 ---
 
@@ -19,6 +21,7 @@ const tr = useTranslations(lang);
   id="comments-section"
   data-comments-uuid={nodeUuid}
   data-comments-nid={nodeNid}
+  data-comments-node-type={nodeType}
   data-comments-lang={lang}
   data-comments-authenticated={String(isAuthenticated)}
   data-comments-username={userName}
@@ -45,11 +48,18 @@ const tr = useTranslations(lang);
           />
           <div class="flex justify-end mt-2">
             <button
-              class="bg-egrem-black text-white px-6 py-2 rounded-2xl hover:bg-egrem-red transition-colors font-display font-bold text-sm uppercase tracking-wider cursor-pointer border-none"
+              class="bg-egrem-black text-white px-6 py-2 rounded-2xl hover:bg-egrem-red transition-colors font-display font-bold text-sm uppercase tracking-wider cursor-pointer border-none disabled:opacity-50 disabled:hover:bg-egrem-black"
               data-comments-submit
             >
               {tr('actualidad.detail.comments_submit')}
             </button>
+          </div>
+          <div
+            class="mt-3 p-3 rounded-lg border bg-yellow-50 border-egrem-gold text-small text-egrem-black hidden"
+            role="status"
+            data-comments-confirmation
+          >
+            <span class="font-bold">✓</span> {tr('actualidad.detail.comments_confirmation')}
           </div>
         </div>
       </div>
@@ -75,6 +85,7 @@ const tr = useTranslations(lang);
 
   const uuid = section.dataset.commentsUuid!;
   const nid = section.dataset.commentsNid!;
+  const nodeType = section.dataset.commentsNodeType || 'node--blog';
   const lang = section.dataset.commentsLang || 'es';
   const authenticated = section.dataset.commentsAuthenticated === 'true';
   const userName = section.dataset.commentsUsername || '';
@@ -82,6 +93,47 @@ const tr = useTranslations(lang);
   const countEl = section.querySelector('[data-comments-count]')!;
   const textarea = section.querySelector<HTMLTextAreaElement>('[data-comments-textarea]');
   const submitBtn = section.querySelector<HTMLButtonElement>('[data-comments-submit]');
+  const confirmation = section.querySelector<HTMLDivElement>('[data-comments-confirmation]');
+
+  const STRINGS: Record<string, Record<string, string>> = {
+    es: {
+      reply: 'Responder',
+      reply_to: 'Respondiendo a {author}',
+      reply_placeholder: 'Escribe una respuesta...',
+      cancel: 'Cancelar',
+      send: 'Enviar respuesta',
+      sending: 'Enviando...',
+      empty: 'No hay comentarios aún. ¡Sé el primero!',
+      pending: 'Pendiente de aprobación',
+      comments: 'Comentarios',
+      comments_count: '{n} comentarios',
+      error: 'Error',
+      you: 'Tú',
+    },
+    en: {
+      reply: 'Reply',
+      reply_to: 'Replying to {author}',
+      reply_placeholder: 'Write a reply...',
+      cancel: 'Cancel',
+      send: 'Send reply',
+      sending: 'Sending...',
+      empty: 'No comments yet. Be the first!',
+      pending: 'Pending approval',
+      comments: 'Comments',
+      comments_count: '{n} comments',
+      error: 'Error',
+      you: 'You',
+    },
+  };
+  const S = STRINGS[lang] ?? STRINGS.es;
+
+  function t(key: string, vars?: Record<string, string>): string {
+    let value = S[key] ?? key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) value = value.replaceAll(`{${k}}`, v);
+    }
+    return value;
+  }
 
   interface PendingComment {
     id: string;
@@ -91,6 +143,7 @@ const tr = useTranslations(lang);
     created: string;
     relativeTime: string;
     status: string;
+    parentId?: string | null;
   }
 
   const STORAGE_KEY = `egrem_pending_comments_${uuid}`;
@@ -109,22 +162,24 @@ const tr = useTranslations(lang);
 
   async function loadComments() {
     try {
-      const [serverRes] = await Promise.all([
-        fetch(`/api/actualidad/comments?node=${uuid}&lang=${lang}`),
-      ]);
+      const serverRes = await fetch(`/api/actualidad/comments?node=${uuid}&lang=${lang}`);
       if (!serverRes.ok) return;
       const serverComments: PendingComment[] = await serverRes.json();
 
       const pending = getPendingComments();
 
       const serverIds = new Set(serverComments.map((c) => c.id));
-      const stillPending = pending.filter((c) => !serverIds.has(c.id));
+      const stillPending = pending.filter((c) => {
+        if (serverIds.has(c.id)) return false;
+        if (!c.id) return false;
+        const dup = serverComments.some(
+          (s) => s.body === c.body && s.author === c.author,
+        );
+        return !dup;
+      });
       savePendingComments(stillPending);
 
-      const merged = [...serverComments, ...stillPending];
-      merged.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
-
-      renderComments(merged);
+      renderComments([...serverComments, ...stillPending]);
     } catch {
       // silent
     }
@@ -136,85 +191,181 @@ const tr = useTranslations(lang);
 
     countEl.textContent =
       publishedCount > 0
-        ? `${publishedCount} ${lang === 'en' ? 'comments' : 'comentarios'}`
-        : lang === 'en'
-          ? 'Comments'
-          : 'Comentarios';
+        ? t('comments_count', { n: String(publishedCount) })
+        : t('comments');
 
     if (visible.length === 0) {
-      list.innerHTML = `<p class="text-egrem-gray text-small text-center py-4">${
-        lang === 'en' ? 'No comments yet. Be the first!' : 'No hay comentarios aún. ¡Sé el primero!'
-      }</p>`;
+      list.innerHTML = `<p class="text-egrem-gray text-small text-center py-4">${t('empty')}</p>`;
       return;
     }
 
-    list.innerHTML = visible
-      .map(
-        (c) => `
-      <div class="flex gap-3">
+    const roots = visible.filter((c) => !c.parentId || !visible.some((p) => p.id === c.parentId));
+    roots.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
+
+    list.innerHTML = roots
+      .map((root) => {
+        const children = visible
+          .filter((c) => c.parentId === root.id)
+          .sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
+        return renderComment(root) + children.map((c) => renderComment(c, true)).join('');
+      })
+      .join('');
+  }
+
+  function escapeHtml(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function renderComment(c: PendingComment, isReply = false): string {
+    const authorInitial = escapeHtml(c.authorInitial);
+    const author = escapeHtml(c.author);
+    const body = escapeHtml(c.body);
+    const bubble =
+      c.status === 'pending'
+        ? 'bg-yellow-50 border-egrem-gold'
+        : 'bg-egrem-gray-light border-egrem-gray/20';
+    const pendingBadge =
+      c.status === 'pending'
+        ? `<p class="font-display text-small m-0 mt-1 italic" style="color: var(--color-egrem-gold);">${t('pending')}</p>`
+        : '';
+    const replyButton = authenticated
+      ? `<button type="button" class="mt-1 text-small font-bold text-egrem-gold uppercase tracking-widest bg-transparent border-0 p-0 cursor-pointer hover:text-egrem-red transition-colors" data-reply-btn="${c.id}">${t('reply')}</button>`
+      : '';
+    const replyBox = authenticated
+      ? `<div class="hidden mt-2" data-reply-box="${c.id}">
+          <p class="text-small text-egrem-gray m-0 mb-1" data-reply-label>${t('reply_to', { author })}</p>
+          <textarea class="w-full bg-white border border-egrem-gray/20 rounded-lg p-3 font-display text-body focus:border-egrem-gold focus:ring-1 focus:ring-egrem-gold transition-all resize-none" rows="2" data-reply-textarea placeholder="${t('reply_placeholder')}"></textarea>
+          <div class="flex justify-end gap-2 mt-2">
+            <button type="button" class="px-4 py-1.5 rounded-xl border border-egrem-gray/40 text-egrem-gray font-display font-bold text-xs uppercase tracking-wider cursor-pointer bg-transparent hover:text-egrem-black transition-colors" data-reply-cancel>${t('cancel')}</button>
+            <button type="button" class="bg-egrem-black text-white px-4 py-1.5 rounded-xl hover:bg-egrem-red transition-colors font-display font-bold text-xs uppercase tracking-wider cursor-pointer border-none disabled:opacity-50 disabled:hover:bg-egrem-black" data-reply-send>${t('send')}</button>
+          </div>
+        </div>`
+      : '';
+
+    return `
+      <div class="flex gap-3 ${isReply ? 'ml-10 border-l-2 border-egrem-gray/20 pl-4' : ''}">
         <div class="w-10 h-10 rounded-full bg-egrem-gray-light flex items-center justify-center shrink-0 font-bold font-display text-lg text-egrem-red">
-          ${c.authorInitial}
+          ${authorInitial}
         </div>
         <div class="flex-1 min-w-0">
-          <div class="${c.status === 'pending' ? 'bg-yellow-50 border-egrem-gold' : 'bg-egrem-gray-light border-egrem-gray/20'} p-3 rounded-xl rounded-tl-none border">
+          <div class="${bubble} p-3 rounded-xl rounded-tl-none border">
             <p class="font-display font-bold text-sm text-egrem-black mb-1">
-              ${c.author}
-              <span class="font-normal text-egrem-gray text-caption"> · ${c.relativeTime}</span>
+              ${author}
+              <span class="font-normal text-egrem-gray text-caption"> · ${escapeHtml(c.relativeTime)}</span>
             </p>
-            <p class="font-display text-body m-0 text-egrem-black">${c.body}</p>
-            ${c.status === 'pending' ? `<p class="font-display text-small m-0 mt-1 italic" style="color: var(--color-egrem-gold);">${lang === 'en' ? 'Pending approval' : 'Pendiente de aprobación'}</p>` : ''}
+            <p class="font-display text-body m-0 text-egrem-black">${body}</p>
+            ${pendingBadge}
           </div>
+          ${replyButton}
+          ${replyBox}
         </div>
       </div>
-    `,
-      )
-      .join('');
+    `;
+  }
+
+  async function postComment(body: string, parentId: string | null) {
+    const res = await fetch('/api/actualidad/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nid: parseInt(nid), nodeUuid: uuid, nodeType: nodeType, body, parentId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || t('error'));
+      return false;
+    }
+    const { commentId, status } = await res.json();
+    const pending: PendingComment = {
+      id: commentId || crypto.randomUUID(),
+      author: userName || t('you'),
+      authorInitial: (userName || t('you'))[0].toUpperCase(),
+      body,
+      created: new Date().toISOString(),
+      relativeTime: lang === 'en' ? 'just now' : 'ahora mismo',
+      status: status === 'published' ? 'published' : 'pending',
+      parentId,
+    };
+    if (pending.status === 'pending') {
+      const existing = getPendingComments();
+      existing.push(pending);
+      savePendingComments(existing);
+    }
+    if (confirmation) confirmation.classList.remove('hidden');
+    await loadComments();
+    return true;
   }
 
   loadComments();
 
   if (authenticated && textarea && submitBtn) {
+    const submitLabel = submitBtn.textContent || '';
     submitBtn.addEventListener('click', async () => {
       const body = textarea.value.trim();
       if (!body) return;
 
       submitBtn.disabled = true;
-      submitBtn.textContent = lang === 'en' ? 'Sending...' : 'Enviando...';
-
+      submitBtn.textContent = t('sending');
       try {
-        const res = await fetch('/api/actualidad/comments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nid: parseInt(nid), body }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          alert(data.error || 'Error');
-          return;
-        }
+        await postComment(body, null);
         textarea.value = '';
-
-        const { commentId, status } = await res.json();
-        const pending: PendingComment = {
-          id: commentId || crypto.randomUUID(),
-          author: userName || (lang === 'en' ? 'You' : 'Tú'),
-          authorInitial: (userName || (lang === 'en' ? 'Y' : 'T'))[0].toUpperCase(),
-          body,
-          created: new Date().toISOString(),
-          relativeTime: lang === 'en' ? 'just now' : 'ahora mismo',
-          status: status === 'published' ? 'published' : 'pending',
-        };
-        if (pending.status === 'pending') {
-          const existing = getPendingComments();
-          existing.push(pending);
-          savePendingComments(existing);
-        }
-        await loadComments();
       } catch {
-        alert('Error');
+        alert(t('error'));
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = lang === 'en' ? 'Publish' : 'Publicar';
+        submitBtn.textContent = submitLabel;
+      }
+    });
+
+    list.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const replyBtn = target.closest<HTMLButtonElement>('[data-reply-btn]');
+      const cancelBtn = target.closest<HTMLButtonElement>('[data-reply-cancel]');
+      const sendBtn = target.closest<HTMLButtonElement>('[data-reply-send]');
+
+      if (replyBtn) {
+        const id = replyBtn.dataset.replyBtn!;
+        const box = list.querySelector<HTMLDivElement>(`[data-reply-box="${id}"]`);
+        if (!box) return;
+        const open = !box.classList.contains('hidden');
+        list.querySelectorAll('[data-reply-box]').forEach((b) => b.classList.add('hidden'));
+        if (open) return;
+        box.classList.remove('hidden');
+        const replyTextarea = box.querySelector<HTMLTextAreaElement>('[data-reply-textarea]');
+        if (replyTextarea) replyTextarea.focus();
+        return;
+      }
+
+      if (cancelBtn) {
+        const box = cancelBtn.closest<HTMLDivElement>('[data-reply-box]');
+        box?.classList.add('hidden');
+        return;
+      }
+
+      if (sendBtn) {
+        const box = sendBtn.closest<HTMLDivElement>('[data-reply-box]');
+        if (!box) return;
+        const replyTextarea = box.querySelector<HTMLTextAreaElement>('[data-reply-textarea]');
+        const body = replyTextarea?.value.trim() ?? '';
+        if (!body) return;
+        const rootId = box.dataset.replyBox!;
+        sendBtn.disabled = true;
+        try {
+          const ok = await postComment(body, rootId);
+          if (ok) {
+            box.classList.add('hidden');
+            if (replyTextarea) replyTextarea.value = '';
+          }
+        } catch {
+          alert(t('error'));
+        } finally {
+          sendBtn.disabled = false;
+        }
+        return;
       }
     });
   }

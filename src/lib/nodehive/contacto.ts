@@ -15,6 +15,7 @@ export async function fetchContactoPage(lang = 'es'): Promise<NhContactoPage | n
       'field_components.field_sede',
       'field_components.field_sede.field_imagen_representativa',
       'field_components.field_sede.field_imagen_representativa.field_media_image',
+      'field_components.field_sede.field_tipo_sede',
     ].join(',');
 
     const res = await jsonApiFetch(`node/astro_page/${PAGE_UUID}?include=${include}`, lang);
@@ -57,11 +58,33 @@ export async function fetchContactoPage(lang = 'es'): Promise<NhContactoPage | n
   }
 }
 
-export function fetchTipoConsultaOptions(): NhTipoConsultaOption[] {
-  return [
-    { value: 'general', label_es: 'Información General', label_en: 'General Information' },
-    { value: 'licensing', label_es: 'Licencias Comerciales', label_en: 'Commercial Licensing' },
-    { value: 'events', label_es: 'Contratación de Eventos', label_en: 'Event Booking' },
-    { value: 'support', label_es: 'Soporte Tienda Online', label_en: 'Online Store Support' },
-  ];
+export async function fetchTipoConsultaOptions(lang = 'es'): Promise<NhTipoConsultaOption[]> {
+  try {
+    const fetchPromise = jsonApiFetch(
+      `taxonomy_term/tipo_de_consulta?page[limit]=50&sort=weight`,
+      lang,
+    );
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Drupal taxonomy fetch timed out')), 3000),
+    );
+    const res = await Promise.race([fetchPromise, timeoutPromise]);
+
+    const list = Array.isArray(res.data) ? res.data : [res.data];
+    return list.map((t) => {
+      const a = t.attributes as Record<string, unknown>;
+      return {
+        value: (a.drupal_internal__tid as number)?.toString() ?? t.id,
+        label_es: (a.name as string) ?? '',
+        label_en: (a.name as string) ?? '',
+      };
+    });
+  } catch (e) {
+    console.warn('[NodeHive] fetchTipoConsultaOptions failed, using fallback:', e);
+    return [
+      { value: 'general', label_es: 'Información General', label_en: 'General Information' },
+      { value: 'licensing', label_es: 'Licencias Comerciales', label_en: 'Commercial Licensing' },
+      { value: 'events', label_es: 'Contratación de Eventos', label_en: 'Event Booking' },
+      { value: 'support', label_es: 'Soporte Tienda Online', label_en: 'Online Store Support' },
+    ];
+  }
 }

@@ -89,7 +89,7 @@ export default function HeaderNav({
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setCurrentPath(window.location.pathname);
+    setCurrentPath(window.location.pathname + window.location.search);
   }, []);
 
   useEffect(() => {

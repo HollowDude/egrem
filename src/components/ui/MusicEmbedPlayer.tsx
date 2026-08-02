@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react';
+import type { MusicPlatform } from '@/lib/nodehive/music-embed';
+import { platformLabel, EMBED_CONFIG } from '@/lib/nodehive/music-embed';
 
-export default function SpotifyPlayer() {
-  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
+interface EmbedState {
+  url: string;
+  platform: MusicPlatform;
+}
+
+export default function MusicEmbedPlayer() {
+  const [embed, setEmbed] = useState<EmbedState | null>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      const target = (e.target as HTMLElement).closest('[data-spotify-embed]');
+      const target = (e.target as HTMLElement).closest('[data-embed-url]');
       if (target) {
         e.preventDefault();
-        const url = target.getAttribute('data-spotify-embed');
-        if (url) setEmbedUrl(url);
+        const url = target.getAttribute('data-embed-url');
+        const platform = (target.getAttribute('data-embed-platform') as MusicPlatform) ?? 'other';
+        if (url) setEmbed({ url, platform });
       }
     }
     document.addEventListener('click', handler);
@@ -17,20 +25,24 @@ export default function SpotifyPlayer() {
   }, []);
 
   useEffect(() => {
-    if (!embedUrl) return;
+    if (!embed) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setEmbedUrl(null);
+      if (e.key === 'Escape') setEmbed(null);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [embedUrl]);
+  }, [embed]);
 
-  if (!embedUrl) return null;
+  if (!embed) return null;
+
+  const config = embed.platform === 'apple_music' ? EMBED_CONFIG.apple_music : EMBED_CONFIG.spotify;
+  const label = platformLabel(embed.platform) || 'Spotify';
+  const separator = embed.url.includes('?') ? '&' : '?';
 
   return (
     <>
       <div
-        onClick={() => setEmbedUrl(null)}
+        onClick={() => setEmbed(null)}
         role="presentation"
         style={{
           position: 'fixed', inset: 0, zIndex: 9998,
@@ -40,7 +52,7 @@ export default function SpotifyPlayer() {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Reproductor de Spotify"
+        aria-label={`Reproductor de ${label}`}
         style={{
           position: 'fixed', zIndex: 9999,
           top: '50%', left: '50%',
@@ -49,16 +61,16 @@ export default function SpotifyPlayer() {
         }}
       >
         <iframe
-          src={`${embedUrl}?utm_source=oembed`}
-          title="Reproductor de Spotify"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          src={`${embed.url}${separator}utm_source=oembed`}
+          title={`Reproductor de ${label}`}
+          allow={config.allow}
           loading="lazy"
           style={{
-            width: '100%', height: 352, border: 'none', borderRadius: 12,
+            width: '100%', height: config.height, border: 'none', borderRadius: 12,
           }}
         />
         <button
-          onClick={() => setEmbedUrl(null)}
+          onClick={() => setEmbed(null)}
           aria-label="Cerrar"
           style={{
             position: 'absolute', top: -36, right: 0,

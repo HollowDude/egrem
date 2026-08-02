@@ -30,5 +30,13 @@ export const t: Record<Lang, Record<string, string>> = {
 };
 
 export function useTranslations(lang: Lang) {
-  return (key: string): string => t[lang][key] ?? t['es'][key] ?? key;
+  return (key: string, vars?: Record<string, string | number>): string => {
+    let value = t[lang][key] ?? t['es'][key] ?? key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        value = value.replaceAll(`{${k}}`, String(v));
+      }
+    }
+    return value;
+  };
 }

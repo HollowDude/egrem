@@ -1,0 +1,127 @@
+---
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  isAuthenticated: boolean;
+  userMail?: string;
+  lang?: Lang;
+}
+
+const { isAuthenticated, userMail = '', lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+---
+
+<aside
+  class="card card--no-zoom p-6"
+  data-newsletter-card
+  data-newsletter-lang={lang}
+>
+  <h3 class="font-display font-bold text-xl text-egrem-black mb-4 flex items-center gap-2 border-b border-egrem-gray/20 pb-3">
+    <span class="text-egrem-red" style="font-family:'Material Symbols Outlined';">
+      mail
+    </span>
+    {tr('actualidad.detail.newsletter_title')}
+  </h3>
+
+  <p class="text-body text-egrem-gray m-0 mb-4">
+    {tr('actualidad.detail.newsletter_subtitle')}
+  </p>
+
+  {
+    isAuthenticated ? (
+      <div class="flex flex-col gap-3">
+        <label class="flex flex-col gap-1">
+          <span class="text-small text-egrem-gray uppercase font-bold">
+            {tr('actualidad.detail.newsletter_email_label')}
+          </span>
+          <input
+            type="email"
+            value={userMail}
+            readonly
+            class="w-full bg-egrem-gray-light border border-egrem-gray/30 text-egrem-black font-display text-body rounded-xl p-2 cursor-not-allowed opacity-70"
+            data-newsletter-email
+          />
+        </label>
+        <button
+          type="button"
+          class="bg-egrem-red text-white px-6 py-2.5 rounded-2xl hover:bg-egrem-red-dark hover:scale-105 active:scale-[0.97] transition-all duration-300 font-display font-bold text-sm uppercase tracking-wider cursor-pointer border-none w-full disabled:opacity-50 disabled:hover:scale-100"
+          data-newsletter-submit
+        >
+          {tr('actualidad.detail.newsletter_subscribe')}
+        </button>
+        <p
+          class="text-small m-0 hidden"
+          data-newsletter-feedback
+        />
+      </div>
+    ) : (
+      <p class="text-body text-egrem-gray m-0 p-4 bg-egrem-gray-light rounded-lg text-center">
+        <a href="/login" class="text-egrem-red font-bold no-underline hover:underline">
+          {tr('actualidad.detail.newsletter_login_required')}
+        </a>
+      </p>
+    )
+  }
+</aside>
+
+<script>
+  const card = document.querySelector<HTMLElement>('[data-newsletter-card]');
+  if (!card) throw new Error('missing newsletter card');
+
+  const lang = card.dataset.newsletterLang || 'es';
+  const submitBtn = card.querySelector<HTMLButtonElement>('[data-newsletter-submit]');
+  const feedback = card.querySelector<HTMLParagraphElement>('[data-newsletter-feedback]');
+  if (!submitBtn || !feedback) throw new Error('missing newsletter elements');
+
+  const STRINGS: Record<string, Record<'success' | 'already' | 'error', string>> = {
+    es: {
+      success: '¡Te has suscrito al boletín!',
+      already: 'Ya estás suscrito al boletín.',
+      error: 'Ocurrió un error al suscribirte. Inténtalo de nuevo.',
+    },
+    en: {
+      success: "You're subscribed to the newsletter!",
+      already: 'You are already subscribed.',
+      error: 'An error occurred while subscribing. Please try again.',
+    },
+  };
+  const strings = STRINGS[lang] ?? STRINGS.es;
+
+  function show(message: string, tone: 'ok' | 'warn' | 'err') {
+    const el = document.querySelector<HTMLParagraphElement>('[data-newsletter-feedback]');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('hidden', 'text-green-700', 'text-egrem-gold', 'text-egrem-red');
+    if (tone === 'ok') el.classList.add('text-green-700');
+    if (tone === 'warn') el.classList.add('text-egrem-gold', 'font-bold');
+    if (tone === 'err') el.classList.add('text-egrem-red');
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch('/api/actualidad/suscribirse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lang }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        show(data.error || strings.error, 'err');
+        return;
+      }
+      if (data.already) {
+        show(strings.already, 'warn');
+        return;
+      }
+      show(strings.success, 'ok');
+      submitBtn.textContent =
+        lang === 'en' ? 'Subscribed' : 'Suscrito';
+    } catch {
+      show(strings.error, 'err');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+</script>

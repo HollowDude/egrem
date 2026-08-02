@@ -35,6 +35,27 @@ function parseImage(
   return img;
 }
 
+function parseRedesSociales(
+  resource: { relationships?: Record<string, JsonApiRelationship> },
+  included: JsonApiResource[] | undefined,
+): NhRedSocial[] {
+  return resolveRelIds(
+    (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_redes_sociales,
+  )
+    .map((ref) => {
+      const p = findIncluded(included, 'paragraph--redsocial_artista', ref.id);
+      const pa = p?.attributes as Record<string, unknown> | undefined;
+      const enlace = pa?.field_enlace as { uri?: string; title?: string } | undefined;
+      return {
+        id: ref.id,
+        platform: (pa?.field_icon as string) ?? '',
+        url: enlace?.uri ? normalizeDrupalUri(enlace.uri) : '',
+        label: enlace?.title ?? '',
+      };
+    })
+    .filter((s) => s.url);
+}
+
 export async function fetchArtistas(lang = 'es'): Promise<NhArtistaListItem[]> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
@@ -71,7 +92,7 @@ export async function fetchArtistaByPath(
   try {
     const cleanPath = path.replace(/^\/?(es\/|en\/)?/, '/').replace(/\/$/, '');
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `node/artista?filter[path.alias][value]=${encodeURIComponent(cleanPath)}&include=field_imagen,field_imagen.field_media_image,field_agencia,field_redes_sociales,field_videos_artista`,
+      `node/artista?filter[path.alias][value]=${encodeURIComponent(cleanPath)}&include=field_imagen,field_imagen.field_media_image,field_agencia,field_redes_sociales`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
@@ -82,34 +103,6 @@ export async function fetchArtistaByPath(
 
     const href = (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
 
-    const redesSociales: NhRedSocial[] = resolveRelIds(
-      (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_redes_sociales,
-    ).map((ref) => {
-      const p = findIncluded(included, 'paragraph--redsocial_artista', ref.id);
-      const pa = p?.attributes as Record<string, unknown> | undefined;
-      const enlace = pa?.field_enlace as { uri?: string; title?: string } | undefined;
-      return {
-        id: ref.id,
-        platform: (pa?.field_icon as string) ?? '',
-        url: enlace?.uri ? normalizeDrupalUri(enlace.uri) : '',
-        label: enlace?.title ?? '',
-      };
-    }).filter((s) => s.url);
-
-    const videos: NhArtistaVideo[] = (await Promise.all(
-      resolveRelIds(
-        (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_videos_artista,
-      ).map(async (ref) => {
-        const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
-        const pa = p?.attributes as Record<string, unknown> | undefined;
-        const urlField = pa?.field_url_video as { uri?: string } | undefined;
-        const url = urlField?.uri ? normalizeDrupalUri(urlField.uri) : '';
-        if (!url) return null;
-        const resolved = await resolveVideoLink('', url);
-        return { id: ref.id, url, youtubeId: resolved.youtubeId, title: resolved.title, thumbnail: resolved.thumbnail?.url ?? null };
-      }),
-    )).filter((v): v is NhArtistaVideo => v !== null);
-
     return {
       id: resource.id,
       nid: (a.drupal_internal__nid as number) ?? 0,
@@ -119,8 +112,7 @@ export async function fetchArtistaByPath(
       body: (a.body as { value?: string })?.value ?? '',
       summary: (a.body as { summary?: string })?.summary ?? '',
       href: href.startsWith('/') ? href : `/${href}`,
-      redesSociales,
-      videos,
+      redesSociales: parseRedesSociales(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
     };
   } catch (e) {
     console.warn('[NodeHive] fetchArtistaByPath failed:', e);
@@ -134,7 +126,7 @@ export async function fetchArtistaByNid(
 ): Promise<NhArtistaDetail | null> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `node/artista?filter[drupal_internal__nid]=${nid}&include=field_imagen,field_imagen.field_media_image,field_agencia,field_redes_sociales,field_videos_artista`,
+      `node/artista?filter[drupal_internal__nid]=${nid}&include=field_imagen,field_imagen.field_media_image,field_agencia,field_redes_sociales`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
@@ -143,34 +135,6 @@ export async function fetchArtistaByNid(
     const a = resource.attributes as Record<string, unknown>;
     const included = res.included ?? [];
     const href = (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
-
-    const redesSociales: NhRedSocial[] = resolveRelIds(
-      (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_redes_sociales,
-    ).map((ref) => {
-      const p = findIncluded(included, 'paragraph--redsocial_artista', ref.id);
-      const pa = p?.attributes as Record<string, unknown> | undefined;
-      const enlace = pa?.field_enlace as { uri?: string; title?: string } | undefined;
-      return {
-        id: ref.id,
-        platform: (pa?.field_icon as string) ?? '',
-        url: enlace?.uri ? normalizeDrupalUri(enlace.uri) : '',
-        label: enlace?.title ?? '',
-      };
-    }).filter((s) => s.url);
-
-    const videos: NhArtistaVideo[] = (await Promise.all(
-      resolveRelIds(
-        (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_videos_artista,
-      ).map(async (ref) => {
-        const p = findIncluded(included, 'paragraph--videos_artista', ref.id);
-        const pa = p?.attributes as Record<string, unknown> | undefined;
-        const urlField = pa?.field_url_video as { uri?: string } | undefined;
-        const url = urlField?.uri ? normalizeDrupalUri(urlField.uri) : '';
-        if (!url) return null;
-        const resolved = await resolveVideoLink('', url);
-        return { id: ref.id, url, youtubeId: resolved.youtubeId, title: resolved.title, thumbnail: resolved.thumbnail?.url ?? null };
-      }),
-    )).filter((v): v is NhArtistaVideo => v !== null);
 
     return {
       id: resource.id,
@@ -181,12 +145,46 @@ export async function fetchArtistaByNid(
       body: (a.body as { value?: string })?.value ?? '',
       summary: (a.body as { summary?: string })?.summary ?? '',
       href: href.startsWith('/') ? href : `/${href}`,
-      redesSociales,
-      videos,
+      redesSociales: parseRedesSociales(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
     };
   } catch (e) {
     console.warn('[NodeHive] fetchArtistaByNid failed:', e);
     return null;
+  }
+}
+
+export async function fetchVideosByArtista(
+  artistaId: string,
+  lang = 'es',
+): Promise<NhArtistaVideo[]> {
+  if (!artistaId) return [];
+  try {
+    const res = await jsonApiFetch<Record<string, unknown>>(
+      `node/video_yt?filter[field_artistas.id][value]=${encodeURIComponent(artistaId)}&sort=-created`,
+      lang,
+    );
+    const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
+
+    const videos: NhArtistaVideo[] = [];
+    for (const resource of data) {
+      const a = resource.attributes as Record<string, unknown>;
+      const link = a.field_link as { uri?: string; title?: string } | undefined;
+      const rawUrl = link?.uri ?? '';
+      if (!rawUrl) continue;
+
+      const resolved = await resolveVideoLink('', rawUrl);
+      videos.push({
+        id: resource.id,
+        url: normalizeDrupalUri(rawUrl),
+        youtubeId: resolved.youtubeId,
+        title: resolved.title || link?.title || (a.title as string) || '',
+        thumbnail: resolved.thumbnail?.url ?? null,
+      });
+    }
+    return videos;
+  } catch (e) {
+    console.warn('[NodeHive] fetchVideosByArtista failed:', e);
+    return [];
   }
 }
 

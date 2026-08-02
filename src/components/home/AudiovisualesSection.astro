@@ -5,7 +5,7 @@
  * Botón play rojo siempre visible en el centro.
  *
  * NodeHive: paragraph bundle "_component_homepage_videos"
- * Cada tarjeta es un paragraph "catalogo_video_yt" editable individualmente.
+ * Cada tarjeta es un nodo "video_yt" editable individualmente.
  */
 
 import SectionHeader from '@/components/ui/SectionHeader.astro';
@@ -81,7 +81,7 @@ const videos: NhVideo[] = items?.length
         videos.map((item) => (
           <NodeHiveEntity
             entityType="paragraph"
-            bundle={item.bundle ?? 'catalogo_video_yt'}
+            bundle={item.bundle ?? 'video_yt'}
             id={item.id}
             internalId={item.internalId}
             parentId={item.parentId}

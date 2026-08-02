@@ -11,7 +11,7 @@ import SectionHeader from '@/components/ui/SectionHeader.astro';
 import ActionLink from '@/components/ui/ActionLink.astro';
 import PlayOverlay from '@/components/ui/PlayOverlay.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
-import SpotifyPlayer from '@/components/ui/SpotifyPlayer';
+import MusicEmbedPlayer from '@/components/ui/MusicEmbedPlayer';
 import type { NhEntityMeta, NhAlbum } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
@@ -102,7 +102,8 @@ const lanzamientos: NhAlbum[] = items?.length
             {/* Portada cuadrada */}
             <a
               href={album.spotifyId ? '#' : album.href}
-              data-spotify-embed={album.embedUrl || undefined}
+              data-embed-url={album.embedUrl || undefined}
+              data-embed-platform={album.embedUrl ? 'spotify' : undefined}
               class="block no-underline"
             >
               <div
@@ -130,7 +131,8 @@ const lanzamientos: NhAlbum[] = items?.length
             <ActionLink
               href={album.spotifyId ? '#' : album.href}
               class="mt-2"
-              data-spotify-embed={album.embedUrl || undefined}
+              data-embed-url={album.embedUrl || undefined}
+              data-embed-platform={album.embedUrl ? 'spotify' : undefined}
             >
               {tr('home.section.see_album')}
             </ActionLink>
@@ -141,4 +143,4 @@ const lanzamientos: NhAlbum[] = items?.length
   </div>
 </NodeHiveEntity>
 
-<SpotifyPlayer client:load />
+<MusicEmbedPlayer client:load />

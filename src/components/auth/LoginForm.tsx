@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
+import { sanitizeRedirect } from '@/lib/auth/redirect';
 
 interface Props {
   lang?: Lang;
@@ -47,7 +48,7 @@ export default function LoginForm({ lang = 'es' }: Props) {
       }
 
       const params = new URLSearchParams(window.location.search);
-      window.location.href = params.get('redirect') || '/';
+      window.location.href = sanitizeRedirect(params.get('redirect'));
     } catch {
       setError(tr('auth.error.generic'));
     } finally {

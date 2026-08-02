@@ -13,6 +13,15 @@ interface Props {
   sede?: NhSede | null;
 }
 
+function formatTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('es-CU', { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch {
+    return iso;
+  }
+}
+
 export default function ContactModal({
   open: controlledOpen,
   onClose: controlledOnClose,
@@ -80,14 +89,15 @@ export default function ContactModal({
   const subtitle = tr('contacto.hero.subtitle');
   const dir = sede?.direccion;
   const address = dir
-    ? [dir.address_line1, dir.locality, dir.administrative_area, dir.country_code]
-        .filter(Boolean)
-        .join(', ')
+    ? [dir.address_line1, dir.locality, dir.administrative_area, dir.country_code].filter(Boolean).join(', ')
     : 'Calle 3ra No. 1008 e/ 10 y 12, Miramar, Playa, La Habana, Cuba';
   const phones = sede?.telefono?.length
     ? sede.telefono.map((p) => p.phone_number).filter(Boolean)
     : ['+53 7 204 9822', '+53 7 204 9823'];
   const email = sede?.correo || 'info@egrem.co.cu';
+  const horarioDisplay = sede?.horario
+    ? `${formatTime(sede.horario.value)} – ${formatTime(sede.horario.end_value)}`
+    : null;
 
   return (
     <>
@@ -132,8 +142,8 @@ export default function ContactModal({
             <span className="icon text-3xl">close</span>
           </button>
 
-          <div className="p-8 border-b border-egrem-gray">
-            <h1 className="text-h1 text-egrem-black uppercase font-bold mb-2 border-l-4 border-egrem-red pl-6">
+          <div className="p-8 border-b border-egrem-gray/20">
+            <h1 className="text-h1 text-egrem-black uppercase font-bold mb-2 border-b-4 border-egrem-red pb-2 inline-block">
               {title}
             </h1>
             <p className="text-body text-egrem-gray max-w-2xl">
@@ -151,13 +161,12 @@ export default function ContactModal({
                   idPrefix="modal"
                   lang={lang}
                   tipoConsultaOptions={tipoConsultaOptions}
-                  onSuccess={close}
                 />
               </div>
 
               {variant === 'full' && (
                 <div className="lg:col-span-5 flex flex-col gap-6">
-                  <h2 className="text-h2 text-egrem-black uppercase font-bold border-l-4 border-egrem-gold pl-4">
+                  <h2 className="text-h2 text-egrem-black uppercase font-bold border-b-4 border-egrem-gold pb-2 inline-block">
                     {tr('contacto.info.title')}
                   </h2>
                   <div className="space-y-4">
@@ -186,6 +195,15 @@ export default function ContactModal({
                         </a>
                       </div>
                     </div>
+                    {horarioDisplay && (
+                      <div className="flex items-start gap-4">
+                        <span className="icon icon-filled text-egrem-red text-2xl shrink-0">schedule</span>
+                        <div>
+                          <h3 className="text-small text-egrem-gray uppercase font-bold">{tr('contacto.info.hours_label')}</h3>
+                          <p className="text-body text-egrem-black">{horarioDisplay}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

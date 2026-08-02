@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   try {
-    const { nid, body } = await request.json();
+    const { nid, nodeUuid, nodeType, body, parentId } = await request.json();
 
     if (!nid || !body) {
       return new Response(JSON.stringify({ error: 'Missing nid or body.' }), {
@@ -40,7 +40,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const result = await postComment(nid, session.accessToken, session.csrfToken, body);
+    const result = await postComment(
+      nid,
+      nodeUuid,
+      nodeType,
+      session.accessToken,
+      session.csrfToken,
+      body,
+      typeof parentId === 'string' && parentId.length > 0 ? parentId : null,
+    );
 
     if (!result.ok) {
       return new Response(JSON.stringify({ error: result.error || 'Could not post comment.' }), {

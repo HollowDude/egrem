@@ -10,6 +10,7 @@ export interface NhComment {
   created: string;
   relativeTime: string;
   status: 'published' | 'pending';
+  parentId?: string | null;
 }
 
 function relativeTime(dateStr: string, lang: string): string {
@@ -32,7 +33,7 @@ function relativeTime(dateStr: string, lang: string): string {
 export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComment[]> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `comment/${COMMENT_TYPE}?filter[entity_id.id][value]=${nodeUuid}&filter[status][value]=1&sort=created&include=uid`,
+      `comment/${COMMENT_TYPE}?filter[entity_id.id][value]=${nodeUuid}&filter[field_aprobado][value]=1&sort=created&include=uid,pid`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
@@ -56,6 +57,13 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
         }
       }
 
+      const pidRel = resource.relationships?.pid;
+      const pidData = Array.isArray(pidRel?.data) ? pidRel?.data[0] : pidRel?.data;
+      const parentId =
+        pidData && typeof pidData === 'object' && 'id' in pidData
+          ? (pidData.id as string)
+          : null;
+
       return {
         id: resource.id,
         author: authorName || 'Anónimo',
@@ -64,6 +72,7 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
         created: a.created as string,
         relativeTime: relativeTime(a.created as string, lang),
         status: 'published',
+        parentId,
       } satisfies NhComment;
     });
   } catch (e) {
@@ -74,62 +83,93 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
 
 export async function postComment(
   nid: number,
+  nodeUuid: string,
+  nodeType: string,
   accessToken: string,
   csrfToken: string,
   body: string,
+  parentId?: string | null,
 ): Promise<{ ok: boolean; error?: string; id?: string; status?: 'published' | 'pending' }> {
   const baseUrl = getBaseUrlValue();
 
-  // Try JSON:API with Bearer token first
-  const jsonRes = await fetch(`${baseUrl}/jsonapi/comment/comment`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/vnd.api+json',
-      Accept: 'application/vnd.api+json',
-    },
-    body: JSON.stringify({
-      data: {
-        type: 'comment--comment',
-        attributes: {
-          entity_id: nid,
-          entity_type: 'node',
-          field_name: 'field_comentarios',
-          comment_body: [{ value: body, format: 'basic_html' }],
-        },
+  try {
+    // Try JSON:API with Bearer token first
+    const jsonRes = await fetch(`${baseUrl}/jsonapi/comment/comment`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/vnd.api+json',
+        Accept: 'application/vnd.api+json',
       },
-    }),
-  });
-  if (jsonRes.ok) {
-    const json = await jsonRes.json().catch(() => null);
-    const id = json?.data?.id ?? '';
-    const status = json?.data?.attributes?.status === true ? 'published' : ('pending' as const);
-    return { ok: true, id, status };
+      body: JSON.stringify({
+        data: {
+          type: 'comment--comment',
+          attributes: {
+            entity_type: 'node',
+            field_name: 'field_comentarios',
+            field_aprobado: [{ value: false }],
+            comment_body: [{ value: body, format: 'basic_html' }],
+          },
+          relationships: {
+            entity_id: {
+              data: { type: nodeType, id: nodeUuid },
+            },
+            ...(parentId
+              ? {
+                  pid: {
+                    data: { type: 'comment--comment', id: parentId },
+                  },
+                }
+              : {}),
+          },
+        },
+      }),
+    });
+    if (jsonRes.ok) {
+      const json = await jsonRes.json().catch(() => null);
+      const id = json?.data?.id ?? '';
+      return { ok: true, id, status: 'pending' };
+    }
+
+    // Fallback: REST format with lang prefix + csrf_token
+    const restRes = await fetch(`${baseUrl}/es/comment?_format=json`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        entity_id: [{ target_id: nid }],
+        entity_type: [{ value: 'node' }],
+        comment_type: [{ target_id: COMMENT_TYPE }],
+        field_name: [{ value: 'field_comentarios' }],
+        subject: [{ value: '' }],
+        field_aprobado: [{ value: 0 }],
+        comment_body: [{ value: body, format: 'basic_html' }],
+        ...(parentId ? { pid: [{ target_uuid: parentId }] } : {}),
+      }),
+    });
+    if (restRes.ok) {
+      const json = await restRes.json().catch(() => null);
+      const id =
+        (typeof json?.uuid === 'string' && json.uuid) ||
+        (typeof json?.id === 'string' && json.id) ||
+        '';
+      return { ok: true, id, status: 'pending' };
+    }
+
+    const text = await restRes.text().catch(() => '');
+    console.error('[NodeHive] postComment failed:', jsonRes.status, restRes.status, text);
+    return {
+      ok: false,
+      error: 'No se pudo publicar el comentario. Verifica tu sesión o configuración de Drupal.',
+    };
+  } catch (e) {
+    console.error('[NodeHive] postComment network error:', e);
+    return {
+      ok: false,
+      error: 'No se pudo publicar el comentario. Intenta nuevamente.',
+    };
   }
-
-  // Fallback: REST format with lang prefix + csrf_token
-  const restRes = await fetch(`${baseUrl}/es/comment?_format=json`, {
-    method: 'POST',
-    headers: {
-      'X-CSRF-Token': csrfToken,
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({
-      entity_id: [{ target_id: nid }],
-      entity_type: [{ value: 'node' }],
-      comment_type: [{ target_id: COMMENT_TYPE }],
-      field_name: [{ value: 'field_comentarios' }],
-      subject: [{ value: '' }],
-      comment_body: [{ value: body, format: 'basic_html' }],
-    }),
-  });
-  if (restRes.ok) return { ok: true };
-
-  const text = await restRes.text().catch(() => '');
-  console.error('[NodeHive] postComment failed:', jsonRes.status, restRes.status, text);
-  return {
-    ok: false,
-    error: 'No se pudo publicar el comentario. Verifica tu sesión o configuración de Drupal.',
-  };
 }

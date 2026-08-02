@@ -12,8 +12,8 @@ import ArtistaAgenciaCard from '@/components/artistas/ArtistaAgenciaCard.astro';
 import ArtistaRedesSociales from '@/components/artistas/ArtistaRedesSociales.astro';
 import Breadcrumb from '@/components/ui/Breadcrumb.astro';
 import Button from '@/components/ui/Button.astro';
-import { fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist } from '@/lib/nodehive';
-import type { NhArtistaDetail, NhAlbumDiscografia } from '@/lib/nodehive';
+import { fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist, fetchVideosByArtista } from '@/lib/nodehive';
+import type { NhArtistaDetail, NhAlbumDiscografia, NhArtistaVideo } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
@@ -21,6 +21,7 @@ const tr = useTranslations(lang);
 
 let artista: NhArtistaDetail | null = null;
 let albums: NhAlbumDiscografia[] = [];
+let videos: NhArtistaVideo[] = [];
 
 try {
   const slug = Astro.url.pathname.replace(/^\/?(?:es\/|en\/)?artista\//, '').replace(/\/$/, '');
@@ -40,6 +41,7 @@ try {
   }
 
   albums = await fetchAlbumsByArtist(artista.nid, lang);
+  videos = await fetchVideosByArtista(artista.id, lang);
 } catch (e) {
   console.error('[artista/[...slug]] Failed:', e);
   return Astro.rewrite('/404');
@@ -79,7 +81,7 @@ const pageTitle = `${artista.name} | ${tr('artistas.page_title')}`;
         <div class="lg:col-span-8">
           <ArtistaBiografia artista={artista} />
           <ArtistaDiscografia albums={albums} />
-          <ArtistaVideos videos={artista.videos} />
+          <ArtistaVideos videos={videos} />
           <ArtistaEventos />
         </div>
         <aside class="lg:col-span-4 flex flex-col gap-6">

@@ -45,7 +45,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
   const PAGE_UUID = NODEHIVE_CONFIG.pages.home;
 
   const res = await jsonApiFetch(
-    `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo,field_components.field_photo.field_media_image,field_components.field_videos,field_components.field_lanzamientos,field_components.field_contenido,field_components.field_contenido.field_imagen_o_multimedia,field_components.field_contenido.field_imagen_o_multimedia.field_media_image,field_components.field_contenido.field_tags,field_components.field_contenido.field_artistas_relacionados,field_components.field_contenido.field_artistas_relacionados.field_imagen,field_components.field_contenido.field_artistas_relacionados.field_imagen.field_media_image`,
+      `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo,field_components.field_photo.field_media_image,field_components.field_videos_yt,field_components.field_lanzamientos,field_components.field_contenido,field_components.field_contenido.field_imagen_o_multimedia,field_components.field_contenido.field_imagen_o_multimedia.field_media_image,field_components.field_contenido.field_tags,field_components.field_contenido.field_artistas_relacionados,field_components.field_contenido.field_artistas_relacionados.field_imagen,field_components.field_contenido.field_artistas_relacionados.field_imagen.field_media_image`,
     lang,
   );
 
@@ -127,18 +127,18 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
         type: compType,
       });
     } else if (compType === '_component_homepage_videos') {
-      const videoRefs = resolveRelIds(comp.relationships?.field_videos);
+      const videoRefs = resolveRelIds(comp.relationships?.field_videos_yt);
       for (const vr of videoRefs) {
-        const videoComp = findIncluded(included, 'paragraph--catalogo_video_yt', vr.id);
+        const videoComp = findIncluded(included, 'node--video_yt', vr.id);
         if (!videoComp) continue;
         const vAttrs = videoComp.attributes as Record<string, unknown>;
         const link = vAttrs.field_link as { uri: string; title: string } | null;
         videoLinks.push({
           id: videoComp.id,
-          internalId: (vAttrs.drupal_internal__id as number) ?? 0,
+          internalId: (vAttrs.drupal_internal__nid as number) ?? 0,
           parentId: (vAttrs.parent_id as string) ?? '',
-          bundle: 'catalogo_video_yt',
-          title: link?.title ?? '',
+          bundle: 'video_yt',
+          title: link?.title ?? (vAttrs.title as string) ?? '',
           url: link ? normalizeDrupalUri(link.uri) : '',
         });
       }

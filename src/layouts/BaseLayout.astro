@@ -19,7 +19,9 @@ import Footer from '@/components/layout/Footer.astro';
 import '@/styles/globals.css';
 import '@/styles/nodehive-editor.css';
 import { fetchHeaderFragment, fetchFooterFragment } from '@/lib/nodehive';
-import type { NhHeaderFragment, NhFooterFragment } from '@/lib/nodehive';
+import { fetchContactoPage, fetchTipoConsultaOptions } from '@/lib/nodehive/contacto';
+import type { NhHeaderFragment, NhFooterFragment, NhTipoConsultaOption } from '@/lib/nodehive';
+import type { NhSede } from '@/lib/nodehive/entities';
 
 import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
 import YouTubePlayer from '@/components/ui/YouTubePlayer';
@@ -75,6 +77,17 @@ try {
   nhFooter = await fetchFooterFragment(lang);
 } catch (e) {
   console.error('[NodeHive] Failed to fetch footer fragment:', e);
+}
+
+// Fetch contacto data for the global ContactModal
+let contactoSede: NhSede | null = null;
+let tipoConsultaOptions: NhTipoConsultaOption[] = [];
+try {
+  const contacto = await fetchContactoPage(lang);
+  contactoSede = contacto?.sede ?? null;
+  tipoConsultaOptions = await fetchTipoConsultaOptions(lang);
+} catch (e) {
+  console.warn('[NodeHive] Failed to fetch contacto data for modal:', e);
 }
 ---
 
@@ -146,7 +159,12 @@ try {
     <Footer nhFooter={nhFooter} lang={lang} />
 
     <YouTubePlayer client:only="react" />
-    <ContactModal client:only="react" />
+    <ContactModal
+      client:only="react"
+      sede={contactoSede}
+      tipoConsultaOptions={tipoConsultaOptions}
+      lang={lang}
+    />
     <NodeHiveConnector />
   </body>
 </html>

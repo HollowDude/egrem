@@ -37,7 +37,7 @@ export const auth: Record<Lang, Record<string, string>> = {
     'auth.register.password': 'Contraseña',
     'auth.register.password_placeholder': 'Mínimo 8 caracteres',
     'auth.register.submit': 'Crear Cuenta',
-    'auth.register.success': 'Cuenta creada. Revisa tu correo para activarla.',
+    'auth.register.success': 'Cuenta creada. Revise su correo para activarla.',
     'auth.register.has_account': '¿Ya tienes una cuenta?',
     'auth.register.login_link': 'Inicia sesión aquí',
     'auth.register.error.first_name': 'El nombre es obligatorio.',

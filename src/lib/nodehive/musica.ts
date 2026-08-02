@@ -1,13 +1,19 @@
 import type { JsonApiResource, JsonApiRelationship, JsonApiResourceIdentifier } from './client';
 import { jsonApiFetch } from './client';
-import { findIncluded, resolveRelIds } from './helpers';
+import { findIncluded, resolveRelIds, slugify } from './helpers';
 import { parseMediaImage, resolveFileUrl, normalizeDrupalUri } from './parsers';
 import type { NhMediaImage } from './parsers';
-import type { NhAlbumDiscografia } from './entities';
+import type { NhAlbumDiscografia, NhExternalApp, NhMusicPlatform, NhTrack } from './entities';
+import { detectPlatform, buildEmbedUrl } from './music-embed';
 
 export interface CatalogoMusicaParams {
   sello?: string;
   search?: string;
+  decada?: string;
+  disco?: string;
+  artista?: string;
+  agencia?: string;
+  interprete?: string;
   page?: number;
   limit?: number;
 }
@@ -18,6 +24,11 @@ export interface CatalogoMusicaResult {
   totalPages: number;
   currentPage: number;
   availableSellos: { name: string; tid: number; slug: string }[];
+  availableDecadas: string[];
+  availableDiscos: string[];
+  availableArtistas: { name: string; slug: string; nid: number }[];
+  availableAgencias: { name: string; slug: string }[];
+  availableInterpretes: { name: string; slug: string; nid: number }[];
 }
 
 export function parseAlbumCover(
@@ -34,6 +45,48 @@ export function parseAlbumCover(
   return img;
 }
 
+function parseArtistaRef(
+  resource: { relationships?: Record<string, JsonApiRelationship> },
+  field: string,
+  included: JsonApiResource[],
+): { name: string; slug: string; nid: number } | undefined {
+  const rel = resource.relationships?.[field]?.data as JsonApiResourceIdentifier | undefined;
+  if (!rel) return undefined;
+  const artistRes = findIncluded(included, 'node--artista', rel.id);
+  if (!artistRes) return undefined;
+  const aa = artistRes.attributes as Record<string, unknown>;
+  const name = (aa.title as string) ?? '';
+  if (!name) return undefined;
+  return {
+    name,
+    slug: slugify(name),
+    nid: (aa.drupal_internal__nid as number) ?? 0,
+  };
+}
+
+function parseAgencia(
+  resource: { relationships?: Record<string, JsonApiRelationship> },
+  included: JsonApiResource[],
+): { name: string; slug: string } | undefined {
+  const rel = resource.relationships?.field_artista?.data as JsonApiResourceIdentifier | undefined;
+  if (!rel) return undefined;
+  const artistRes = findIncluded(included, 'node--artista', rel.id);
+  if (!artistRes) return undefined;
+  const agRel = artistRes.relationships?.field_agencia?.data as JsonApiResourceIdentifier | undefined;
+  if (!agRel) return undefined;
+  const term = findIncluded(included, 'taxonomy_term--agencias', agRel.id);
+  if (!term) return undefined;
+  const ta = term.attributes as Record<string, unknown>;
+  const name = (ta.name as string) ?? '';
+  if (!name) return undefined;
+  return { name, slug: slugify(name) };
+}
+
+function parseDecada(year: number | null): string {
+  if (!year) return '';
+  return `${Math.floor(year / 10) * 10}s`;
+}
+
 export function parseAlbumResource(
   resource: JsonApiResource<Record<string, unknown>>,
   included: JsonApiResource[],
@@ -41,20 +94,54 @@ export function parseAlbumResource(
   const a = resource.attributes as Record<string, unknown>;
   const rels = resource.relationships as Record<string, JsonApiRelationship> | undefined;
 
-  const tracks: string[] = resolveRelIds(rels?.field_track_list).map((ref) => {
+  const tracks: NhTrack[] = resolveRelIds(rels?.field_track_list).map((ref) => {
     const p = findIncluded(included, 'paragraph--album_tracks', ref.id);
-    return (p?.attributes as Record<string, unknown>)?.field_track_title as string ?? '';
-  }).filter(Boolean);
+    const pa = p?.attributes as Record<string, unknown> | undefined;
+    const title = (pa?.field_track_title as string) ?? '';
+    if (!title) return null;
+    const duration = (pa?.field_duracion as number | null) ?? null;
 
-  const externalApps: { title: string; url: string }[] = resolveRelIds(rels?.field_external_apps).map((ref) => {
+    const audioRel = p?.relationships?.field_track_url?.data as JsonApiResourceIdentifier | undefined;
+    let audioUrl: string | null = null;
+    if (audioRel) {
+      const media = findIncluded(included, 'media--audio', audioRel.id);
+      const fileRefs = resolveRelIds(media?.relationships?.field_media_audio_file);
+      if (fileRefs.length > 0) {
+        const file = findIncluded(included, 'file--file', fileRefs[0].id);
+        const uri = (file?.attributes as Record<string, unknown> | undefined)?.uri as
+          | { url?: string }
+          | undefined;
+        if (uri?.url) audioUrl = resolveFileUrl(uri.url);
+      }
+    }
+
+    const previewLink = pa?.field_enlace_preview as { uri?: string } | undefined;
+    const previewUrl = previewLink?.uri ? normalizeDrupalUri(previewLink.uri) : null;
+    const previewPlatform: NhMusicPlatform | null = previewUrl ? detectPlatform(previewUrl) : null;
+    return {
+      title,
+      durationSeconds: duration,
+      audioUrl,
+      previewUrl,
+      previewPlatform,
+      previewEmbedUrl: previewUrl ? buildEmbedUrl(previewUrl) : null,
+    };
+  }).filter((t): t is NhTrack => t !== null);
+
+  const externalApps: NhExternalApp[] = resolveRelIds(rels?.field_external_apps).map((ref) => {
     const p = findIncluded(included, 'paragraph--external_apps', ref.id);
     const pa = p?.attributes as Record<string, unknown> | undefined;
     const link = pa?.field_app_link as { uri?: string; title?: string } | undefined;
+    const url = link?.uri ? normalizeDrupalUri(link.uri) : '';
+    if (!url) return null;
+    const platform = detectPlatform(url);
     return {
       title: (pa?.field_titulo as string) ?? '',
-      url: link ? normalizeDrupalUri(link.uri) : '',
+      url,
+      platform,
+      embedUrl: buildEmbedUrl(url),
     };
-  }).filter((e) => e.url);
+  }).filter((e): e is NhExternalApp => e !== null);
 
   const selloRel = rels?.field_sello?.data as JsonApiResourceIdentifier | undefined;
   let sello: { name: string; tid: number; slug: string } | undefined;
@@ -70,15 +157,24 @@ export function parseAlbumResource(
   const bodyRel = a.body as { value?: string } | undefined;
   const href = (a.path as { alias?: string | null })?.alias ?? `/catalogo/musica/${a.drupal_internal__nid}`;
 
+  const year = (a.field_year as number | null) ?? null;
+  const artistaRef = parseArtistaRef(resource, 'field_artista', included);
+  const interpreteRef = parseArtistaRef(resource, 'field_interprete', included);
+  const agencia = parseAgencia(resource, included);
+
   return {
     id: resource.id,
     nid: (a.drupal_internal__nid as number) ?? 0,
     title: (a.title as string) ?? '',
-    year: (a.field_year as number | null) ?? null,
+    year,
     albumNumber: (a.field_album_number as number | null) ?? null,
+    decada: parseDecada(year),
     body: bodyRel?.value ?? '',
     cover: parseAlbumCover(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
     sello: sello && sello.name ? sello : undefined,
+    artista: artistaRef,
+    interprete: interpreteRef,
+    agencia,
     tracks,
     externalApps,
     href: href.startsWith('/') ? href : `/${href}`,
@@ -93,10 +189,15 @@ export async function fetchAlbumesCatalogo(
   const page = params.page ?? 1;
   const limit = params.limit ?? 50;
   const allSellos = new Map<string, { name: string; tid: number; slug: string }>();
+  const allDecadas = new Set<string>();
+  const allDiscos = new Set<string>();
+  const allArtistas = new Map<string, { name: string; slug: string; nid: number }>();
+  const allAgencias = new Map<string, { name: string; slug: string }>();
+  const allInterpretes = new Map<string, { name: string; slug: string; nid: number }>();
 
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `node/album?sort=-field_year&page[limit]=${limit}&include=field_imagen_portada,field_imagen_portada.field_media_image,field_sello,field_track_list,field_external_apps`,
+      `node/album?sort=-field_year&page[limit]=${limit}&include=field_imagen_portada,field_imagen_portada.field_media_image,field_sello,field_track_list,field_external_apps,field_track_list.field_track_url,field_track_list.field_track_url.field_media_audio_file,field_artista,field_artista.field_agencia,field_interprete`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
@@ -118,6 +219,20 @@ export async function fetchAlbumesCatalogo(
         }
       }
 
+      if (discografia.decada) allDecadas.add(discografia.decada);
+      if (discografia.albumNumber !== null && discografia.albumNumber !== undefined) {
+        allDiscos.add(String(discografia.albumNumber));
+      }
+      if (discografia.artista) {
+        allArtistas.set(discografia.artista.slug, discografia.artista);
+      }
+      if (discografia.agencia) {
+        allAgencias.set(discografia.agencia.slug, discografia.agencia);
+      }
+      if (discografia.interprete) {
+        allInterpretes.set(discografia.interprete.slug, discografia.interprete);
+      }
+
       return discografia;
     });
 
@@ -133,6 +248,26 @@ export async function fetchAlbumesCatalogo(
       );
     }
 
+    if (params.decada) {
+      albums = albums.filter((a) => a.decada === params.decada);
+    }
+
+    if (params.disco) {
+      albums = albums.filter((a) => String(a.albumNumber) === params.disco);
+    }
+
+    if (params.artista) {
+      albums = albums.filter((a) => a.artista?.slug === params.artista);
+    }
+
+    if (params.agencia) {
+      albums = albums.filter((a) => a.agencia?.slug === params.agencia);
+    }
+
+    if (params.interprete) {
+      albums = albums.filter((a) => a.interprete?.slug === params.interprete);
+    }
+
     const total = albums.length;
     const perPage = 24;
     const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -146,6 +281,11 @@ export async function fetchAlbumesCatalogo(
       totalPages,
       currentPage,
       availableSellos: Array.from(allSellos.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      availableDecadas: Array.from(allDecadas).sort((a, b) => parseInt(a) - parseInt(b)),
+      availableDiscos: Array.from(allDiscos).sort((a, b) => parseInt(a) - parseInt(b)),
+      availableArtistas: Array.from(allArtistas.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      availableAgencias: Array.from(allAgencias.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      availableInterpretes: Array.from(allInterpretes.values()).sort((a, b) => a.name.localeCompare(b.name)),
     };
   } catch (e) {
     console.warn('[NodeHive] fetchAlbumesCatalogo failed:', e);
@@ -155,6 +295,11 @@ export async function fetchAlbumesCatalogo(
       totalPages: 0,
       currentPage: 1,
       availableSellos: [],
+      availableDecadas: [],
+      availableDiscos: [],
+      availableArtistas: [],
+      availableAgencias: [],
+      availableInterpretes: [],
     };
   }
 }
@@ -166,7 +311,7 @@ export async function fetchAlbumByPath(
   try {
     const cleanPath = path.replace(/^\/?(es\/|en\/)?/, '/').replace(/\/$/, '');
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `node/album?filter[path.alias][value]=${encodeURIComponent(cleanPath)}&include=field_imagen_portada,field_imagen_portada.field_media_image,field_sello,field_track_list,field_external_apps`,
+      `node/album?filter[path.alias][value]=${encodeURIComponent(cleanPath)}&include=field_imagen_portada,field_imagen_portada.field_media_image,field_sello,field_track_list,field_external_apps,field_track_list.field_track_url,field_track_list.field_track_url.field_media_audio_file`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
@@ -184,7 +329,7 @@ export async function fetchAlbumByNid(
 ): Promise<NhAlbumDiscografia | null> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `node/album?filter[drupal_internal__nid]=${nid}&include=field_imagen_portada,field_imagen_portada.field_media_image,field_sello,field_track_list,field_external_apps`,
+      `node/album?filter[drupal_internal__nid]=${nid}&include=field_imagen_portada,field_imagen_portada.field_media_image,field_sello,field_track_list,field_external_apps,field_track_list.field_track_url,field_track_list.field_track_url.field_media_audio_file`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];

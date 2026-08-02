@@ -149,21 +149,48 @@ export interface NhArtistaVideo {
 
 export interface NhArtistaDetail extends NhArtistaListItem {
   redesSociales: NhRedSocial[];
-  videos: NhArtistaVideo[];
+}
+
+export type NhMusicPlatform = 'spotify' | 'apple_music' | 'other';
+
+export interface NhExternalApp {
+  title: string;
+  url: string;
+  platform: NhMusicPlatform;
+  embedUrl: string | null;
+}
+
+export interface NhTrack {
+  title: string;
+  durationSeconds: number | null;
+  audioUrl: string | null;
+  previewUrl: string | null;
+  previewPlatform: NhMusicPlatform | null;
+  previewEmbedUrl: string | null;
 }
 
 export interface NhAlbumDiscografia extends NhBase {
   nid: number;
   title: string;
   year: number | null;
+  decada?: string;
   albumNumber: number | null;
   body: string;
   cover: NhMediaImage | null;
   sello?: { name: string; tid: number; slug: string };
-  tracks: string[];
-  externalApps: { title: string; url: string }[];
+  artista?: { name: string; slug: string; nid: number };
+  interprete?: { name: string; slug: string; nid: number };
+  agencia?: { name: string; slug: string };
+  tracks: NhTrack[];
+  externalApps: NhExternalApp[];
   href: string;
   artistName?: string;
+}
+
+export interface NhVideoArtistaRef {
+  name: string;
+  href: string;
+  nid: number;
 }
 
 export interface NhCatalogoVideo {
@@ -172,9 +199,9 @@ export interface NhCatalogoVideo {
   youtubeId: string | null;
   title: string;
   thumbnail: string | null;
-  artistName: string;
-  artistHref: string;
-  artistNid: number;
+  body?: string;
+  artistas: NhVideoArtistaRef[];
+  tipo?: { name: string; slug: string };
 }
 
 export interface NhVideoDetail {
@@ -197,6 +224,7 @@ export interface NhVideoDestacado {
 
 export interface CatalogoVideosParams {
   artista?: string;
+  tipo?: string;
   page?: number;
   limit?: number;
 }
@@ -206,7 +234,9 @@ export interface CatalogoVideosResult {
   total: number;
   totalPages: number;
   currentPage: number;
+  hasMore: boolean;
   availableArtistas: { name: string; slug: string; nid: number }[];
+  availableTipos: { name: string; slug: string }[];
 }
 
 /* ─── About / Quiénes Somos ────────────────────────────────────── */

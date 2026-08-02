@@ -14,12 +14,10 @@ const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
 const artista = Astro.url.searchParams.get('artista') ?? '';
-const currentPage = Math.max(1, parseInt(Astro.url.searchParams.get('page') ?? '1'));
+const tipo = Astro.url.searchParams.get('tipo') ?? '';
 
-const result = await fetchVideosCatalogo({ artista: artista || undefined, page: currentPage }, lang);
-const { videos, total, totalPages, currentPage: page, availableArtistas } = result;
-const showingEnd = Math.min(page * 24, total);
-const showingStart = total > 0 ? (page - 1) * 24 + 1 : 0;
+const result = await fetchVideosCatalogo({ artista: artista || undefined, tipo: tipo || undefined, page: 1 }, lang);
+const { videos, total, hasMore, availableArtistas, availableTipos } = result;
 
 let hero = null;
 try {
@@ -34,19 +32,6 @@ try {
 } catch (e) {
   console.error('[catalogo/videos] Failed to fetch destacado:', e);
 }
-
-function pageUrl(p: number): string {
-  const params = new URLSearchParams();
-  if (artista) params.set('artista', artista);
-  if (p > 1) params.set('page', String(p));
-  const qs = params.toString();
-  return `/catalogo/videos${qs ? '?' + qs : ''}`;
-}
-
-const paginationStart = Math.max(1, page - 4);
-const paginationEnd = Math.min(totalPages, paginationStart + 9);
-const visiblePages: number[] = [];
-for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
 ---
 
 <BaseLayout
@@ -65,7 +50,7 @@ for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
       <VideoDestacado video={destacado} />
     ) : null}
 
-    <VideoFilterBar {availableArtistas} {artista} />
+    <VideoFilterBar {availableArtistas} {artista} {availableTipos} {tipo} />
 
     <section class="section-py bg-white">
       <div class="container-site">
@@ -76,38 +61,31 @@ for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
           </div>
         ) : (
           <>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5" data-videos-grid>
               {videos.map((video) => (
                 <VideoCard video={video} />
               ))}
             </div>
 
             <div class="mt-12 flex flex-col items-center gap-4">
-              <p class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
+              <p class="font-display text-[11px] text-egrem-gray uppercase tracking-wider" data-videos-count>
                 {tr('videos.showing')
-                  .replace('{start}', String(showingStart))
-                  .replace('{end}', String(showingEnd))
+                  .replace('{count}', String(videos.length))
                   .replace('{total}', String(total))}
               </p>
-              {totalPages > 1 && (
-                <nav class="flex items-center gap-2">
-                  {page > 1 && (
-                    <a href={pageUrl(page - 1)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline" aria-label={tr('videos.pagination.prev')}>
-                      <span style="font-family: 'Material Symbols Outlined';">chevron_left</span>
-                    </a>
-                  )}
-                  {visiblePages.map((p) => (
-                    <a
-                      href={pageUrl(p)}
-                      class:list={['w-10 h-10 flex items-center justify-center rounded-xl no-underline font-bold', p === page ? 'bg-egrem-red text-white' : 'border border-egrem-gray/30 text-egrem-black hover:bg-egrem-gray-light']}
-                    >{p}</a>
-                  ))}
-                  {page < totalPages && (
-                    <a href={pageUrl(page + 1)} class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline" aria-label={tr('videos.pagination.next')}>
-                      <span style="font-family: 'Material Symbols Outlined';">chevron_right</span>
-                    </a>
-                  )}
-                </nav>
+              {hasMore && (
+                <button
+                  type="button"
+                  data-load-more
+                  data-artista={artista}
+                  data-tipo={tipo}
+                  data-lang={lang}
+                  data-page="1"
+                  class="inline-flex items-center gap-2 px-8 py-3 bg-egrem-black text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-full hover:bg-egrem-red hover:scale-105 active:scale-[0.97] transition-all duration-200 cursor-pointer border-none"
+                >
+                  <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">add</span>
+                  {tr('videos.pagination.load_more')}
+                </button>
               )}
             </div>
           </>
@@ -116,3 +94,95 @@ for (let i = paginationStart; i <= paginationEnd; i++) visiblePages.push(i);
     </section>
   </main>
 </BaseLayout>
+
+<script>
+  const grid = document.querySelector('[data-videos-grid]');
+  const loadMoreBtn = document.querySelector<HTMLButtonElement>('[data-load-more]');
+  const countEl = document.querySelector('[data-videos-count]');
+  if (!grid || !loadMoreBtn) return;
+
+  const lang = loadMoreBtn.dataset.lang || 'es';
+  const STRINGS: Record<string, { loading: string; noMore: string; error: string; count: string }> = {
+    es: { loading: 'Cargando...', noMore: 'No hay más videos', error: 'Error al cargar videos', count: 'Mostrando {count} de {total} videos' },
+    en: { loading: 'Loading...', noMore: 'No more videos', error: 'Error loading videos', count: 'Showing {count} of {total} videos' },
+  };
+  const S = STRINGS[lang] ?? STRINGS.es;
+  const defaultLabel = loadMoreBtn.textContent ?? '';
+
+  function escapeHtml(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function videoCardHtml(v: {
+    youtubeId: string | null;
+    title: string;
+    thumbnail: string | null;
+    artistas: { name: string }[];
+  }): string {
+    const thumb = v.thumbnail
+      ? `<img src="${escapeHtml(v.thumbnail)}" alt="${escapeHtml(v.title)}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />`
+      : `<div class="w-full h-full flex items-center justify-center bg-egrem-dark"><span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">videocam</span></div>`;
+    const artistas = v.artistas.length > 0
+      ? `<p class="font-display text-small text-egrem-gray">${v.artistas.map((a) => escapeHtml(a.name)).join(', ')}</p>`
+      : '';
+    return `
+      <a href="#" data-youtube-id="${v.youtubeId ?? ''}" class="group no-underline cursor-pointer" aria-label="${escapeHtml(v.title)}">
+        <div class="aspect-video relative overflow-hidden rounded-2xl border border-egrem-gray/20 bg-egrem-dark group-hover:border-egrem-red transition-all duration-300 mb-3">
+          ${thumb}
+          <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors">
+            <span class="text-white text-5xl opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-lg" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_circle</span>
+          </div>
+        </div>
+        <h3 class="font-display font-bold text-[18px] text-egrem-black group-hover:text-egrem-red transition-colors leading-tight mb-0.5">${escapeHtml(v.title)}</h3>
+        ${artistas}
+      </a>
+    `;
+  }
+
+  loadMoreBtn.addEventListener('click', async () => {
+    const page = parseInt(loadMoreBtn.dataset.page || '1') + 1;
+    loadMoreBtn.disabled = true;
+    loadMoreBtn.textContent = S.loading;
+
+    try {
+      const qs = new URLSearchParams({
+        page: String(page),
+        lang: loadMoreBtn.dataset.lang || 'es',
+      });
+      if (loadMoreBtn.dataset.artista) qs.set('artista', loadMoreBtn.dataset.artista);
+      if (loadMoreBtn.dataset.tipo) qs.set('tipo', loadMoreBtn.dataset.tipo);
+
+      const res = await fetch(`/api/catalogo/videos?${qs.toString()}`);
+      if (!res.ok) throw new Error('bad status');
+      const data = await res.json();
+
+      const fragment = document.createElement('div');
+      fragment.innerHTML = data.videos.map(videoCardHtml).join('');
+      for (const node of Array.from(fragment.children)) {
+        grid.appendChild(node);
+      }
+
+      loadMoreBtn.dataset.page = String(data.currentPage);
+      if (countEl) {
+        countEl.textContent = S.count
+          .replace('{count}', String(grid.children.length))
+          .replace('{total}', String(data.total));
+      }
+      if (data.hasMore) {
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = defaultLabel;
+      } else {
+        loadMoreBtn.textContent = S.noMore;
+        loadMoreBtn.style.display = 'none';
+      }
+    } catch {
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.textContent = S.error;
+    }
+  });
+</script>
