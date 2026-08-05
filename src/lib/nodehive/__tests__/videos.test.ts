@@ -393,13 +393,13 @@ describe('fetchVideosCatalogo', () => {
     });
 
     const page1 = await fetchVideosCatalogo({ page: 1 }, 'es');
-    expect(page1.videos).toHaveLength(24);
+    expect(page1.videos).toHaveLength(10);
     expect(page1.hasMore).toBe(true);
     expect(page1.total).toBe(30);
 
     const page2 = await fetchVideosCatalogo({ page: 2 }, 'es');
-    expect(page2.videos).toHaveLength(6);
-    expect(page2.hasMore).toBe(false);
+    expect(page2.videos).toHaveLength(10);
+    expect(page2.hasMore).toBe(true);
   });
 });
 

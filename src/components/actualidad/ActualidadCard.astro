@@ -68,7 +68,7 @@ const bundleLabels: Record<string, string> = {
       <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
       <div class="absolute bottom-0 left-0 p-6 w-full">
         <span class="badge mb-3 inline-block">{bundleLabels[bundle] || bundle}</span>
-        <h2 class="text-h2 text-white mb-2 group-hover:text-egrem-gold transition-colors">
+        <h2 class="text-h2 text-white mb-2 group-hover:text-egrem-gold transition-colors line-clamp-2">
           {title}
         </h2>
         <p class="text-body text-white/80 hidden md:block max-w-3xl line-clamp-2">{summary}</p>
@@ -122,14 +122,14 @@ const bundleLabels: Record<string, string> = {
       </a>
 
       <div class="card-body flex flex-col flex-1">
-        <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors">
+        <h3 class="font-display font-bold text-xl text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2 min-h-[3.125rem]">
           <a href={href} class="text-inherit no-underline">
             {title}
           </a>
         </h3>
 
         <p
-          class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1"
+          class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1 min-h-[4.375rem]"
           style="color: var(--color-text-secondary);"
         >
           {summary}

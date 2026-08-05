@@ -85,7 +85,7 @@ export async function fetchVideosCatalogo(
   const page = params.page ?? 1;
   const allArtistas = new Map<string, { name: string; slug: string; nid: number }>();
   const allTipos = new Map<string, { name: string; slug: string }>();
-  const perPage = 24;
+  const perPage = 10;
 
   try {
     let videos = await fetchAllArtistVideos(lang);

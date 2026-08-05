@@ -45,6 +45,39 @@ const AGENCIA_2 = {
   attributes: { name: 'Música' },
 };
 
+const LANZAMIENTO_ALBUM = {
+  type: 'taxonomy_term--tipo_de_lanzamiento',
+  id: 'lanzamiento-1',
+  attributes: { name: 'Álbum', drupal_internal__tid: 24 },
+};
+
+const AUDIO_FILE = {
+  type: 'file--file',
+  id: 'file-1',
+  attributes: { uri: { url: '/sites/default/files/track.mp3' } },
+};
+
+const AUDIO_MEDIA = {
+  type: 'media--audio',
+  id: 'audio-1',
+  attributes: { name: 'Track 1' },
+  relationships: { field_media_audio_file: { data: [{ type: 'file--file', id: 'file-1' }] } },
+};
+
+const TRACK_NODE = {
+  type: 'node--track',
+  id: 'track-1',
+  attributes: { title: 'Tema Uno', field_duracion: 210, field_enlace_preview: null },
+  relationships: { field_track_url: { data: { type: 'media--audio', id: 'audio-1' } } },
+};
+
+const TRACK_PARAGRAPH = {
+  type: 'paragraph--lanzamiento_track',
+  id: 'para-track-1',
+  attributes: { field_numero_pista: 1 },
+  relationships: { field_track: { data: { type: 'node--track', id: 'track-1' } } },
+};
+
 function albumA(): ReturnType<typeof albumResource> {
   return albumResource(
     'album-a',
@@ -53,6 +86,8 @@ function albumA(): ReturnType<typeof albumResource> {
       field_artista: { data: { type: 'node--artista', id: 'artista-a' } },
       field_interprete: { data: { type: 'node--artista', id: 'artista-a' } },
       field_sello: { data: { type: 'taxonomy_term--sello_discografico', id: 'sello-uno' } },
+      field_tipo_lanzamiento: { data: { type: 'taxonomy_term--tipo_de_lanzamiento', id: 'lanzamiento-1' } },
+      field_track_list: { data: [{ type: 'paragraph--lanzamiento_track', id: 'para-track-1' }] },
     },
   );
 }
@@ -72,7 +107,7 @@ function albumB(): ReturnType<typeof albumResource> {
 function mockResponse(data: ReturnType<typeof albumResource>[]) {
   mockJsonApiFetch.mockResolvedValueOnce({
     data,
-    included: [SELLO_UNO, ARTISTA_A, ARTISTA_B, AGENCIA_1, AGENCIA_2],
+    included: [SELLO_UNO, ARTISTA_A, ARTISTA_B, AGENCIA_1, AGENCIA_2, LANZAMIENTO_ALBUM, AUDIO_FILE, AUDIO_MEDIA, TRACK_NODE, TRACK_PARAGRAPH],
   });
 }
 
@@ -157,5 +192,48 @@ describe('fetchAlbumesCatalogo', () => {
     expect(result.availableArtistas).toEqual([]);
     expect(result.availableAgencias).toEqual([]);
     expect(result.availableInterpretes).toEqual([]);
+  });
+
+  it('parses tracks from the new lanzamiento_track + node--track model', async () => {
+    mockResponse([albumA()]);
+    const result = await fetchAlbumesCatalogo({}, 'es');
+
+    expect(result.albums[0].tracks).toEqual([
+      {
+        title: 'Tema Uno',
+        durationSeconds: 210,
+        audioUrl: 'http://drupal.local/sites/default/files/track.mp3',
+        previewUrl: null,
+        previewPlatform: null,
+        previewEmbedUrl: null,
+      },
+    ]);
+  });
+
+  it('parses the lanzamiento type and artista href', async () => {
+    mockResponse([albumA()]);
+    const result = await fetchAlbumesCatalogo({}, 'es');
+
+    expect(result.albums[0].lanzamiento).toEqual({ name: 'Álbum', tid: 24, slug: 'álbum' });
+    expect(result.albums[0].artista).toMatchObject({
+      name: 'Artista A',
+      slug: 'artista-a',
+      nid: 1,
+      href: '/artista/1',
+    });
+  });
+
+  it('uses the artist path alias as href when present', async () => {
+    const withAlias = {
+      ...ARTISTA_A,
+      attributes: { ...ARTISTA_A.attributes, path: { alias: '/artistas/marisney-elvira' } },
+    };
+    mockJsonApiFetch.mockResolvedValueOnce({
+      data: [albumA()],
+      included: [SELLO_UNO, withAlias, AGENCIA_1, LANZAMIENTO_ALBUM, AUDIO_FILE, AUDIO_MEDIA, TRACK_NODE, TRACK_PARAGRAPH],
+    });
+    const result = await fetchAlbumesCatalogo({}, 'es');
+
+    expect(result.albums[0].artista?.href).toBe('/artistas/marisney-elvira');
   });
 });

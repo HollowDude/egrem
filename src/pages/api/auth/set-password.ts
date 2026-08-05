@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { setPasswordFromOneTimeLogin } from '@/lib/nodehive/setPassword';
-import { setSession } from '@/lib/auth/session';
+import { setSession, isSecureRequest } from '@/lib/auth/session';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const body = await request.json().catch(() => null);
@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   if (result.data) {
-    await setSession(cookies, result.data);
+    await setSession(cookies, result.data, isSecureRequest(request));
     return json({ success: true, user: { name: result.data.name } }, 200);
   }
 

@@ -29,6 +29,53 @@ afterEach(() => {
 });
 
 describe('getComments', () => {
+  it('includes comments approved via core status', async () => {
+    mockJsonApiFetch.mockResolvedValueOnce({
+      data: [
+        {
+          type: 'comment--comment',
+          id: 'core-approved',
+          attributes: {
+            comment_body: { value: 'Aprobado por status' },
+            created: new Date().toISOString(),
+            status: true,
+            field_aprobado: false,
+          },
+          relationships: { pid: { data: null } },
+        },
+      ],
+      included: [],
+    });
+
+    const comments = await getComments('node-uuid');
+
+    expect(comments).toHaveLength(1);
+    expect(comments[0].id).toBe('core-approved');
+  });
+
+  it('filters out comments not approved by either mechanism', async () => {
+    mockJsonApiFetch.mockResolvedValueOnce({
+      data: [
+        {
+          type: 'comment--comment',
+          id: 'pending-1',
+          attributes: {
+            comment_body: { value: 'Sin aprobar' },
+            created: new Date().toISOString(),
+            status: false,
+            field_aprobado: false,
+          },
+          relationships: { pid: { data: null } },
+        },
+      ],
+      included: [],
+    });
+
+    const comments = await getComments('node-uuid');
+
+    expect(comments).toEqual([]);
+  });
+
   it('parses the pid relationship as parentId', async () => {
     mockJsonApiFetch.mockResolvedValueOnce({
       data: [
@@ -38,6 +85,7 @@ describe('getComments', () => {
           attributes: {
             comment_body: { value: 'Hello' },
             created: new Date().toISOString(),
+            status: true,
           },
           relationships: { pid: { data: null } },
         },
@@ -47,6 +95,7 @@ describe('getComments', () => {
           attributes: {
             comment_body: { value: 'Reply' },
             created: new Date().toISOString(),
+            status: true,
           },
           relationships: { pid: { data: { type: 'comment--comment', id: 'root-1' } } },
         },
@@ -93,7 +142,7 @@ describe('postComment', () => {
     expect(body.data.relationships.pid).toBeUndefined();
   });
 
-  it('posts via JSON:API with the parent relationship and always marks pending', async () => {
+  it('posts via JSON:API with the parent relationship and reflects Drupal status', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(jsonResponse({ data: { id: 'c-2', attributes: { status: true } } }));
@@ -102,7 +151,7 @@ describe('postComment', () => {
 
     expect(result.ok).toBe(true);
     expect(result.id).toBe('c-2');
-    expect(result.status).toBe('pending');
+    expect(result.status).toBe('published');
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/jsonapi/comment/comment');
     const body = JSON.parse(init?.body as string);
@@ -114,6 +163,17 @@ describe('postComment', () => {
       type: 'comment--comment',
       id: 'root-1',
     });
+  });
+
+  it('marks pending when Drupal returns status false', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      jsonResponse({ data: { id: 'c-3', attributes: { status: false } } }),
+    );
+
+    const result = await postComment(5, 'node-uuid-1', 'node--blog', 'token-1', 'csrf-1', 'Hola');
+
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe('pending');
   });
 
   it('falls back to REST with pid target_uuid', async () => {

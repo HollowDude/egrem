@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { loginWithDrupal } from '@/lib/auth/drupal-auth';
-import { setSession } from '@/lib/auth/session';
+import { setSession, isSecureRequest } from '@/lib/auth/session';
 import { resolveEmailToUsername } from '@/lib/nodehive/forgotPassword';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { user } = await loginWithDrupal(loginName, password);
 
-    await setSession(cookies, user);
+    await setSession(cookies, user, isSecureRequest(request));
 
     return new Response(
       JSON.stringify({ success: true, user: { uid: user.uid, name: user.name, mail: user.mail } }),

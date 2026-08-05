@@ -33,13 +33,20 @@ function relativeTime(dateStr: string, lang: string): string {
 export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComment[]> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `comment/${COMMENT_TYPE}?filter[entity_id.id][value]=${nodeUuid}&filter[field_aprobado][value]=1&sort=created&include=uid,pid`,
+      `comment/${COMMENT_TYPE}?filter[entity_id.id][value]=${nodeUuid}&sort=created&include=uid,pid`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
     const included = res.included ?? [];
 
-    return data.map((resource) => {
+    return data
+      .filter((resource) => {
+        const a = resource.attributes as Record<string, unknown>;
+        const status = a.status as boolean | undefined;
+        const aprobado = a.field_aprobado as boolean | undefined;
+        return status === true || aprobado === true;
+      })
+      .map((resource) => {
       const a = resource.attributes as Record<string, unknown>;
       const bodyField = a.comment_body as { value?: string } | { value?: string }[] | undefined;
       const bodyValue = Array.isArray(bodyField)
@@ -80,6 +87,15 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
     return [];
   }
 }
+function isPublished(value: unknown): boolean {
+  if (value === true || value === 1 || value === '1') return true;
+  if (Array.isArray(value)) return value.some((v) => isPublished(v?.value ?? v));
+  if (value && typeof value === 'object') {
+    const v = (value as { value?: unknown }).value;
+    if (v !== undefined) return isPublished(v);
+  }
+  return false;
+}
 
 export async function postComment(
   nid: number,
@@ -107,7 +123,6 @@ export async function postComment(
           attributes: {
             entity_type: 'node',
             field_name: 'field_comentarios',
-            field_aprobado: [{ value: false }],
             comment_body: [{ value: body, format: 'basic_html' }],
           },
           relationships: {
@@ -128,7 +143,11 @@ export async function postComment(
     if (jsonRes.ok) {
       const json = await jsonRes.json().catch(() => null);
       const id = json?.data?.id ?? '';
-      return { ok: true, id, status: 'pending' };
+      return {
+        ok: true,
+        id,
+        status: isPublished(json?.data?.attributes?.status) ? 'published' : 'pending',
+      };
     }
 
     // Fallback: REST format with lang prefix + csrf_token
@@ -145,7 +164,6 @@ export async function postComment(
         comment_type: [{ target_id: COMMENT_TYPE }],
         field_name: [{ value: 'field_comentarios' }],
         subject: [{ value: '' }],
-        field_aprobado: [{ value: 0 }],
         comment_body: [{ value: body, format: 'basic_html' }],
         ...(parentId ? { pid: [{ target_uuid: parentId }] } : {}),
       }),
@@ -156,7 +174,11 @@ export async function postComment(
         (typeof json?.uuid === 'string' && json.uuid) ||
         (typeof json?.id === 'string' && json.id) ||
         '';
-      return { ok: true, id, status: 'pending' };
+      return {
+        ok: true,
+        id,
+        status: isPublished(json?.status) ? 'published' : 'pending',
+      };
     }
 
     const text = await restRes.text().catch(() => '');

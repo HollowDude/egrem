@@ -21,6 +21,7 @@ import CurrencySwitcher from '@/components/ui/CurrencySwitcher';
 import SearchModal from '@/components/ui/SearchModal';
 import AccessibilityWidget from '@/components/ui/AccessibilityWidget';
 import { buttonClasses } from '@/lib/ui/buttonClasses';
+import { isAuthPath } from '@/lib/auth/redirect';
 
 interface NavDropdownItem {
   label: string;
@@ -89,7 +90,8 @@ export default function HeaderNav({
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setCurrentPath(window.location.pathname + window.location.search);
+    const full = window.location.pathname + window.location.search;
+    setCurrentPath(isAuthPath(full) ? '' : full);
   }, []);
 
   useEffect(() => {

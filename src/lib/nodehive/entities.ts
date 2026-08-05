@@ -178,8 +178,9 @@ export interface NhAlbumDiscografia extends NhBase {
   body: string;
   cover: NhMediaImage | null;
   sello?: { name: string; tid: number; slug: string };
-  artista?: { name: string; slug: string; nid: number };
-  interprete?: { name: string; slug: string; nid: number };
+  lanzamiento?: { name: string; tid: number; slug: string };
+  artista?: { name: string; slug: string; nid: number; href: string };
+  interprete?: { name: string; slug: string; nid: number; href: string };
   agencia?: { name: string; slug: string };
   tracks: NhTrack[];
   externalApps: NhExternalApp[];

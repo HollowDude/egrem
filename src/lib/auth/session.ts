@@ -14,7 +14,17 @@ if (!_secret || _secret.length < 32) {
 }
 const ENC_KEY = new TextEncoder().encode(_secret).slice(0, 32);
 
-export async function setSession(cookies: AstroCookies, user: SessionUser): Promise<void> {
+export function isSecureRequest(request: Request): boolean {
+  const proto = request.headers.get('x-forwarded-proto');
+  if (proto) return proto.split(',')[0].trim() === 'https';
+  return new URL(request.url).protocol === 'https:';
+}
+
+export async function setSession(
+  cookies: AstroCookies,
+  user: SessionUser,
+  secure: boolean = import.meta.env.PROD,
+): Promise<void> {
   const payload: JWTPayload = {
     uid: user.uid,
     name: user.name,
@@ -33,7 +43,7 @@ export async function setSession(cookies: AstroCookies, user: SessionUser): Prom
 
   cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: import.meta.env.PROD,
+    secure,
     sameSite: 'lax',
     maxAge: SESSION_MAX_AGE,
     path: '/',
@@ -76,10 +86,10 @@ export async function getSession(cookies: AstroCookies): Promise<SessionUser | n
   }
 }
 
-export function destroySession(cookies: AstroCookies): void {
+export function destroySession(cookies: AstroCookies, secure: boolean = import.meta.env.PROD): void {
   cookies.set(COOKIE_NAME, '', {
     httpOnly: true,
-    secure: import.meta.env.PROD,
+    secure,
     sameSite: 'lax',
     maxAge: 0,
     path: '/',

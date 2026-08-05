@@ -16,12 +16,11 @@ const initials = artista.name
   .toUpperCase();
 ---
 
-<article class="group relative bg-white border border-egrem-gray/20 rounded-xl overflow-hidden hover:border-egrem-gold/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col cursor-pointer">
-  <a
-    href={artista.href}
-    class="block relative overflow-hidden no-underline bg-egrem-gray-light"
-    style="aspect-ratio: 4/3;"
-  >
+<a
+  href={artista.href}
+  class="group relative block bg-white border border-egrem-gray/20 rounded-xl overflow-hidden hover:border-egrem-gold/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col cursor-pointer no-underline"
+>
+  <div class="block relative overflow-hidden bg-egrem-gray-light" style="aspect-ratio: 4/3;">
     {artista.image?.url ? (
       <img
         src={artista.image.url}
@@ -51,7 +50,7 @@ const initials = artista.name
         {artista.name}
       </h3>
     </div>
-  </a>
+  </div>
   <div class="px-4 py-3 flex items-center justify-between bg-white">
     {artista.summary ? (
       <p class="text-[13px] font-display m-0 line-clamp-1 flex-1" style="color: var(--color-text-secondary);">
@@ -70,4 +69,4 @@ const initials = artista.name
       </span>
     </span>
   </div>
-</article>
+</a>

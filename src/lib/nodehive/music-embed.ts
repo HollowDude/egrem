@@ -43,3 +43,10 @@ export const EMBED_CONFIG: Record<'spotify' | 'apple_music', { height: number; a
     allow: 'autoplay *; encrypted-media *;',
   },
 };
+
+export const EMBED_OPEN_EVENT = 'egrem:open-embed';
+
+export interface EmbedOpenDetail {
+  url: string;
+  platform: MusicPlatform;
+}

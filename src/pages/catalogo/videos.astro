@@ -96,10 +96,11 @@ try {
 </BaseLayout>
 
 <script>
-  const grid = document.querySelector('[data-videos-grid]');
-  const loadMoreBtn = document.querySelector<HTMLButtonElement>('[data-load-more]');
-  const countEl = document.querySelector('[data-videos-count]');
-  if (!grid || !loadMoreBtn) return;
+  (() => {
+    const grid = document.querySelector('[data-videos-grid]');
+    const loadMoreBtn = document.querySelector<HTMLButtonElement>('[data-load-more]');
+    const countEl = document.querySelector('[data-videos-count]');
+    if (!grid || !loadMoreBtn) return;
 
   const lang = loadMoreBtn.dataset.lang || 'es';
   const STRINGS: Record<string, { loading: string; noMore: string; error: string; count: string }> = {
@@ -185,4 +186,5 @@ try {
       loadMoreBtn.textContent = S.error;
     }
   });
+  })();
 </script>

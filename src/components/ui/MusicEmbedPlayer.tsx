@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { MusicPlatform } from '@/lib/nodehive/music-embed';
-import { platformLabel, EMBED_CONFIG } from '@/lib/nodehive/music-embed';
+import { platformLabel, EMBED_CONFIG, EMBED_OPEN_EVENT, type EmbedOpenDetail } from '@/lib/nodehive/music-embed';
 
 interface EmbedState {
   url: string;
@@ -20,8 +20,16 @@ export default function MusicEmbedPlayer() {
         if (url) setEmbed({ url, platform });
       }
     }
+    function onOpenEmbed(e: Event) {
+      const detail = (e as CustomEvent<EmbedOpenDetail>).detail;
+      if (detail?.url) setEmbed({ url: detail.url, platform: detail.platform ?? 'other' });
+    }
     document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
+    window.addEventListener(EMBED_OPEN_EVENT, onOpenEmbed);
+    return () => {
+      document.removeEventListener('click', handler);
+      window.removeEventListener(EMBED_OPEN_EVENT, onOpenEmbed);
+    };
   }, []);
 
   useEffect(() => {

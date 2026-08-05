@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import type { NhTipoConsultaOption } from '@/lib/nodehive';
+import type { NhSede, NhTipoConsultaOption } from '@/lib/nodehive';
 import {
   MAX_MESSAGE_LENGTH,
   MIN_MESSAGE_LENGTH,
@@ -14,9 +14,22 @@ interface Props {
   idPrefix?: string;
   lang?: Lang;
   tipoConsultaOptions?: NhTipoConsultaOption[];
+  sede?: NhSede | null;
   className?: string;
   submitLabel?: string;
+  /** Valor inicial del select de tipo de consulta (value o label) */
+  initialInquiry?: string;
 }
+
+/**
+ * Identificador estable por defecto para "Contratación de artista".
+ * Se usa cuando el término de la taxonomía no existe en el backend.
+ */
+export const ARTIST_BOOKING_FALLBACK: NhTipoConsultaOption = {
+  value: 'artist_booking',
+  label_es: 'Contratación de artista',
+  label_en: 'Artist Booking',
+};
 
 const ERROR_KEYS: Record<ContactErrorCode, string> = {
   inquiry_required: 'contacto.form.inquiry_required',
@@ -35,8 +48,10 @@ export default function ContactForm({
   idPrefix = 'page',
   lang = 'es',
   tipoConsultaOptions,
+  sede,
   className = '',
   submitLabel,
+  initialInquiry,
 }: Props) {
   const tr = useTranslations(lang as Lang);
   const options = tipoConsultaOptions ?? [
@@ -46,7 +61,31 @@ export default function ContactForm({
     { value: 'support', label_es: 'Soporte Tienda Online', label_en: 'Online Store Support' },
   ];
 
-  const [inquiry, setInquiry] = useState('');
+  const resolvedOptions = options.some(
+    (o) => o.label_es === ARTIST_BOOKING_FALLBACK.label_es || o.label_en === ARTIST_BOOKING_FALLBACK.label_en,
+  )
+    ? options
+    : [...options, ARTIST_BOOKING_FALLBACK];
+
+  function resolveInitialInquiry(): string {
+    if (!initialInquiry) return '';
+    const match = resolvedOptions.find(
+      (o) =>
+        o.value === initialInquiry ||
+        o.label_es === initialInquiry ||
+        o.label_en === initialInquiry,
+    );
+    if (match) return match.value;
+    if (
+      initialInquiry === 'artist_booking' ||
+      initialInquiry.toLowerCase().includes('artista')
+    ) {
+      return ARTIST_BOOKING_FALLBACK.value;
+    }
+    return '';
+  }
+
+  const [inquiry, setInquiry] = useState(resolveInitialInquiry());
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -106,6 +145,8 @@ export default function ContactForm({
           message: message.trim(),
           hp: '',
           website: '',
+          sede: sede?.title ?? '',
+          sede_correo: sede?.correo ?? '',
         }),
       });
 
@@ -163,7 +204,7 @@ export default function ContactForm({
     return Boolean(showFieldError(field)) || serverFieldError?.field === field;
   }
 
-  const disabled = loading || sent || (attempted && hasErrors());
+  const disabled = loading || sent || hasErrors();
   const charAtMax = message.length >= MAX_MESSAGE_LENGTH;
   const charWarn = message.length >= CHAR_WARN_FROM;
 
@@ -195,7 +236,7 @@ export default function ContactForm({
           className={`${inputClass} appearance-none ${isFieldInvalid('inquiry') ? inputErrorClass : ''}`}
         >
           <option disabled value="">{tr('contacto.form.inquiry_placeholder')}</option>
-          {options.map((opt) => (
+          {resolvedOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {lang === 'en' ? opt.label_en : opt.label_es}
             </option>

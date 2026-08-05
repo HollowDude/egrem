@@ -290,11 +290,9 @@ const tr = useTranslations(lang);
       status: status === 'published' ? 'published' : 'pending',
       parentId,
     };
-    if (pending.status === 'pending') {
-      const existing = getPendingComments();
-      existing.push(pending);
-      savePendingComments(existing);
-    }
+    const existing = getPendingComments().filter((c) => c.id !== pending.id);
+    existing.push(pending);
+    savePendingComments(existing);
     if (confirmation) confirmation.classList.remove('hidden');
     await loadComments();
     return true;

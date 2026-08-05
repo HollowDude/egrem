@@ -82,12 +82,14 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const payload = {
+      webform_id: 'contacto',
+      inquiry: body.inquiry ?? '',
       name: (body.name as string).trim(),
       email: (body.email as string).trim(),
       phone: ((body.phone as string) ?? '').trim(),
       company: body.empresa ?? body.company ?? '',
       sede: body.sede ?? '',
-      tipo_consulta: body.inquiry ?? '',
+      sede_correo: body.sede_correo ?? 'contacto@egrem.co.cu',
       message: (body.message as string).trim(),
     };
 
@@ -99,7 +101,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const drupalResponse = await fetch(`${DRUPAL_BASE_URL}/submit.php`, {
+    const drupalResponse = await fetch(`${DRUPAL_BASE_URL}/webform_rest/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
