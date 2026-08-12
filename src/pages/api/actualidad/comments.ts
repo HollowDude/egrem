@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
 import { getComments, postComment } from '@/lib/nodehive/comments';
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, cookies }) => {
   const nodeUuid = url.searchParams.get('node');
   const lang = url.searchParams.get('lang') || 'es';
 
@@ -13,8 +13,15 @@ export const GET: APIRoute = async ({ url }) => {
     });
   }
 
+  const session = await getSession(cookies);
   const comments = await getComments(nodeUuid, lang);
-  return new Response(JSON.stringify(comments), {
+
+  const visible = comments.filter((c) => {
+    if (c.status === 'published') return true;
+    return session !== null && c.ownerUid !== null && String(c.ownerUid) === String(session.uid);
+  });
+
+  return new Response(JSON.stringify(visible), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

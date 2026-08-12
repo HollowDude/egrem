@@ -1,0 +1,88 @@
+---
+/**
+ * EventoDiaPopover.astro — Celda del calendario con popover nativo HTML.
+ * El día se renderiza como botón; si tiene eventos, abre un popover con el listado.
+ */
+import type { NhEventoListItem } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+import { solapaDia } from '@/lib/calendario';
+
+interface Props {
+  fecha: string;
+  dia: number;
+  esDelMes: boolean;
+  eventos: NhEventoListItem[];
+  lang?: Lang;
+}
+
+const { fecha, dia, esDelMes, eventos, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+const id = `popover-dia-${fecha.replaceAll('-', '')}`;
+
+const delDia = eventos.filter((e) => solapaDia(e.fechaInicio, e.fechaFin, fecha));
+const tieneEventos = delDia.length > 0;
+---
+
+<div
+  class:list={[
+    'relative h-16 md:h-20 flex items-start justify-center pt-1.5 rounded-lg border transition-colors',
+    esDelMes ? 'bg-white border-egrem-gray/15' : 'bg-egrem-gray-light/40 border-transparent',
+    tieneEventos ? 'hover:border-egrem-gold cursor-pointer' : '',
+  ]}
+>
+  <button
+    type="button"
+    popovertarget={tieneEventos ? id : undefined}
+    class:list={[
+      'w-full h-full flex flex-col items-center gap-1 relative z-10 bg-transparent border-none cursor-pointer rounded-lg',
+      !esDelMes && 'opacity-35',
+    ]}
+    aria-label={tieneEventos ? `${dia} — ${delDia.length} eventos` : `${dia}`}
+  >
+    <span
+      class:list={[
+        'font-display font-bold text-small leading-none',
+        esDelMes ? 'text-egrem-black' : 'text-egrem-gray',
+      ]}
+    >
+      {dia}
+    </span>
+    {tieneEventos && (
+      <span class="w-1.5 h-1.5 bg-egrem-red rounded-full" aria-hidden="true"></span>
+    )}
+  </button>
+
+  {tieneEventos && (
+    <div
+      id={id}
+      popover
+      class="w-[280px] max-w-[85vw] rounded-xl border border-egrem-gray/25 shadow-xl p-3 m-0 mt-12 ml-2 bg-white"
+    >
+      <div class="space-y-2.5">
+        {delDia.slice(0, 4).map((e) => (
+          <a
+            href={e.href}
+            class="block no-underline rounded-lg p-2.5 border border-egrem-gray/15 hover:border-egrem-red transition-colors"
+          >
+            <p class="font-display font-bold text-small text-egrem-black m-0 leading-tight">
+              {e.title}
+            </p>
+            <p class="font-display text-[11px] m-0 mt-1" style="color: var(--color-text-secondary);">
+              {e.lugar}
+            </p>
+            <span class="inline-flex items-center gap-1 mt-1.5 font-display font-bold text-[10px] uppercase tracking-widest text-egrem-red">
+              {tr('evento.calendar.popover.view')}
+              <span class="text-[12px]" style="font-family: 'Material Symbols Outlined';">arrow_forward</span>
+            </span>
+          </a>
+        ))}
+        {delDia.length > 4 && (
+          <p class="font-display text-[11px] text-egrem-gray text-center m-0 pt-1 border-t border-egrem-gray/15">
+            +{delDia.length - 4} {tr('evento.list.details').toLowerCase()}
+          </p>
+        )}
+      </div>
+    </div>
+  )}
+</div>

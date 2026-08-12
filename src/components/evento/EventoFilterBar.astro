@@ -1,0 +1,114 @@
+---
+/**
+ * EventoFilterBar.astro — Filtros del listado de eventos (querystring + SSR).
+ * Tipo de evento (taxonomía tipo_de_evento), lugar (distintos field_lugar), ventana de fecha y búsqueda.
+ */
+import { useTranslations } from '@/i18n/translations';
+import { slugify } from '@/lib/nodehive';
+
+interface Props {
+  lugares: string[];
+  categorias: string[];
+  tipo: string;
+  sede: string;
+  fecha: string;
+  q: string;
+  basePath: string;
+}
+
+const tr = useTranslations(Astro.locals.lang);
+const { lugares, categorias, tipo, sede, fecha, q, basePath } = Astro.props;
+
+const lugarOptions = Array.from(new Set(lugares.filter(Boolean))).sort((a, b) =>
+  a.localeCompare(b),
+);
+
+const tipoOptions = Array.from(new Set(categorias.filter(Boolean))).sort((a, b) =>
+  a.localeCompare(b),
+);
+---
+
+<section class="bg-egrem-gray-light border-b border-egrem-gray/20">
+  <div class="container-site py-5">
+    <form method="GET" action={basePath} class="flex flex-wrap items-end gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">
+          {tr('evento.filter.tipo')}
+        </label>
+        <select
+          name="tipo"
+          class="bg-white border border-egrem-gray/30 text-egrem-black rounded-full focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-4 min-w-[180px]"
+          onchange="this.form.submit()"
+        >
+          <option value="">{tr('evento.filter.tipo.all')}</option>
+          {tipoOptions.map((t) => (
+            <option value={slugify(t)} selected={tipo === slugify(t)}>{t}</option>
+          ))}
+        </select>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">
+          {tr('evento.filter.sede')}
+        </label>
+        <select
+          name="sede"
+          class="bg-white border border-egrem-gray/30 text-egrem-black rounded-full focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-4 min-w-[180px]"
+          onchange="this.form.submit()"
+        >
+          <option value="">{tr('evento.filter.fecha.todas')}</option>
+          {lugarOptions.map((l) => (
+            <option value={slugify(l)} selected={sede === slugify(l)}>{l}</option>
+          ))}
+        </select>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">
+          {tr('evento.filter.fecha')}
+        </label>
+        <select
+          name="fecha"
+          class="bg-white border border-egrem-gray/30 text-egrem-black rounded-full focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-4 min-w-[150px]"
+          onchange="this.form.submit()"
+        >
+          <option value="">{tr('evento.filter.fecha.todas')}</option>
+          <option value="semana" selected={fecha === 'semana'}>
+            {tr('evento.filter.fecha.semana')}
+          </option>
+          <option value="mes" selected={fecha === 'mes'}>
+            {tr('evento.filter.fecha.mes')}
+          </option>
+        </select>
+      </div>
+
+      <div class="flex flex-col gap-1 flex-1 min-w-[220px]">
+        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">
+          {tr('evento.filter.search')}
+        </label>
+        <input
+          type="text"
+          name="q"
+          value={q}
+          placeholder={tr('evento.filter.search_placeholder')}
+          class="bg-white border border-egrem-gray/30 text-egrem-black rounded-full focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-4 w-full"
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="inline-flex px-5 py-1.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-full hover:bg-egrem-red-dark transition-colors"
+      >
+        {tr('evento.filter.submit')}
+      </button>
+      {(tipo || sede || fecha || q) && (
+        <a
+          href={basePath}
+          class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline"
+        >
+          {tr('evento.filter.clear')}
+        </a>
+      )}
+    </form>
+  </div>
+</section>

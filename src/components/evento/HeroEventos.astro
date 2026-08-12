@@ -1,0 +1,57 @@
+---
+import type { NhEventosHero, NhEntityMeta } from '@/lib/nodehive';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  hero: NhEventosHero | null;
+  nhEntity?: NhEntityMeta;
+}
+
+const { hero, nhEntity } = Astro.props;
+const tr = useTranslations(Astro.locals.lang);
+const heroTitle = hero?.title || tr('evento.hero.title');
+const heroSubtitle = hero?.subtitle || tr('evento.hero.eyebrow');
+---
+
+<NodeHiveEntity
+  entityType="paragraph"
+  bundle={nhEntity?.bundle ?? '_component_eventos_hero'}
+  id={nhEntity?.id}
+  internalId={nhEntity?.internalId}
+  parentId={nhEntity?.parentId}
+  lang={Astro.locals.lang}
+  tag="section"
+  class="bg-egrem-dark section-py border-b border-egrem-gray/20 text-center relative overflow-hidden"
+  editLabel="Editar Hero"
+  editField="field_title"
+>
+  {
+    hero?.photo?.url && (
+      <div class="absolute inset-0 opacity-20">
+        <img
+          src={hero.photo.url}
+          alt=""
+          class="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    )
+  }
+  <div class="container-site relative z-10">
+    <h1 class="text-h1 text-white uppercase mb-3" data-nodehive-field="field_title">
+      {heroTitle}
+    </h1>
+    {
+      heroSubtitle && (
+        <p
+          class="text-body text-egrem-gray max-w-2xl mx-auto mb-0"
+          data-nodehive-field="field_subtitle"
+        >
+          {heroSubtitle}
+        </p>
+      )
+    }
+  </div>
+</NodeHiveEntity>

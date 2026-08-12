@@ -1,0 +1,275 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Button from '@/components/ui/Button.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import EventoPrograma from '@/components/evento/EventoPrograma.astro';
+import EventoLineupCard from '@/components/evento/EventoLineupCard.astro';
+import EventoTicketCard from '@/components/evento/EventoTicketCard.astro';
+import { fetchEventoByPath, fetchEventoByNid, esEventoPasado } from '@/lib/nodehive';
+import type { NhEventoDetalle } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+let evento: NhEventoDetalle | null = null;
+
+try {
+  const slug = Astro.url.pathname.replace(/^\/?(?:es\/|en\/)?evento\//, '').replace(/\/$/, '');
+  const isNumeric = /^\d+$/.test(slug);
+
+  if (isNumeric) {
+    evento = await fetchEventoByNid(parseInt(slug), lang);
+  } else {
+    evento = await fetchEventoByPath(Astro.url.pathname, lang);
+  }
+
+  if (!evento) {
+    return Astro.rewrite('/404');
+  }
+} catch (e) {
+  console.error('[evento/[...slug]] Failed:', e);
+  return Astro.rewrite('/404');
+}
+
+function formatFecha(fecha: string): string {
+  const d = new Date(`${fecha}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return fecha;
+  return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** "20 - 25 Febrero, 2026" / "28 Febrero - 2 Marzo, 2026" / "20 Febrero, 2026" */
+function formatRango(inicio: string, fin: string): string {
+  if (!inicio) return '';
+  if (!fin || fin === inicio) return formatFecha(inicio);
+  const dInicio = new Date(`${inicio}T12:00:00`);
+  const dFin = new Date(`${fin}T12:00:00`);
+  if (Number.isNaN(dInicio.getTime()) || Number.isNaN(dFin.getTime())) return formatFecha(inicio);
+  const sameMonth = dInicio.getMonth() === dFin.getMonth() && dInicio.getFullYear() === dFin.getFullYear();
+  const diaInicio = dInicio.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric' });
+  const diaFin = dFin.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric' });
+  const mes = dFin
+    .toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long' })
+    .replace(/^./, (c) => c.toUpperCase());
+  const anio = dFin.getFullYear();
+  return sameMonth
+    ? `${diaInicio} - ${diaFin} ${mes}, ${anio}`
+    : `${diaInicio} ${dInicio.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long' }).replace(/^./, (c) => c.toUpperCase())} - ${diaFin} ${mes}, ${anio}`;
+}
+
+const fechaDisplay = formatRango(evento.fechaInicio, evento.fechaFin);
+const esPasado = esEventoPasado(evento.fechaFin, new Date().toISOString().slice(0, 10));
+const mapQuery = encodeURIComponent(evento.direccionCompleta || evento.lugar);
+const mapUrl = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
+const pageTitle = `${evento.title} | EGREM`;
+const tipoLabel = evento.esInternacional
+  ? tr('evento.detail.internacional')
+  : tr('evento.detail.nacional');
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={evento.descripcion.replace(/<[^>]*>/g, '').slice(0, 160) || evento.title}
+  ogImage={evento.heroImage?.url}
+  canonical={Astro.url.href}
+>
+  <main id="main-content">
+    <NodeHiveEntity
+      entityType="node"
+      bundle="evento"
+      id={evento.id}
+      internalId={evento.internalId}
+      lang={lang}
+      tag="section"
+      class="relative h-[400px] md:h-[500px] w-full overflow-hidden bg-egrem-dark flex items-end"
+      editLabel="Editar Evento"
+      editField="title"
+    >
+      {evento.heroImage?.url && (
+        <img
+          src={evento.heroImage.url}
+          alt={evento.heroImage.alt || evento.title}
+          class="absolute inset-0 w-full h-full object-cover"
+          loading="eager"
+          decoding="async"
+        />
+      )}
+      <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+
+      <div class="relative z-10 w-full container-site pb-12 md:pb-16">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div class="max-w-2xl">
+            <div class="flex flex-wrap gap-2 mb-4">
+              {evento.categoria && (
+                <span class="bg-egrem-red text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
+                  {evento.categoria}
+                </span>
+              )}
+              <span class="bg-white/15 backdrop-blur-sm text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
+                {tipoLabel}
+              </span>
+            </div>
+            <h1 class="text-h1 text-white m-0">{evento.title}</h1>
+            {fechaDisplay && (
+              <p class="font-display text-body lg:text-lg text-white/90 m-0 mt-3 flex items-center gap-2 flex-wrap">
+                <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined'; font-size: 20px;">calendar_month</span>
+                {fechaDisplay}
+                {evento.hora && <span>· {evento.hora}</span>}
+              </p>
+            )}
+            {evento.lugar && (
+              <p class="font-display text-small text-white/80 m-0 mt-1 flex items-center gap-2">
+                <span style="font-family: 'Material Symbols Outlined'; font-size: 16px;">location_on</span>
+                {evento.lugar}
+              </p>
+            )}
+          </div>
+
+          {evento.tiposEntrada.length > 0 && !esPasado && (
+            <div class="shrink-0">
+              <Button variant="primary" size="lg" href="#entradas">
+                {tr('evento.detail.buy_tickets')}
+              </Button>
+            </div>
+          )}
+          {esPasado && (
+            <span class="shrink-0 bg-white/15 backdrop-blur-sm text-white font-display font-bold text-[12px] uppercase tracking-widest rounded px-3 py-2">
+              {tr('evento.detail.finished')}
+            </span>
+          )}
+        </div>
+      </div>
+    </NodeHiveEntity>
+
+    <section class="container-site py-12 md:py-16">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
+        <div class="lg:col-span-2 space-y-12">
+          {evento.descripcion && (
+            <div class="bg-white border border-egrem-gray/20 rounded-xl p-6 md:p-8 shadow-sm">
+              <h2 class="text-h3 text-egrem-red uppercase m-0 mb-4 border-b-2 border-egrem-red pb-2 inline-block">
+                {tr('evento.detail.about')}
+              </h2>
+              <div
+                class="font-display text-body leading-relaxed text-egrem-gray [&_p]:mb-3 [&_p:last-child]:mb-0"
+                set:html={evento.descripcion}
+              />
+            </div>
+          )}
+
+          {evento.programa.length > 0 && (
+            <div>
+              <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2">
+                <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined';">event_note</span>
+                {tr('evento.detail.programa')}
+              </h2>
+              <EventoPrograma dias={evento.programa} lang={lang} />
+            </div>
+          )}
+
+          {evento.lineup.length > 0 && (
+            <div>
+              <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2">
+                <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined';">mic_external_on</span>
+                {tr('evento.detail.lineup')}
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {evento.lineup.map((entry) => (
+                  <EventoLineupCard artista={entry} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
+          {evento.tiposEntrada.length > 0 && !esPasado && (
+            <div id="entradas" class="bg-white border border-egrem-gray/20 rounded-xl p-6 shadow-sm scroll-mt-28">
+              <h3 class="text-h3 text-egrem-black m-0 pb-3 border-b border-egrem-gray/20 uppercase">
+                {tr('evento.detail.tickets_title')}
+              </h3>
+              <div class="space-y-4 mt-4">
+                {evento.tiposEntrada.map((entrada) => (
+                  <EventoTicketCard entrada={entrada} lang={lang} />
+                ))}
+              </div>
+              <button
+                type="button"
+                data-open-checkout-inquiry
+                data-event-title={evento.title}
+                data-inquiry-message={tr('evento.detail.checkout_inquiry', { title: evento.title })}
+                class="w-full mt-6 inline-flex items-center justify-center gap-2 bg-egrem-red text-white font-display font-bold text-[13px] uppercase tracking-wider px-6 py-3 rounded-xl hover:bg-egrem-red-dark hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer border-none shadow-sm"
+              >
+                <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">shopping_cart_checkout</span>
+                {tr('evento.detail.checkout')}
+              </button>
+            </div>
+          )}
+
+          <div class="bg-white border border-egrem-gray/20 rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6 pb-4 border-b border-egrem-gray/20">
+              <h3 class="text-h3 text-egrem-black m-0 flex items-center gap-2 uppercase">
+                <span class="text-egrem-red" style="font-family: 'Material Symbols Outlined';">location_on</span>
+                {tr('evento.detail.location')}
+              </h3>
+            </div>
+            <div class="relative" style="height: 220px;">
+              <iframe
+                src={mapUrl}
+                width="100%"
+                height="100%"
+                style="border:0; display:block;"
+                allowfullscreen
+                loading="lazy"
+                title={evento.lugar}
+              ></iframe>
+              <div class="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-egrem-gray/20 max-w-[240px]">
+                <p class="font-display text-small text-egrem-black m-0 leading-snug">
+                  {evento.direccionCompleta || evento.lugar}
+                </p>
+                <a
+                  href={mapLink}
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex items-center gap-1 mt-1.5 text-small text-egrem-red hover:underline no-underline font-semibold"
+                >
+                  <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">open_in_new</span>
+                  {tr('evento.detail.location_open')}
+                </a>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="mt-14 text-center">
+        <Button variant="ghost" size="md" href="/eventos">
+          {tr('evento.detail.back')}
+        </Button>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-open-checkout-inquiry]');
+    if (!btn) return;
+    const title = btn.dataset.eventTitle ?? '';
+    window.dispatchEvent(
+      new CustomEvent('open-contact-modal', {
+        detail: {
+          variant: 'form-only',
+          inquiry: 'Consulta sobre entradas: ' + title,
+          message: btn.dataset.inquiryMessage ?? '',
+        },
+      }),
+    );
+  });
+</script>

@@ -1,0 +1,227 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import HeroEventos from '@/components/evento/HeroEventos.astro';
+import EventoFilterBar from '@/components/evento/EventoFilterBar.astro';
+import EventoDiaPopover from '@/components/evento/EventoDiaPopover.astro';
+import EventoListCard from '@/components/evento/EventoListCard.astro';
+import { fetchEventosListado, fetchEventosHero, slugify } from '@/lib/nodehive';
+import type { NhEventoListItem, NhEventosHero, NhEntityMeta } from '@/lib/nodehive';
+import { construirGrillaMes, solapaConMes, posicionEnSemana, mesSiguiente, mesAnterior, fechaISO } from '@/lib/calendario';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+const basePath = Astro.url.pathname.split('?')[0];
+
+/* ─── Parámetros ──────────────────────────────────────────────── */
+const mesParam = Astro.url.searchParams.get('mes');
+const hoy = new Date();
+const [anio, mes] = mesParam && /^\d{4}-\d{2}$/.test(mesParam)
+  ? mesParam.split('-').map(Number)
+  : [hoy.getFullYear(), hoy.getMonth() + 1];
+
+const tipo = Astro.url.searchParams.get('tipo') ?? '';
+const sede = Astro.url.searchParams.get('sede') ?? '';
+const fechaFiltro = Astro.url.searchParams.get('fecha') ?? '';
+const q = Astro.url.searchParams.get('q') ?? '';
+
+/* ─── Datos ───────────────────────────────────────────────────── */
+const eventos = await fetchEventosListado(lang);
+
+let hero: NhEventosHero | null = null;
+try {
+  hero = await fetchEventosHero(lang);
+} catch (e) {
+  console.error('[Eventos] Failed to fetch hero:', e);
+}
+
+function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | undefined {
+  if (!entity) return undefined;
+  return {
+    id: entity.id,
+    internalId: entity.internalId,
+    parentId: entity.parentId,
+    bundle: entity.bundle,
+  };
+}
+
+function solapaVentana(ini: string, fin: string, vIni: string, vFin: string): boolean {
+  if (!ini) return false;
+  return ini <= vFin && (fin || ini) >= vIni;
+}
+
+const hoyStr = fechaISO(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate());
+const finSemana = fechaISO(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate() + 7);
+const prox = mesSiguiente(hoy.getFullYear(), hoy.getMonth() + 1);
+const inicioProxMes = fechaISO(prox.anio, prox.mes, 1);
+const finProxMes = fechaISO(prox.anio, prox.mes, 28);
+
+const filtrados = eventos.filter((e) => {
+  if (tipo && slugify(e.categoria) !== tipo) return false;
+  if (sede && e.lugar.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s,']+/g, '-').toLowerCase() !== sede) {
+    return false;
+  }
+  if (fechaFiltro === 'semana' && !solapaVentana(e.fechaInicio, e.fechaFin, hoyStr, finSemana)) return false;
+  if (fechaFiltro === 'mes' && !solapaVentana(e.fechaInicio, e.fechaFin, inicioProxMes, `${inicioProxMes.slice(0, 8)}${finProxMes.slice(8)}`)) return false;
+  if (q) {
+    const ql = q.toLowerCase();
+    const hayMatch =
+      e.title.toLowerCase().includes(ql) ||
+      e.artistas.some((a) => a.toLowerCase().includes(ql));
+    if (!hayMatch) return false;
+  }
+  return true;
+});
+
+const eventosDelMes = filtrados.filter((e) => solapaConMes(e.fechaInicio, e.fechaFin, anio, mes));
+const grilla = construirGrillaMes(anio, mes);
+const lugares = eventos.map((e) => e.lugar);
+const categorias = eventos.map((e) => e.categoria);
+
+/* ─── Navegación de mes (preserva filtros) ────────────────────── */
+function urlConMes(nuevo: { anio: number; mes: number }): string {
+  const params = new URLSearchParams();
+  if (tipo) params.set('tipo', tipo);
+  if (sede) params.set('sede', sede);
+  if (fechaFiltro) params.set('fecha', fechaFiltro);
+  if (q) params.set('q', q);
+  params.set('mes', `${nuevo.anio}-${String(nuevo.mes).padStart(2, '0')}`);
+  return `${basePath}?${params.toString()}`;
+}
+
+const prev = mesAnterior(anio, mes);
+const next = mesSiguiente(anio, mes);
+
+const mesLabel = new Date(anio, mes - 1, 1)
+  .toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long' })
+  .toUpperCase();
+
+/* ─── Semanas con barras de eventos multi-día ─────────────────── */
+interface BarraEvento {
+  evento: NhEventoListItem;
+  columna: number;
+  span: number;
+  stack: number;
+}
+
+const semanas = Array.from({ length: 6 }, (_, w) => {
+  const celdas = grilla.slice(w * 7, w * 7 + 7);
+  const stackPorDia = new Array(7).fill(0);
+  const barras: BarraEvento[] = [];
+  for (const evento of eventosDelMes) {
+    const pos = posicionEnSemana(evento.fechaInicio, evento.fechaFin, anio, mes, w);
+    if (!pos) continue;
+    let stack = 0;
+    for (let i = pos.columna - 1; i < pos.columna - 1 + pos.span; i++) {
+      stack = Math.max(stack, stackPorDia[i]);
+    }
+    for (let i = pos.columna - 1; i < pos.columna - 1 + pos.span; i++) {
+      stackPorDia[i] = stack + 1;
+    }
+    barras.push({ evento, columna: pos.columna, span: pos.span, stack });
+  }
+  return { celdas, barras };
+});
+---
+
+<BaseLayout
+  title={tr('evento.page_title')}
+  description={tr('evento.page_description')}
+>
+  <main id="main-content">
+    <HeroEventos hero={hero} nhEntity={entityMeta(hero)} />
+
+    <EventoFilterBar {lugares} {categorias} {tipo} {sede} fecha={fechaFiltro} {q} {basePath} />
+
+    <section class="section-py bg-white">
+      <div class="container-site">
+        <div class="bg-white border border-egrem-gray/20 rounded-2xl p-4 md:p-8 shadow-sm">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <h2 class="text-h3 text-egrem-black uppercase m-0 border-b-4 border-egrem-red pb-1 inline-block self-start">
+              {mesLabel} {anio}
+            </h2>
+            <div class="flex items-center gap-3">
+              <a
+                href={urlConMes(prev)}
+                aria-label={tr('evento.month.prev')}
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-egrem-gray/30 text-egrem-black hover:border-egrem-red hover:text-egrem-red transition-colors no-underline"
+              >
+                <span style="font-family: 'Material Symbols Outlined';">chevron_left</span>
+              </a>
+              <a
+                href={urlConMes(next)}
+                aria-label={tr('evento.month.next')}
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-egrem-gray/30 text-egrem-black hover:border-egrem-red hover:text-egrem-red transition-colors no-underline"
+              >
+                <span style="font-family: 'Material Symbols Outlined';">chevron_right</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-7 gap-1 md:gap-1.5 mb-2">
+            {['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'].map((d) => (
+              <span class="text-center font-display font-bold text-[10px] md:text-[11px] uppercase tracking-widest text-egrem-gray pb-1">
+                {tr(`evento.calendar.${d}`)}
+              </span>
+            ))}
+          </div>
+
+          {
+            semanas.map(({ celdas, barras }) => (
+              <div class="relative grid grid-cols-7 gap-1 md:gap-1.5 min-h-[64px] md:min-h-[80px]">
+                {celdas.map((celda) => (
+                  <EventoDiaPopover
+                    fecha={celda.fecha}
+                    dia={celda.dia}
+                    esDelMes={celda.esDelMes}
+                    eventos={eventosDelMes}
+                    lang={lang}
+                  />
+                ))}
+
+                {
+                  barras.map(({ evento, columna, span, stack }) => (
+                    <div
+                      class="absolute z-20 h-[20px] md:h-[22px] flex items-center overflow-hidden rounded-md bg-egrem-red text-white font-display font-bold text-[9px] md:text-[10px] uppercase tracking-wider px-1.5 no-underline pointer-events-none shadow-sm"
+                      style={`left: calc(${((columna - 1) * 100) / 7}% + 0.1rem); width: calc(${(span * 100) / 7}% - 0.2rem); top: ${30 + stack * 24}px;`}
+                    >
+                      <span class="truncate">{evento.title}</span>
+                    </div>
+                  ))
+                }
+              </div>
+            ))
+          }
+
+          {eventosDelMes.length === 0 && (
+            <div class="flex flex-col items-center justify-center py-14 text-center">
+              <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">event_busy</span>
+              <p class="text-egrem-gray text-body m-0">{tr('evento.list.empty')}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <section class="section-py bg-egrem-gray-light">
+      <div class="container-site">
+        <SectionHeader title={tr('evento.list.title')} accent="red" />
+        {filtrados.length === 0 ? (
+          <div class="flex flex-col items-center justify-center py-16 text-center bg-white border border-egrem-gray/20 rounded-2xl">
+            <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">event_off</span>
+            <p class="text-egrem-gray text-body m-0">{tr('evento.list.no_results')}</p>
+          </div>
+        ) : (
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+            {filtrados.map((evento) => (
+              <EventoListCard evento={evento} lang={lang} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  </main>
+</BaseLayout>

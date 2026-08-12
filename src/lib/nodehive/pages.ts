@@ -7,6 +7,7 @@ import { NODEHIVE_CONFIG } from './config';
 import type {
   NhVideoLink,
   NhAlbumLink,
+  NhEventoLink,
   NhLoginPage,
   NhLoginRight,
   NhActualidadItem,
@@ -38,6 +39,7 @@ export interface NhHomePage {
   sections: NhSection[];
   videoLinks: NhVideoLink[];
   albumLinks: NhAlbumLink[];
+  eventoLinks: NhEventoLink[];
   novedades: NhActualidadItem[];
 }
 
@@ -45,7 +47,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
   const PAGE_UUID = NODEHIVE_CONFIG.pages.home;
 
   const res = await jsonApiFetch(
-      `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo,field_components.field_photo.field_media_image,field_components.field_videos_yt,field_components.field_lanzamientos,field_components.field_contenido,field_components.field_contenido.field_imagen_o_multimedia,field_components.field_contenido.field_imagen_o_multimedia.field_media_image,field_components.field_contenido.field_tags,field_components.field_contenido.field_artistas_relacionados,field_components.field_contenido.field_artistas_relacionados.field_imagen,field_components.field_contenido.field_artistas_relacionados.field_imagen.field_media_image`,
+    `node/astro_page/${PAGE_UUID}?include=field_components,field_components.field_buttons,field_components.field_photo,field_components.field_photo.field_media_image,field_components.field_videos_yt,field_components.field_lanzamientos,field_components.field_contenido,field_components.field_contenido.field_imagen_o_multimedia,field_components.field_contenido.field_imagen_o_multimedia.field_media_image,field_components.field_contenido.field_tags,field_components.field_contenido.field_artistas_relacionados,field_components.field_contenido.field_artistas_relacionados.field_imagen,field_components.field_contenido.field_artistas_relacionados.field_imagen.field_media_image`,
     lang,
   );
 
@@ -59,6 +61,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
   const sections: NhSection[] = [];
   const videoLinks: NhVideoLink[] = [];
   const albumLinks: NhAlbumLink[] = [];
+  const eventoLinks: NhEventoLink[] = [];
   const novedades: NhActualidadItem[] = [];
 
   for (const ref of componentRels) {
@@ -105,6 +108,19 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
     } else if (compType === '_component_homepage_lanzamientos') {
       const albumRefs = resolveRelIds(comp.relationships?.field_lanzamientos);
       for (const ar of albumRefs) {
+        if (ar.type === 'node--album') {
+          // Referencia al tipo de contenido real "lanzamiento" (album).
+          // El fetcher lo resuelve completo desde Drupal.
+          albumLinks.push({
+            id: ar.id,
+            internalId: 0,
+            parentId: comp.id,
+            bundle: 'album',
+            title: '',
+            url: '',
+          });
+          continue;
+        }
         const albumComp = findIncluded(included, 'paragraph--homepage_lanzamiento_spotify', ar.id);
         if (!albumComp) continue;
         const aAttrs = albumComp.attributes as Record<string, unknown>;
@@ -116,6 +132,25 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
           bundle: 'homepage_lanzamiento_spotify',
           title: link?.title ?? '',
           url: link ? normalizeDrupalUri(link.uri) : '',
+        });
+      }
+      sections.push({
+        id: comp.id,
+        internalId,
+        parentId,
+        bundle: compType,
+        title: (attrs.field_title as string) ?? '',
+        type: compType,
+      });
+    } else if (compType === '_component_homepage_eventos') {
+      const eventoRefs = resolveRelIds(comp.relationships?.field_eventos);
+      for (const er of eventoRefs) {
+        if (er.type !== 'node--evento') continue;
+        eventoLinks.push({
+          id: er.id,
+          internalId: 0,
+          parentId: comp.id,
+          bundle: 'evento',
         });
       }
       sections.push({
@@ -185,6 +220,7 @@ export async function fetchHomePage(lang = 'es'): Promise<NhHomePage> {
     sections,
     videoLinks,
     albumLinks,
+    eventoLinks,
     novedades,
   };
 }

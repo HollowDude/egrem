@@ -14,11 +14,17 @@ import type { NhEntityMeta, NhEvento } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
 
+function parseLocal(dateStr: string): Date {
+  // Parsear a mediodía local para evitar el desfase de timezone
+  // (new Date('2026-02-20') se interpreta como UTC y getDate() local retrocede un día).
+  return new Date(`${dateStr}T12:00:00`);
+}
+
 function formatDay(dateStr: string): string {
-  return new Date(dateStr).getDate().toString();
+  return parseLocal(dateStr).getDate().toString();
 }
 function formatMonth(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es', { month: 'short' }).replace('.', '');
+  return parseLocal(dateStr).toLocaleDateString('es', { month: 'short' }).replace('.', '');
 }
 
 interface Props {

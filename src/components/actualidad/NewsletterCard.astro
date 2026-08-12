@@ -4,11 +4,12 @@ import { useTranslations } from '@/i18n/translations';
 
 interface Props {
   isAuthenticated: boolean;
+  isSubscribed?: boolean;
   userMail?: string;
   lang?: Lang;
 }
 
-const { isAuthenticated, userMail = '', lang = 'es' } = Astro.props;
+const { isAuthenticated, isSubscribed = false, userMail = '', lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 ---
 
@@ -47,8 +48,13 @@ const tr = useTranslations(lang);
           type="button"
           class="bg-egrem-red text-white px-6 py-2.5 rounded-2xl hover:bg-egrem-red-dark hover:scale-105 active:scale-[0.97] transition-all duration-300 font-display font-bold text-sm uppercase tracking-wider cursor-pointer border-none w-full disabled:opacity-50 disabled:hover:scale-100"
           data-newsletter-submit
+          data-newsletter-subscribed={isSubscribed ? 'true' : 'false'}
+          data-newsletter-subscribe-label={tr('actualidad.detail.newsletter_subscribe')}
+          data-newsletter-unsubscribe-label={tr('actualidad.detail.newsletter_unsubscribe')}
         >
-          {tr('actualidad.detail.newsletter_subscribe')}
+          {isSubscribed
+            ? tr('actualidad.detail.newsletter_unsubscribe')
+            : tr('actualidad.detail.newsletter_subscribe')}
         </button>
         <p
           class="text-small m-0 hidden"
@@ -74,19 +80,28 @@ const tr = useTranslations(lang);
   const feedback = card.querySelector<HTMLParagraphElement>('[data-newsletter-feedback]');
   if (!submitBtn || !feedback) throw new Error('missing newsletter elements');
 
-  const STRINGS: Record<string, Record<'success' | 'already' | 'error', string>> = {
+  const STRINGS: Record<
+    string,
+    Record<'success' | 'already' | 'unsubscribed' | 'error', string>
+  > = {
     es: {
       success: '¡Te has suscrito al boletín!',
       already: 'Ya estás suscrito al boletín.',
-      error: 'Ocurrió un error al suscribirte. Inténtalo de nuevo.',
+      unsubscribed: 'Te has dado de baja del boletín.',
+      error: 'Ocurrió un error al procesar tu solicitud. Inténtalo de nuevo.',
     },
     en: {
       success: "You're subscribed to the newsletter!",
       already: 'You are already subscribed.',
-      error: 'An error occurred while subscribing. Please try again.',
+      unsubscribed: 'You have unsubscribed from the newsletter.',
+      error: 'An error occurred while processing your request. Please try again.',
     },
   };
   const strings = STRINGS[lang] ?? STRINGS.es;
+
+  const subscribeLabel = submitBtn.dataset.newsletterSubscribeLabel || 'Subscribe';
+  const unsubscribeLabel = submitBtn.dataset.newsletterUnsubscribeLabel || 'Unsubscribe';
+  let subscribed = submitBtn.dataset.newsletterSubscribed === 'true';
 
   function show(message: string, tone: 'ok' | 'warn' | 'err') {
     const el = document.querySelector<HTMLParagraphElement>('[data-newsletter-feedback]');
@@ -101,23 +116,31 @@ const tr = useTranslations(lang);
   submitBtn.addEventListener('click', async () => {
     submitBtn.disabled = true;
     try {
-      const res = await fetch('/api/actualidad/suscribirse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lang }),
-      });
+      const res = await fetch(
+        subscribed ? '/api/actualidad/darse-de-baja' : '/api/actualidad/suscribirse',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lang }),
+        },
+      );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         show(data.error || strings.error, 'err');
         return;
       }
-      if (data.already) {
-        show(strings.already, 'warn');
-        return;
+      if (subscribed) {
+        show(strings.unsubscribed, 'ok');
+        subscribed = false;
+      } else {
+        if (data.already) {
+          show(strings.already, 'warn');
+          return;
+        }
+        show(strings.success, 'ok');
+        subscribed = true;
       }
-      show(strings.success, 'ok');
-      submitBtn.textContent =
-        lang === 'en' ? 'Subscribed' : 'Suscrito';
+      submitBtn.textContent = subscribed ? unsubscribeLabel : subscribeLabel;
     } catch {
       show(strings.error, 'err');
     } finally {

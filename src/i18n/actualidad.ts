@@ -46,6 +46,7 @@ export const actualidad: Record<Lang, Record<string, string>> = {
       'Recibe en tu correo las novedades del blog de EGREM.',
     'actualidad.detail.newsletter_email_label': 'Tu correo',
     'actualidad.detail.newsletter_subscribe': 'Suscribirme',
+    'actualidad.detail.newsletter_unsubscribe': 'Darse de baja',
     'actualidad.detail.newsletter_login_required': 'Inicia sesión para suscribirte',
   },
   en: {
@@ -93,6 +94,7 @@ export const actualidad: Record<Lang, Record<string, string>> = {
       'Get EGREM blog news delivered to your inbox.',
     'actualidad.detail.newsletter_email_label': 'Your email',
     'actualidad.detail.newsletter_subscribe': 'Subscribe',
+    'actualidad.detail.newsletter_unsubscribe': 'Unsubscribe',
     'actualidad.detail.newsletter_login_required': 'Log in to subscribe',
   },
 };

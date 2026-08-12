@@ -34,6 +34,7 @@ export default function ContactModal({
   const [internalOpen, setInternalOpen] = useState(false);
   const [variant, setVariant] = useState<'full' | 'form-only'>(defaultVariant);
   const [inquiry, setInquiry] = useState<string | undefined>(undefined);
+  const [message, setMessage] = useState<string | undefined>(undefined);
   const [show, setShow] = useState(false);
 
   const isControlled = controlledOpen !== undefined;
@@ -79,6 +80,7 @@ export default function ContactModal({
       if (detail?.variant) setVariant(detail.variant);
       else setVariant(defaultVariant);
       setInquiry(detail?.inquiry ?? undefined);
+      setMessage(detail?.message ?? undefined);
       if (!isControlled) setInternalOpen(true);
     }
     window.addEventListener('open-contact-modal', handler);
@@ -164,6 +166,7 @@ export default function ContactModal({
                   lang={lang}
                   tipoConsultaOptions={tipoConsultaOptions}
                   initialInquiry={inquiry}
+                  initialMessage={message}
                   sede={sede}
                 />
               </div>

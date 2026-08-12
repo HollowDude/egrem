@@ -10,6 +10,7 @@ export interface NhComment {
   created: string;
   relativeTime: string;
   status: 'published' | 'pending';
+  ownerUid: number | null;
   parentId?: string | null;
 }
 
@@ -30,6 +31,16 @@ function relativeTime(dateStr: string, lang: string): string {
   return lang === 'en' ? `${d}d ago` : `hace ${d}d`;
 }
 
+function isAprobado(value: unknown): boolean {
+  if (value === true || value === 1 || value === '1') return true;
+  if (Array.isArray(value)) return value.some((v) => isAprobado(v?.value ?? v));
+  if (value && typeof value === 'object') {
+    const v = (value as { value?: unknown }).value;
+    if (v !== undefined) return isAprobado(v);
+  }
+  return false;
+}
+
 export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComment[]> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
@@ -39,14 +50,7 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
     const included = res.included ?? [];
 
-    return data
-      .filter((resource) => {
-        const a = resource.attributes as Record<string, unknown>;
-        const status = a.status as boolean | undefined;
-        const aprobado = a.field_aprobado as boolean | undefined;
-        return status === true || aprobado === true;
-      })
-      .map((resource) => {
+    return data.map((resource) => {
       const a = resource.attributes as Record<string, unknown>;
       const bodyField = a.comment_body as { value?: string } | { value?: string }[] | undefined;
       const bodyValue = Array.isArray(bodyField)
@@ -55,6 +59,11 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
 
       const uidRel = resource.relationships?.uid;
       const uidData = Array.isArray(uidRel?.data) ? uidRel?.data[0] : uidRel?.data;
+      const ownerUid =
+        uidData && typeof uidData === 'object' && 'meta' in uidData
+          ? ((uidData.meta as { drupal_internal__target_id?: number })
+              .drupal_internal__target_id ?? null)
+          : null;
       let authorName = (a.name as string) ?? '';
       if (uidData && typeof uidData === 'object' && 'id' in uidData) {
         const user = included.find((r) => r.type === 'user--user' && r.id === uidData.id);
@@ -78,7 +87,8 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
         body: (bodyValue as string) ?? '',
         created: a.created as string,
         relativeTime: relativeTime(a.created as string, lang),
-        status: 'published',
+        status: isAprobado(a.field_aprobado) ? 'published' : 'pending',
+        ownerUid,
         parentId,
       } satisfies NhComment;
     });
@@ -86,15 +96,6 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
     console.warn('[NodeHive] getComments failed:', e);
     return [];
   }
-}
-function isPublished(value: unknown): boolean {
-  if (value === true || value === 1 || value === '1') return true;
-  if (Array.isArray(value)) return value.some((v) => isPublished(v?.value ?? v));
-  if (value && typeof value === 'object') {
-    const v = (value as { value?: unknown }).value;
-    if (v !== undefined) return isPublished(v);
-  }
-  return false;
 }
 
 export async function postComment(
@@ -146,7 +147,7 @@ export async function postComment(
       return {
         ok: true,
         id,
-        status: isPublished(json?.data?.attributes?.status) ? 'published' : 'pending',
+        status: isAprobado(json?.data?.attributes?.field_aprobado) ? 'published' : 'pending',
       };
     }
 
@@ -177,7 +178,7 @@ export async function postComment(
       return {
         ok: true,
         id,
-        status: isPublished(json?.status) ? 'published' : 'pending',
+        status: isAprobado(json?.field_aprobado) ? 'published' : 'pending',
       };
     }
 

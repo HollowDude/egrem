@@ -1,4 +1,11 @@
-import type { NhBase, NhMediaImage, NhMediaFile, NhMediaVideo, NhRemoteVideo, NhEntityMeta } from './parsers';
+import type {
+  NhBase,
+  NhMediaImage,
+  NhMediaFile,
+  NhMediaVideo,
+  NhRemoteVideo,
+  NhEntityMeta,
+} from './parsers';
 
 export interface NhLoginRight extends NhBase, NhEntityMeta {
   title: string;
@@ -27,8 +34,16 @@ export interface NhEvento extends NhBase {
   title: string;
   venue: string;
   date: string;
+  endDate?: string;
   time: string;
   href: string;
+}
+
+export interface NhEventoLink {
+  id: string;
+  internalId: number;
+  parentId: string;
+  bundle: string;
 }
 
 export interface NhAlbumLink {
@@ -47,11 +62,14 @@ export interface NhAlbum extends NhBase {
   href: string;
   spotifyId: string | null;
   embedUrl: string;
+  /** App externa no embebible (p. ej. iMusic) → abrir en otra pestaña */
+  externalApp?: { title: string; url: string; platform: string } | null;
   format?: string;
   price?: string;
   internalId?: number;
   parentId?: string;
   bundle?: string;
+  nid?: number;
 }
 
 export interface NhVideoLink {

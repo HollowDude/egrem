@@ -2,14 +2,15 @@
 /**
  * LanzamientosSection.astro — "NUEVOS LANZAMIENTOS"
  * 4 tarjetas de álbumes en fondo gris claro (#eeeeee).
- * Play overlay al hover. Cada tarjeta es un paragraph
- * "homepage_lanzamiento_spotify" con link a Spotify.
+ * La foto y el contenido llevan al detalle del álbum en el sitio.
+ * Sobre la foto, abajo a la derecha, iconos de plataforma:
+ * Spotify reproduce el embed en Home; iMusic abre en otra pestaña.
  *
  * NodeHive: paragraph bundle "_component_homepage_lanzamientos"
  */
 import SectionHeader from '@/components/ui/SectionHeader.astro';
 import ActionLink from '@/components/ui/ActionLink.astro';
-import PlayOverlay from '@/components/ui/PlayOverlay.astro';
+import PlatformIcon from '@/components/ui/PlatformIcon.astro';
 import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import MusicEmbedPlayer from '@/components/ui/MusicEmbedPlayer';
 import type { NhEntityMeta, NhAlbum } from '@/lib/nodehive';
@@ -87,57 +88,87 @@ const lanzamientos: NhAlbum[] = items?.length
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-5">
       {
-        lanzamientos.map((album) => (
-          <NodeHiveEntity
-            entityType="paragraph"
-            bundle={album.bundle ?? 'homepage_lanzamiento_spotify'}
-            id={album.id}
-            internalId={album.internalId}
-            parentId={album.parentId}
-            lang={lang}
-            tag="div"
-            editLabel={album.bundle ? 'Editar Álbum' : undefined}
-            editField="field_link"
-          >
-            {/* Portada cuadrada */}
-            <a
-              href={album.spotifyId ? '#' : album.href}
-              data-embed-url={album.embedUrl || undefined}
-              data-embed-platform={album.embedUrl ? 'spotify' : undefined}
-              class="block no-underline"
+        lanzamientos.map((album) => {
+          const playable = album.embedUrl
+            ? { url: album.embedUrl, platform: 'spotify' as const }
+            : null;
+          const external = album.externalApp ?? null;
+          return (
+            <NodeHiveEntity
+              entityType="paragraph"
+              bundle={album.bundle ?? 'homepage_lanzamiento_spotify'}
+              id={album.id}
+              internalId={album.internalId}
+              parentId={album.parentId}
+              lang={lang}
+              tag="div"
+              editLabel={album.bundle ? 'Editar Álbum' : undefined}
+              editField="field_link"
             >
-              <div
-                class="aspect-square relative overflow-hidden rounded-2xl shadow-sm group-hover:shadow-lg transition-all duration-300 mb-4"
-                style="background: #d0d0d0;"
-              >
-                <img
-                  src={album.cover?.url}
-                  alt={album.cover?.alt ?? album.title}
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                  onerror="this.style.display='none'"
-                />
-                <PlayOverlay mode="hover" icon="play_circle" />
+              {/* Portada — el resto de la tarjeta lleva a los detalles */}
+              <div class="relative block">
+                <a href={album.href} class="block no-underline">
+                  <div
+                    class="aspect-square relative overflow-hidden rounded-2xl shadow-sm group-hover:shadow-lg transition-all duration-300 mb-4"
+                    style="background: #d0d0d0;"
+                  >
+                    <img
+                      src={album.cover?.url}
+                      alt={album.cover?.alt ?? album.title}
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      decoding="async"
+                      onerror="this.style.display='none'"
+                    />
+                  </div>
+                </a>
+                {/* Iconos de plataforma — abajo a la derecha sobre la foto */}
+                <div class="absolute bottom-4 right-2 flex items-center gap-1.5 z-10">
+                  {playable && (
+                    <button
+                      type="button"
+                      data-embed-url={playable.url}
+                      data-embed-platform={playable.platform}
+                      aria-label={tr('home.section.listen')}
+                      title={tr('home.section.listen')}
+                      class="flex items-center justify-center w-9 h-9 rounded-full bg-black/70 backdrop-blur-sm text-white shadow-md transition-all duration-300 hover:scale-110 hover:bg-egrem-red border-0 cursor-pointer"
+                    >
+                      <PlatformIcon platform="spotify" class="w-5 h-5" />
+                    </button>
+                  )}
+                  {external?.url && (
+                    <a
+                      href={external.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${tr('home.section.listen_on')} ${external.title}`}
+                      title={`${tr('home.section.listen_on')} ${external.title}`}
+                      class="flex items-center justify-center w-9 h-9 rounded-full bg-black/70 backdrop-blur-sm text-white shadow-md transition-all duration-300 hover:scale-110 hover:bg-egrem-gold no-underline"
+                    >
+                      <PlatformIcon platform="apple_music" class="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
               </div>
-            </a>
 
-            {/* Info — título */}
-            <h4
-              class="font-display font-bold text-egrem-black uppercase m-0 mb-2"
-              style="font-size: 1.05rem; line-height: 1.2;"
-            >
-              {album.title}
-            </h4>
-            <ActionLink
-              href={album.spotifyId ? '#' : album.href}
-              class="mt-2"
-              data-embed-url={album.embedUrl || undefined}
-              data-embed-platform={album.embedUrl ? 'spotify' : undefined}
-            >
-              {tr('home.section.see_album')}
-            </ActionLink>
-          </NodeHiveEntity>
-        ))
+              {/* Info — artista y título */}
+              {album.artist && (
+                <p class="font-display text-small text-egrem-red uppercase tracking-wider font-semibold m-0 mb-0.5">
+                  {album.artist}
+                </p>
+              )}
+              <h4
+                class="font-display font-bold text-egrem-black uppercase m-0 mb-2"
+                style="font-size: 1.05rem; line-height: 1.2;"
+              >
+                {album.title}
+              </h4>
+              <ActionLink href={album.href} class="mt-2">
+                {tr('home.section.see_album')}
+              </ActionLink>
+            </NodeHiveEntity>
+          );
+        })
       }
     </div>
   </div>

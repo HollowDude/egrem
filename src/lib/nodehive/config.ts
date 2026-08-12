@@ -18,18 +18,20 @@ const LOCAL = {
   videos: 'fe9e5209-55f7-460e-8e37-d7634709d8f8',
   about: 'b4cc549e-751d-43a5-8ea1-5496e5736f42',
   contacto: 'b2ca5aa2-b6f3-43f3-beab-648288260d81',
+  eventos: 'e431371b-c361-4ace-a879-4a947093a192',
 } as const;
 
 const REMOTE = {
   header: '1fd7eda9-acf9-488d-9c2b-c8b9ba3c3eb0',
   footer: 'b86003b8-555c-4d3d-b046-480f68d1e4b9',
-  home: '6e8fc6ae-b1e3-4b8c-8fbb-c4425042b018',
+  home: 'f6cf9495-ba50-4fa9-8287-539336fed646',
   actualidad: '312253f1-c6c4-4bd0-a3a9-328fa4979c75',
   artistas: 'bcb1d38e-35ef-46dc-856f-e57f19ac427e',
   musica: '6be43ce0-36da-4bf1-bc0f-4a4e4ca30aa4',
   videos: 'c48b47ba-11e6-4ab5-8fca-ea389ddab14b',
   about: 'da7f8d9c-c0f8-49f6-9c0f-053a1eedebf9',
   contacto: 'e4c6766c-5b23-4641-abe3-ce6530c631ab',
+  eventos: 'b7c079b9-98f9-4c90-b640-79779c8a08da',
 } as const;
 
 function getEnv(): 'local' | 'remote' {
@@ -53,5 +55,6 @@ export const NODEHIVE_CONFIG = {
     videos: UUID.videos,
     about: UUID.about,
     contacto: UUID.contacto,
+    eventos: UUID.eventos,
   },
 };

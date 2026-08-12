@@ -19,6 +19,7 @@ interface Props {
   submitLabel?: string;
   /** Valor inicial del select de tipo de consulta (value o label) */
   initialInquiry?: string;
+  initialMessage?: string;
 }
 
 /**
@@ -52,6 +53,7 @@ export default function ContactForm({
   className = '',
   submitLabel,
   initialInquiry,
+  initialMessage,
 }: Props) {
   const tr = useTranslations(lang as Lang);
   const options = tipoConsultaOptions ?? [
@@ -82,13 +84,24 @@ export default function ContactForm({
     ) {
       return ARTIST_BOOKING_FALLBACK.value;
     }
+    const q = initialInquiry.toLowerCase();
+    if (q.includes('entradas') || q.includes('ticket')) {
+      const ticketOpt = resolvedOptions.find(
+        (o) => o.label_es.toLowerCase().includes('entradas') || o.label_en.toLowerCase().includes('ticket'),
+      );
+      if (ticketOpt) return ticketOpt.value;
+      const normalOpt = resolvedOptions.find(
+        (o) => o.label_es.toLowerCase() === 'normal' || o.label_en.toLowerCase() === 'normal',
+      );
+      if (normalOpt) return normalOpt.value;
+    }
     return '';
   }
 
   const [inquiry, setInquiry] = useState(resolveInitialInquiry());
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialMessage ?? '');
   const [touched, setTouched] = useState<Record<ContactField, boolean>>({
     inquiry: false,
     name: false,

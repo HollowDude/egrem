@@ -58,13 +58,16 @@ if (nhData?.videoLinks.length) {
 }
 
 // Resolve lanzamientos from homepage albumLinks (via Spotify oEmbed)
-if (nhData?.albumLinks.length) {
-  lanzamientos = await fetchLanzamientos(nhData.albumLinks);
-}
+// Fallback: últimos álbumes registrados en Drupal si la home no referencia ninguno.
+lanzamientos = await fetchLanzamientos(nhData?.albumLinks ?? [], lang);
+
+// Resolve eventos from homepage eventoLinks (referencias node--evento)
+// Fallback: próximos eventos registrados en Drupal si la home no referencia ninguno.
+eventos = await fetchEventos(nhData?.eventoLinks ?? [], lang);
 
 // Content fetchers — fallan silenciosamente si el backend no tiene endpoints
 try {
-  [eventos, producciones] = await Promise.all([fetchEventos(lang), fetchProducciones(lang)]);
+  [producciones] = await Promise.all([fetchProducciones(lang)]);
 } catch (e) {
   console.warn('[NodeHive] Some content fetchers failed (endpoints may not exist yet):', e);
 }

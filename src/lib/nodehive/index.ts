@@ -86,6 +86,23 @@ export type {
 } from './entities';
 export { fetchAllArtistVideos, fetchVideosCatalogo, fetchVideoDestacado } from './videos';
 
+// Eventos (página de eventos: detalle + listado/calendario)
+export type {
+  NhEventoDetalle,
+  NhEventoListItem,
+  NhEventoProgramaDia,
+  NhEventoLineupArtista,
+  NhEventoTipoEntrada,
+  NhEventosHero,
+} from './eventos';
+export {
+  fetchEventosListado,
+  fetchEventoByPath,
+  fetchEventoByNid,
+  esEventoPasado,
+  fetchEventosHero,
+} from './eventos';
+
 // Search
 export type { NhSearchResult, NhSearchResponse } from './search';
 export { searchContent, searchAlbums, searchArtistas, searchActualidad, searchVideos, clearSearchCache } from './search';

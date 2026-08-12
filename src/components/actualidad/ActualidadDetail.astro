@@ -20,12 +20,13 @@ interface Props {
   related: NhActualidadItem[];
   eventos?: NhEvento[];
   isAuthenticated?: boolean;
+  isSubscribed?: boolean;
   userName?: string;
   userMail?: string;
   lang: Lang;
 }
 
-const { item, related, eventos = [], isAuthenticated = false, userName = '', userMail = '', lang } = Astro.props;
+const { item, related, eventos = [], isAuthenticated = false, isSubscribed = false, userName = '', userMail = '', lang } = Astro.props;
 const tr = useTranslations(lang);
 const isBlog = item.bundle === 'blog';
 
@@ -167,6 +168,7 @@ function bundleLabel(bundle: string): string {
         isBlog && (
           <NewsletterCard
             isAuthenticated={isAuthenticated}
+            isSubscribed={isSubscribed}
             userMail={userMail}
             lang={lang}
           />

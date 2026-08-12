@@ -80,3 +80,38 @@ export async function subscribe(
     error: 'No se pudo guardar la suscripción. Verifica tu sesión o configuración de Drupal.',
   };
 }
+
+export async function unsubscribe(
+  mail: string,
+  accessToken: string,
+  csrfToken: string,
+  lang = 'es',
+): Promise<{ ok: boolean; error?: string }> {
+  const baseUrl = getBaseUrlValue();
+
+  let listRes: Awaited<ReturnType<typeof jsonApiFetch>>;
+  try {
+    listRes = await jsonApiFetch<{ data: { id: string }[] }>(
+      `node/${NODE_TYPE}?filter[${MAIL_FIELD}][value]=${encodeURIComponent(mail)}&page[limit]=1`,
+      lang,
+    );
+  } catch (e) {
+    console.warn('[NodeHive] unsubscribe lookup failed:', e);
+    return { ok: false, error: 'No se pudo verificar la suscripción.' };
+  }
+
+  const nodes = Array.isArray(listRes.data) ? listRes.data : [];
+  if (nodes.length === 0) return { ok: true };
+
+  const uuid = nodes[0].id;
+  const res = await fetch(`${baseUrl}/${lang}/jsonapi/node/${NODE_TYPE}/${uuid}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/vnd.api+json',
+    },
+  }).catch(() => ({ ok: false, status: 0 } as Response));
+
+  if (res.ok) return { ok: true };
+  return { ok: false, error: 'No se pudo dar de baja la suscripción.' };
+}

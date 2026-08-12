@@ -1,0 +1,85 @@
+---
+/**
+ * EventoTicketCard.astro — Tarjeta de tier de entrada.
+ * Resalta la entrada con destacado=true con un badge dorado "RECOMENDADO".
+ */
+import type { NhEventoTipoEntrada } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  entrada: NhEventoTipoEntrada;
+  lang?: Lang;
+}
+
+const { entrada, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
+
+const agotada = entrada.disponibles === 0;
+const precio = entrada.precio !== null ? `$${entrada.precio.toFixed(2)}` : null;
+
+function formatDisponibles(count: number): string {
+  return count.toLocaleString(lang === 'en' ? 'en-US' : 'es-ES');
+}
+
+function textoDisponibilidad(disponibles: number): string {
+  const count = formatDisponibles(disponibles);
+  return disponibles <= 50
+    ? tr('evento.detail.tickets_left', { count })
+    : tr('evento.detail.tickets_units', { count });
+}
+---
+
+<div
+  class:list={[
+    'relative border rounded-xl p-4 transition-colors bg-white',
+    entrada.destacado
+      ? 'border-egrem-gold shadow-md hover:border-egrem-gold'
+      : 'border-egrem-gray/30 hover:border-egrem-red',
+  ]}
+>
+  <div class="flex justify-between items-start gap-3 mb-2">
+    <div class="min-w-0">
+      <h4 class="font-display font-bold text-h4 text-egrem-black m-0">{entrada.nombre}</h4>
+      {entrada.destacado && (
+        <span
+          class="mt-1 inline-block bg-egrem-gold text-white font-display font-bold text-[10px] px-2 py-0.5 uppercase tracking-widest rounded"
+        >
+          {tr('evento.detail.tickets_recommended')}
+        </span>
+      )}
+      {entrada.descripcion && (
+        <p class="font-display text-small text-egrem-gray m-0 mt-0.5">{entrada.descripcion}</p>
+      )}
+    </div>
+    {precio && (
+      <span class="font-display font-bold text-xl text-egrem-red shrink-0 ml-3 leading-none mt-1">
+        {precio}
+      </span>
+    )}
+  </div>
+
+  <div class="flex justify-between items-center pt-3 border-t border-egrem-gray/15 mt-3">
+    {entrada.capacidad !== null && (
+      <span class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
+        {tr('evento.detail.tickets_capacity', { count: formatDisponibles(entrada.capacidad) })}
+      </span>
+    )}
+    {agotada ? (
+      <span class="font-display font-bold text-[11px] text-egrem-red uppercase tracking-widest">
+        {tr('evento.list.sold_out')}
+      </span>
+    ) : entrada.disponibles !== null ? (
+      <span
+        class="font-display text-[11px] uppercase tracking-wider font-semibold"
+        style="color: var(--color-text-secondary);"
+      >
+        {textoDisponibilidad(entrada.disponibles)}
+      </span>
+    ) : (
+      <span class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
+        {tr('evento.detail.tickets_not_set')}
+      </span>
+    )}
+  </div>
+</div>

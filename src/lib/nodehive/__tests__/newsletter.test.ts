@@ -8,7 +8,7 @@ vi.mock('../client', () => ({
   getBaseUrlValue: mockGetBaseUrlValue,
 }));
 
-import { isSubscribed, subscribe } from '../newsletter';
+import { isSubscribed, subscribe, unsubscribe } from '../newsletter';
 
 function jsonResponse(body: unknown, status = 200) {
   return {
@@ -113,5 +113,56 @@ describe('subscribe', () => {
 
     expect(result.ok).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('unsubscribe', () => {
+  it('deletes the matching subscription via JSON:API', async () => {
+    mockJsonApiFetch.mockResolvedValueOnce({
+      data: [{ type: 'node--suscripcion_boletin', id: 'uuid-1' }],
+    });
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse(null, 204));
+
+    const result = await unsubscribe('a@b.c', 'token-1', 'csrf-1', 'es');
+
+    expect(result.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain('/jsonapi/node/suscripcion_boletin/uuid-1');
+    expect(init?.method).toBe('DELETE');
+    expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer token-1');
+  });
+
+  it('returns ok when there is nothing to delete', async () => {
+    mockJsonApiFetch.mockResolvedValueOnce({ data: [] });
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    const result = await unsubscribe('nadie@b.c', 'token-1', 'csrf-1', 'es');
+
+    expect(result.ok).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns an error when the DELETE fails', async () => {
+    mockJsonApiFetch.mockResolvedValueOnce({
+      data: [{ type: 'node--suscripcion_boletin', id: 'uuid-1' }],
+    });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({}, 403));
+
+    const result = await unsubscribe('a@b.c', 'token-1', 'csrf-1', 'es');
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  it('returns an error when the lookup fails', async () => {
+    mockJsonApiFetch.mockRejectedValueOnce(new Error('network'));
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    const result = await unsubscribe('a@b.c', 'token-1', 'csrf-1', 'es');
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

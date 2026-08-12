@@ -29,19 +29,34 @@ afterEach(() => {
 });
 
 describe('getComments', () => {
-  it('includes comments approved via core status', async () => {
+  it('marks published only when field_aprobado is true', async () => {
     mockJsonApiFetch.mockResolvedValueOnce({
       data: [
         {
           type: 'comment--comment',
-          id: 'core-approved',
+          id: 'approved-1',
           attributes: {
-            comment_body: { value: 'Aprobado por status' },
+            comment_body: { value: 'Aprobado' },
             created: new Date().toISOString(),
-            status: true,
+            field_aprobado: true,
+          },
+          relationships: {
+            pid: { data: null },
+            uid: { data: { type: 'user--user', id: 'user-a', meta: { drupal_internal__target_id: 6 } } },
+          },
+        },
+        {
+          type: 'comment--comment',
+          id: 'pending-1',
+          attributes: {
+            comment_body: { value: 'Pendiente' },
+            created: new Date().toISOString(),
             field_aprobado: false,
           },
-          relationships: { pid: { data: null } },
+          relationships: {
+            pid: { data: null },
+            uid: { data: { type: 'user--user', id: 'user-a', meta: { drupal_internal__target_id: 6 } } },
+          },
         },
       ],
       included: [],
@@ -49,11 +64,13 @@ describe('getComments', () => {
 
     const comments = await getComments('node-uuid');
 
-    expect(comments).toHaveLength(1);
-    expect(comments[0].id).toBe('core-approved');
+    expect(comments).toHaveLength(2);
+    expect(comments[0].status).toBe('published');
+    expect(comments[1].status).toBe('pending');
+    expect(comments[0].ownerUid).toBe(6);
   });
 
-  it('filters out comments not approved by either mechanism', async () => {
+  it('keeps pending comments with their owner uid for server-side filtering', async () => {
     mockJsonApiFetch.mockResolvedValueOnce({
       data: [
         {
@@ -62,10 +79,12 @@ describe('getComments', () => {
           attributes: {
             comment_body: { value: 'Sin aprobar' },
             created: new Date().toISOString(),
-            status: false,
             field_aprobado: false,
           },
-          relationships: { pid: { data: null } },
+          relationships: {
+            pid: { data: null },
+            uid: { data: { type: 'user--user', id: 'user-b', meta: { drupal_internal__target_id: 12 } } },
+          },
         },
       ],
       included: [],
@@ -73,7 +92,9 @@ describe('getComments', () => {
 
     const comments = await getComments('node-uuid');
 
-    expect(comments).toEqual([]);
+    expect(comments).toHaveLength(1);
+    expect(comments[0].status).toBe('pending');
+    expect(comments[0].ownerUid).toBe(12);
   });
 
   it('parses the pid relationship as parentId', async () => {
@@ -142,10 +163,10 @@ describe('postComment', () => {
     expect(body.data.relationships.pid).toBeUndefined();
   });
 
-  it('posts via JSON:API with the parent relationship and reflects Drupal status', async () => {
+  it('posts via JSON:API with the parent relationship and marks published when field_aprobado is true', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(jsonResponse({ data: { id: 'c-2', attributes: { status: true } } }));
+      .mockResolvedValueOnce(jsonResponse({ data: { id: 'c-2', attributes: { field_aprobado: true } } }));
 
     const result = await postComment(5, 'node-uuid-1', 'node--blog', 'token-1', 'csrf-1', 'Respuesta', 'root-1');
 
@@ -165,9 +186,9 @@ describe('postComment', () => {
     });
   });
 
-  it('marks pending when Drupal returns status false', async () => {
+  it('marks pending when Drupal returns field_aprobado false', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      jsonResponse({ data: { id: 'c-3', attributes: { status: false } } }),
+      jsonResponse({ data: { id: 'c-3', attributes: { field_aprobado: false } } }),
     );
 
     const result = await postComment(5, 'node-uuid-1', 'node--blog', 'token-1', 'csrf-1', 'Hola');
