@@ -34,7 +34,7 @@ export async function fetchOEmbed(url: string): Promise<OEmbedResult | null> {
 
   try {
     const apiUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-    const res = await fetch(apiUrl);
+    const res = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
     const data = await res.json();
     const result: OEmbedResult = {

@@ -104,9 +104,10 @@ const ENTRADA_1 = {
     field_sku: 'FJZ-GEN',
     field_precio: '25.00',
     field_descripcion_entrada: 'Acceso a un día.',
-    field_capacidad: 2000,
-    field_disponibles: 1200,
     field_destacado: true,
+  },
+  relationships: {
+    field_zona_entrada: { data: { type: 'node--zona', id: 'zona-1' } },
   },
 };
 
@@ -118,9 +119,38 @@ const ENTRADA_2 = {
     field_sku: 'FJZ-VIP',
     field_precio: '80.00',
     field_descripcion_entrada: '',
-    field_capacidad: 200,
-    field_disponibles: 45,
     field_destacado: false,
+  },
+  relationships: {
+    field_zona_entrada: { data: { type: 'node--zona', id: 'zona-2' } },
+  },
+};
+
+const ZONA_1 = {
+  type: 'node--zona',
+  id: 'zona-1',
+  attributes: { title: 'Zona General', field_capacidad_maxima: 2000 },
+};
+
+const ZONA_2 = {
+  type: 'node--zona',
+  id: 'zona-2',
+  attributes: { title: 'Zona VIP', field_capacidad_maxima: 200 },
+};
+
+const LOCAL_1 = {
+  type: 'node--local',
+  id: 'local-1',
+  attributes: {
+    title: 'Club Habana',
+    drupal_internal__nid: 50,
+    path: { alias: '/local/club-habana' },
+    field_direccion: {
+      address_line1: '5ta Avenida e/188 y 192',
+      locality: 'La Habana',
+      administrative_area: '03',
+    },
+    field_location: { lat: 23.1104, lon: -82.4046 },
   },
 };
 
@@ -133,13 +163,11 @@ afterEach(() => {
 });
 
 describe('parseEventoDetalle', () => {
-  it('parses fecha, hero, categoria, programa, lineup y entradas', () => {
+  it('parses fecha, hero, categoria, programa, lineup, local y entradas', () => {
     const resource = eventoResource(
       'evt-1',
       {
         field_hora: '20:00',
-        field_lugar: 'Club Habana, La Habana',
-        field_direccion_completa: { value: 'Club Habana, 5ta Avenida e/188 y 192, La Habana, Cuba' },
         body: { value: '<p>Sobre el evento</p>' },
       },
       {
@@ -147,6 +175,7 @@ describe('parseEventoDetalle', () => {
         field_categoria: { data: { type: 'taxonomy_term--tipo_de_evento', id: 'cat-1' } },
         field_programa: { data: [{ type: 'paragraph--evento_dia_programa', id: 'dia-1' }] },
         field_lineup: { data: [{ type: 'paragraph--evento_artista_lineup', id: 'lineup-1' }] },
+        field_venue_bat: { data: { type: 'node--local', id: 'local-1' } },
         field_tipos_entrada: {
           data: [
             { type: 'paragraph--evento_tipo_entrada', id: 'entrada-1' },
@@ -167,6 +196,9 @@ describe('parseEventoDetalle', () => {
       ARTISTA_FILE,
       ENTRADA_1,
       ENTRADA_2,
+      ZONA_1,
+      ZONA_2,
+      LOCAL_1,
     ]);
 
     expect(detalle.title).toBe('Festival de Jazz');
@@ -175,9 +207,16 @@ describe('parseEventoDetalle', () => {
     expect(detalle.hora).toBe('20:00');
     expect(detalle.categoria).toBe('Festival');
     expect(detalle.heroImage?.url).toBe('http://drupal.local/sites/default/files/hero.jpg');
-    expect(detalle.direccionCompleta).toContain('5ta Avenida');
     expect(detalle.esInternacional).toBe(true);
     expect(detalle.href).toBe('/evento/100');
+
+    expect(detalle.local).not.toBeNull();
+    expect(detalle.local!.nombre).toBe('Club Habana');
+    expect(detalle.local!.direccion).toBe('5ta Avenida e/188 y 192, La Habana, 03');
+    expect(detalle.local!.lat).toBe(23.1104);
+    expect(detalle.local!.lng).toBe(-82.4046);
+    expect(detalle.local!.href).toBe('/local/club-habana');
+    expect(detalle.lugarTexto).toBe('Club Habana');
 
     expect(detalle.programa).toHaveLength(1);
     expect(detalle.programa[0]).toEqual({
@@ -196,8 +235,10 @@ describe('parseEventoDetalle', () => {
     expect(detalle.tiposEntrada).toHaveLength(2);
     expect(detalle.tiposEntrada[0].precio).toBe(25);
     expect(detalle.tiposEntrada[0].sku).toBe('FJZ-GEN');
-    expect(detalle.tiposEntrada[0].disponibles).toBe(1200);
+    expect(detalle.tiposEntrada[0].capacidad).toBe(2000);
+    expect(detalle.tiposEntrada[0].disponibles).toBeNull();
     expect(detalle.tiposEntrada[0].destacado).toBe(true);
+    expect(detalle.tiposEntrada[1].capacidad).toBe(200);
     expect(detalle.tiposEntrada[1].destacado).toBe(false);
   });
 
@@ -222,6 +263,50 @@ describe('parseEventoDetalle', () => {
     expect(detalle.programa).toEqual([]);
     expect(detalle.lineup).toEqual([]);
     expect(detalle.tiposEntrada).toEqual([]);
+  });
+
+  it('handles an event without a Local (no venue_bat rel)', () => {
+    const resource = eventoResource('evt-4', {}, {});
+    const detalle = parseEventoDetalle(resource, []);
+    expect(detalle.local).toBeNull();
+    expect(detalle.lugarTexto).toBe('');
+  });
+
+  it('handles a venue_bat relation with id "missing" (target borrado)', () => {
+    const resource = eventoResource(
+      'evt-5',
+      {},
+      { field_venue_bat: { data: { type: 'node--local', id: 'missing' } } },
+    );
+    const detalle = parseEventoDetalle(resource, []);
+    expect(detalle.local).toBeNull();
+    expect(detalle.lugarTexto).toBe('');
+  });
+
+  it('falls back to local fallback href when no path alias', () => {
+    const resource = eventoResource(
+      'evt-6',
+      {},
+      { field_venue_bat: { data: { type: 'node--local', id: 'local-1' } } },
+    );
+    const LOCAL_SIN_ALIAS = {
+      ...LOCAL_1,
+      attributes: {
+        title: 'El Lugar',
+        drupal_internal__nid: 77,
+        path: { alias: null },
+        field_direccion: null,
+        field_location: null,
+      },
+    };
+    const detalle = parseEventoDetalle(resource, [LOCAL_SIN_ALIAS]);
+    expect(detalle.local).not.toBeNull();
+    expect(detalle.local!.nombre).toBe('El Lugar');
+    expect(detalle.local!.direccion).toBe('');
+    expect(detalle.local!.lat).toBeNull();
+    expect(detalle.local!.lng).toBeNull();
+    expect(detalle.local!.href).toBe('/local/77');
+    expect(detalle.lugarTexto).toBe('El Lugar');
   });
 });
 
@@ -260,36 +345,29 @@ describe('fetchEventosListado', () => {
     expect(url).toContain('filter[field_fecha.end_value][value]=');
     expect(url).toContain('filter[field_fecha.end_value][operator]=%3E%3D');
     expect(url).toContain('sort=field_fecha.value');
+    expect(url).toContain('field_tipos_entrada.field_zona_entrada');
+    expect(url).toContain('field_venue_bat');
   });
 
-  it('marks agotado when all entradas have 0 disponibles', async () => {
-    const ENTRADA_AGOTADA = {
-      ...ENTRADA_1,
-      id: 'entrada-agotada',
-      attributes: { ...ENTRADA_1.attributes, field_disponibles: 0 },
-    };
-    const ENTRADA_AGOTADA_2 = {
-      ...ENTRADA_2,
-      id: 'entrada-agotada-2',
-      attributes: { ...ENTRADA_2.attributes, field_disponibles: 0 },
-    };
+  it('does not mark agotado while disponibles is null (Fase 1, pendiente Commerce)', async () => {
     mockJsonApiFetch.mockResolvedValueOnce({
       data: [
         eventoResource('evt-x', {}, {
           field_tipos_entrada: {
             data: [
-              { type: 'paragraph--evento_tipo_entrada', id: 'entrada-agotada' },
-              { type: 'paragraph--evento_tipo_entrada', id: 'entrada-agotada-2' },
+              { type: 'paragraph--evento_tipo_entrada', id: 'entrada-1' },
+              { type: 'paragraph--evento_tipo_entrada', id: 'entrada-2' },
             ],
           },
         }),
       ],
-      included: [ENTRADA_AGOTADA, ENTRADA_AGOTADA_2],
+      included: [ENTRADA_1, ENTRADA_2, ZONA_1, ZONA_2],
     });
 
     const items = await fetchEventosListado('es');
-    expect(items[0].agotado).toBe(true);
+    expect(items[0].agotado).toBe(false);
     expect(items[0].precioDesde).toBe(25);
+    expect(items[0].lugarTexto).toBe('');
   });
 
   it('handles events without tipos de entrada (no price, not sold out)', async () => {
@@ -314,6 +392,8 @@ describe('fetchEventoByPath / fetchEventoByNid', () => {
     expect(url).toContain('filter[path.alias][value]=');
     expect(url).toContain('include=field_imagen_hero');
     expect(url).toContain('field_lineup.field_artista.field_imagen.field_media_image');
+    expect(url).toContain('field_tipos_entrada.field_zona_entrada');
+    expect(url).toContain('field_venue_bat');
   });
 
   it('fetches by nid', async () => {

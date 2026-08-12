@@ -132,7 +132,7 @@ try {
       ? `<p class="font-display text-small text-egrem-gray">${v.artistas.map((a) => escapeHtml(a.name)).join(', ')}</p>`
       : '';
     return `
-      <a href="#" data-youtube-id="${v.youtubeId ?? ''}" class="group no-underline cursor-pointer" aria-label="${escapeHtml(v.title)}">
+      <a href="#" data-youtube-id="${escapeHtml(v.youtubeId ?? '')}" class="group no-underline cursor-pointer" aria-label="${escapeHtml(v.title)}">
         <div class="aspect-video relative overflow-hidden rounded-2xl border border-egrem-gray/20 bg-egrem-dark group-hover:border-egrem-red transition-all duration-300 mb-3">
           ${thumb}
           <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors">

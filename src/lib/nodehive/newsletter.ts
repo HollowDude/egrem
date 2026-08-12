@@ -1,13 +1,18 @@
 import { jsonApiFetch, getBaseUrlValue } from './client';
+import { isValidLang, DEFAULT_LANG } from '@/i18n';
 
 const NODE_TYPE = 'suscripcion_boletin';
 const MAIL_FIELD = 'field_correo_electronico';
+
+function safeLang(lang: string): string {
+  return isValidLang(lang) ? lang : DEFAULT_LANG;
+}
 
 export async function isSubscribed(mail: string, lang = 'es'): Promise<boolean> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
       `node/${NODE_TYPE}?filter[${MAIL_FIELD}][value]=${encodeURIComponent(mail)}&page[limit]=1`,
-      lang,
+      safeLang(lang),
     );
     return Array.isArray(res.data) ? res.data.length > 0 : Boolean(res.data);
   } catch (e) {
@@ -23,6 +28,7 @@ export async function subscribe(
   lang = 'es',
 ): Promise<{ ok: boolean; error?: string }> {
   const baseUrl = getBaseUrlValue();
+  lang = safeLang(lang);
 
   // Try JSON:API with Bearer token first
   let jsonRes: Response;
@@ -88,6 +94,7 @@ export async function unsubscribe(
   lang = 'es',
 ): Promise<{ ok: boolean; error?: string }> {
   const baseUrl = getBaseUrlValue();
+  lang = safeLang(lang);
 
   let listRes: Awaited<ReturnType<typeof jsonApiFetch>>;
   try {

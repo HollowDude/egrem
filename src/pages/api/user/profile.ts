@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
 import { getUserProfile, updateUserProfile } from '@/lib/nodehive/user';
+import { isValidPassword } from '@/utils/passwordValidation';
 
 export const GET: APIRoute = async ({ cookies }) => {
   const session = await getSession(cookies);
@@ -39,11 +40,41 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   try {
     const body = await request.json();
-    const { displayName, newPassword } = body;
+    const { displayName, newPassword, currentPassword } = body as Record<string, unknown>;
+
+    if (newPassword !== undefined && newPassword !== null && newPassword !== '') {
+      if (typeof newPassword !== 'string') {
+        return new Response(JSON.stringify({ error: 'La contraseña debe ser un texto.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (typeof currentPassword !== 'string' || currentPassword.trim() === '') {
+        return new Response(
+          JSON.stringify({ error: 'Para cambiar la contraseña debes indicar la actual.' }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+      if (!isValidPassword(newPassword)) {
+        return new Response(
+          JSON.stringify({ error: 'La nueva contraseña debe tener al menos 8 caracteres, letras y números.' }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+    }
 
     const result = await updateUserProfile(session.uid, session.accessToken, {
-      displayName,
-      newPassword: newPassword || undefined,
+      displayName: typeof displayName === 'string' && displayName.trim() ? displayName : undefined,
+      currentPassword:
+        typeof currentPassword === 'string' && currentPassword.trim() ? currentPassword : undefined,
+      newPassword:
+        typeof newPassword === 'string' && newPassword.trim() ? newPassword : undefined,
     });
 
     if (!result.ok) {

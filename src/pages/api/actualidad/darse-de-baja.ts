@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
 import { unsubscribe } from '@/lib/nodehive/newsletter';
+import { isValidLang, DEFAULT_LANG } from '@/i18n';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const session = await getSession(cookies);
@@ -27,6 +28,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   } catch {
     // ignore malformed body, default lang
   }
+  lang = isValidLang(lang) ? lang : DEFAULT_LANG;
 
   try {
     const result = await unsubscribe(mail, session.accessToken, session.csrfToken, lang);

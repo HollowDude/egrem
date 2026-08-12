@@ -68,9 +68,11 @@ const tieneEventos = delDia.length > 0;
             <p class="font-display font-bold text-small text-egrem-black m-0 leading-tight">
               {e.title}
             </p>
-            <p class="font-display text-[11px] m-0 mt-1" style="color: var(--color-text-secondary);">
-              {e.lugar}
-            </p>
+            {e.lugarTexto && (
+              <p class="font-display text-[11px] m-0 mt-1" style="color: var(--color-text-secondary);">
+                {e.lugarTexto}
+              </p>
+            )}
             <span class="inline-flex items-center gap-1 mt-1.5 font-display font-bold text-[10px] uppercase tracking-widest text-egrem-red">
               {tr('evento.calendar.popover.view')}
               <span class="text-[12px]" style="font-family: 'Material Symbols Outlined';">arrow_forward</span>

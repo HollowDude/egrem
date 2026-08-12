@@ -10,9 +10,10 @@ import { useTranslations } from '@/i18n/translations';
 interface Props {
   evento: NhEventoListItem;
   lang?: Lang;
+  ctaLabel?: string;
 }
 
-const { evento, lang = 'es' } = Astro.props;
+const { evento, lang = 'es', ctaLabel } = Astro.props;
 const tr = useTranslations(lang);
 
 function formatFecha(fecha: string): string {
@@ -62,10 +63,10 @@ const precio = evento.precioDesde !== null ? `$${evento.precioDesde.toFixed(2)}`
     <h3 class="font-display font-bold text-h4 text-egrem-black m-0 mb-1.5 group-hover:text-egrem-red transition-colors">
       {evento.title}
     </h3>
-    {evento.lugar && (
+    {evento.lugarTexto && (
       <p class="font-display text-small m-0 mb-2 flex items-center gap-1" style="color: var(--color-text-secondary);">
         <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">location_on</span>
-        {evento.lugar}
+        {evento.lugarTexto}
       </p>
     )}
     {evento.descripcionCorta && (
@@ -83,7 +84,7 @@ const precio = evento.precioDesde !== null ? `$${evento.precioDesde.toFixed(2)}`
         href={evento.href}
         class="inline-flex items-center gap-1.5 font-display font-bold text-[11px] uppercase tracking-wider text-egrem-red no-underline hover:underline transition-colors"
       >
-        {tr('evento.list.details')}
+        {ctaLabel ?? tr('evento.list.details')}
         <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">arrow_forward</span>
       </a>
     </div>

@@ -61,7 +61,7 @@ const finProxMes = fechaISO(prox.anio, prox.mes, 28);
 
 const filtrados = eventos.filter((e) => {
   if (tipo && slugify(e.categoria) !== tipo) return false;
-  if (sede && e.lugar.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s,']+/g, '-').toLowerCase() !== sede) {
+  if (sede && slugify(e.lugarTexto) !== sede) {
     return false;
   }
   if (fechaFiltro === 'semana' && !solapaVentana(e.fechaInicio, e.fechaFin, hoyStr, finSemana)) return false;
@@ -78,7 +78,7 @@ const filtrados = eventos.filter((e) => {
 
 const eventosDelMes = filtrados.filter((e) => solapaConMes(e.fechaInicio, e.fechaFin, anio, mes));
 const grilla = construirGrillaMes(anio, mes);
-const lugares = eventos.map((e) => e.lugar);
+const lugares = eventos.map((e) => e.lugarTexto);
 const categorias = eventos.map((e) => e.categoria);
 
 /* ─── Navegación de mes (preserva filtros) ────────────────────── */

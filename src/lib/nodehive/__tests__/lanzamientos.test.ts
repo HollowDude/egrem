@@ -293,7 +293,7 @@ describe('fetchEventos — sin referencias usa los próximos eventos', () => {
 
     expect(eventos).toHaveLength(2);
     expect(mockJsonApiFetch).toHaveBeenCalledWith(
-      expect.stringContaining('node/evento?sort=field_fecha.value'),
+      expect.stringContaining('node/evento?filter[field_fecha.end_value][value]='),
       'es',
     );
   });

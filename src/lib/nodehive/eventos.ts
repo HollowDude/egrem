@@ -20,6 +20,14 @@ export interface NhEventosHero extends NhEntityMeta {
   photo: NhMediaImage | null;
 }
 
+export interface NhEventoLocal {
+  nombre: string;
+  direccion: string;
+  lat: number | null;
+  lng: number | null;
+  href: string;
+}
+
 export interface NhEventoProgramaDia {
   titulo: string;
   fecha: string;
@@ -50,8 +58,8 @@ export interface NhEventoDetalle extends NhEntityMeta {
   fechaInicio: string;
   fechaFin: string;
   hora: string;
-  lugar: string;
-  direccionCompleta: string;
+  local: NhEventoLocal | null;
+  lugarTexto: string;
   esInternacional: boolean;
   programa: NhEventoProgramaDia[];
   lineup: NhEventoLineupArtista[];
@@ -65,7 +73,7 @@ export interface NhEventoListItem extends NhEntityMeta {
   thumbnail: NhMediaImage | null;
   fechaInicio: string;
   fechaFin: string;
-  lugar: string;
+  lugarTexto: string;
   categoria: string;
   esInternacional: boolean;
   descripcionCorta: string;
@@ -84,7 +92,7 @@ const ROL_LINEUP: Record<string, string> = {
 };
 
 const EVENTO_INCLUDES =
-  'field_imagen_hero,field_imagen_hero.field_media_image,field_categoria,field_programa,field_lineup,field_lineup.field_artista,field_lineup.field_artista.field_imagen,field_lineup.field_artista.field_imagen.field_media_image,field_tipos_entrada';
+  'field_imagen_hero,field_imagen_hero.field_media_image,field_categoria,field_programa,field_lineup,field_lineup.field_artista,field_lineup.field_artista.field_imagen,field_lineup.field_artista.field_imagen.field_media_image,field_tipos_entrada,field_tipos_entrada.field_zona_entrada,field_venue_bat';
 
 function parseFechaRange(value: unknown): { inicio: string; fin: string } {
   if (typeof value === 'string') return { inicio: value, fin: value };
@@ -181,25 +189,61 @@ function parsePrograma(resource: JsonApiResource, included: JsonApiResource[]): 
     .filter((d): d is NhEventoProgramaDia => d !== null);
 }
 
+function parseLocal(
+  rel: JsonApiRelationship | undefined,
+  included: JsonApiResource[],
+): NhEventoLocal | null {
+  const ids = resolveRelIds(rel);
+  if (ids.length === 0 || ids[0].id === 'missing') return null;
+  const local = findIncluded(included, 'node--local', ids[0].id);
+  if (!local) return null;
+  const a = local.attributes as Record<string, unknown>;
+
+  const dir = a.field_direccion as Record<string, unknown> | undefined;
+  const direccion = dir
+    ? [dir.address_line1, dir.locality, dir.administrative_area].filter(Boolean).join(', ')
+    : '';
+
+  const loc = a.field_location as Record<string, unknown> | undefined;
+  const lat = loc && typeof loc.lat === 'number' ? loc.lat : null;
+  const lng = loc && typeof loc.lon === 'number' ? loc.lon : null;
+
+  const nid = (a.drupal_internal__nid as number) ?? 0;
+  const path = (a.path as { alias?: string | null } | undefined)?.alias;
+  const href = path && path.startsWith('/') ? path : `/local/${nid}`;
+
+  return { nombre: (a.title as string) ?? '', direccion, lat, lng, href };
+}
+
 function parseTiposEntrada(
   resource: JsonApiResource,
   included: JsonApiResource[],
 ): NhEventoTipoEntrada[] {
   const rels = resource.relationships as Record<string, JsonApiRelationship> | undefined;
   return resolveRelIds(rels?.field_tipos_entrada)
-    .map((ref) => {
+    .map((ref): NhEventoTipoEntrada | null => {
       const p = findIncluded(included, 'paragraph--evento_tipo_entrada', ref.id);
       if (!p) return null;
       const pa = p.attributes as Record<string, unknown>;
       const nombre = (pa.field_nombre_entrada as string) ?? '';
       if (!nombre) return null;
+
+      const zonaRel = p.relationships?.field_zona_entrada?.data as JsonApiResourceIdentifier | undefined;
+      let capacidad: number | null = null;
+      if (zonaRel) {
+        const zona = findIncluded(included, 'node--zona', zonaRel.id);
+        capacidad = parseNumero(
+          (zona?.attributes as Record<string, unknown> | undefined)?.field_capacidad_maxima,
+        );
+      }
+
       return {
         nombre,
         sku: (pa.field_sku as string) ?? '',
         precio: parseNumero(pa.field_precio),
         descripcion: (pa.field_descripcion_entrada as string) ?? '',
-        capacidad: parseNumero(pa.field_capacidad),
-        disponibles: parseNumero(pa.field_disponibles),
+        capacidad,
+        disponibles: null,
         destacado: Boolean(pa.field_destacado),
       };
     })
@@ -225,6 +269,8 @@ export function parseEventoDetalle(
     categoria = ((term?.attributes as Record<string, unknown> | undefined)?.name as string) ?? '';
   }
 
+  const local = parseLocal(rels?.field_venue_bat, included);
+
   return {
     id: resource.id,
     internalId: nid,
@@ -237,8 +283,8 @@ export function parseEventoDetalle(
     fechaInicio: inicio,
     fechaFin: fin || inicio,
     hora: (a.field_hora as string) ?? '',
-    lugar: (a.field_lugar as string) ?? '',
-    direccionCompleta: (a.field_direccion_completa as { value?: string } | undefined)?.value ?? '',
+    local,
+    lugarTexto: local?.nombre || '',
     esInternacional: Boolean(a.field_es_internacional),
     programa: parsePrograma(resource, included),
     lineup: parseLineup(resource, included),
@@ -261,6 +307,8 @@ function parseEventoListItem(
 
   const tipos = parseTiposEntrada(resource, included);
   const precios = tipos.map((t) => t.precio).filter((p): p is number => p !== null);
+  // Limitación conocida hasta la Fase 2 (Commerce): con `disponibles` en null,
+  // "agotado" nunca se activa. Es esperado y correcto por ahora.
   const agotado = tipos.length > 0 && tipos.every((t) => t.disponibles === 0);
 
   let categoria = '';
@@ -281,6 +329,7 @@ function parseEventoListItem(
   }
 
   const summary = body?.summary ?? stripHtml(body?.value ?? '').trim();
+  const local = parseLocal(rels?.field_venue_bat, included);
 
   return {
     id: resource.id,
@@ -292,7 +341,7 @@ function parseEventoListItem(
     thumbnail: parseImagen(rels?.field_imagen_hero, included),
     fechaInicio: inicio,
     fechaFin: fin || inicio,
-    lugar: (a.field_lugar as string) ?? '',
+    lugarTexto: local?.nombre || '',
     categoria,
     esInternacional: Boolean(a.field_es_internacional),
     descripcionCorta: summary,
@@ -313,7 +362,7 @@ export async function fetchEventosListado(lang = 'es'): Promise<NhEventoListItem
       hoy.getDate(),
     ).padStart(2, '0')}`;
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `node/evento?filter[field_fecha.end_value][value]=${hoyStr}&filter[field_fecha.end_value][operator]=%3E%3D&sort=field_fecha.value&page[limit]=${LISTADO_LIMIT}&include=field_imagen_hero,field_imagen_hero.field_media_image,field_categoria,field_tipos_entrada,field_lineup,field_lineup.field_artista`,
+      `node/evento?filter[field_fecha.end_value][value]=${hoyStr}&filter[field_fecha.end_value][operator]=%3E%3D&sort=field_fecha.value&page[limit]=${LISTADO_LIMIT}&include=field_imagen_hero,field_imagen_hero.field_media_image,field_categoria,field_tipos_entrada,field_tipos_entrada.field_zona_entrada,field_lineup,field_lineup.field_artista,field_venue_bat`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];

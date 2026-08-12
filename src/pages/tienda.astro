@@ -1,0 +1,102 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import TiendaFilterBar from '@/components/tienda/TiendaFilterBar.astro';
+import TiendaPaginator from '@/components/tienda/TiendaPaginator.astro';
+import EventoListCard from '@/components/evento/EventoListCard.astro';
+import { fetchEventosListado, slugify } from '@/lib/nodehive';
+import { applyFilters, paginate, type TiendaFilters, type TiendaSort } from '@/lib/tienda/filters';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+const basePath = Astro.url.pathname.split('?')[0];
+
+const get = (k: string) => Astro.url.searchParams.get(k) ?? '';
+
+const tipo = get('tipo');
+const sede = get('sede');
+const precioMin = get('precioMin');
+const precioMax = get('precioMax');
+const disponibilidad = get('disponibilidad');
+const q = get('q');
+const ordenParam = get('orden');
+const orden: TiendaSort =
+  ordenParam === 'precio-asc' || ordenParam === 'precio-desc' ? ordenParam : 'proximos';
+const pagRaw = Number(get('pag')) || 1;
+const pag = pagRaw > 0 ? Math.floor(pagRaw) : 1;
+
+const filtros: TiendaFilters = { tipo, sede, precioMin, precioMax, disponibilidad, q };
+
+const eventos = await fetchEventosListado(lang);
+
+const tiposUnicos = new Map<string, string>();
+const sedesUnicas = new Map<string, string>();
+for (const e of eventos) {
+  const ts = slugify(e.categoria);
+  if (ts && !tiposUnicos.has(ts)) tiposUnicos.set(ts, e.categoria);
+  const ss = slugify(e.lugarTexto);
+  if (ss && !sedesUnicas.has(ss)) sedesUnicas.set(ss, e.lugarTexto);
+}
+const tipos = [...tiposUnicos]
+  .map(([slug, label]) => ({ slug, label }))
+  .sort((a, b) => a.label.localeCompare(b.label));
+const sedes = [...sedesUnicas]
+  .map(([slug, label]) => ({ slug, label }))
+  .sort((a, b) => a.label.localeCompare(b.label));
+
+const aplicados = applyFilters(eventos, filtros, orden);
+const { items, totalPages } = paginate(aplicados, pag, 9);
+---
+
+<BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
+  <main id="main-content">
+    <section class="bg-egrem-dark text-white">
+      <div class="container-site py-14 md:py-20 text-center">
+        <p class="font-display font-bold text-[11px] uppercase tracking-[0.3em] text-egrem-gold m-0 mb-3">
+          {tr('tienda.hero.eyebrow')}
+        </p>
+        <h1 class="font-display font-bold text-h1 m-0 mb-4">{tr('tienda.hero.title')}</h1>
+        <p class="font-display text-body text-egrem-gray-light max-w-2xl mx-auto m-0">
+          {tr('tienda.hero.subtitle')}
+        </p>
+      </div>
+    </section>
+
+    <TiendaFilterBar {tipos} {sedes} {filtros} {orden} {basePath} />
+
+    <section class="section-py bg-egrem-gray-light">
+      <div class="container-site">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+          <SectionHeader title={tr('tienda.list.title')} accent="red" />
+          {aplicados.length > 0 && (
+            <p class="font-display text-small text-egrem-gray m-0">
+              {tr('tienda.list.results', { count: aplicados.length })}
+            </p>
+          )}
+        </div>
+
+        {
+          aplicados.length === 0 ? (
+            <div class="flex flex-col items-center justify-center py-16 text-center bg-white border border-egrem-gray/20 rounded-2xl">
+              <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">confirmation_number</span>
+              <p class="text-egrem-gray text-body m-0">{eventos.length === 0 ? tr('tienda.list.empty') : tr('tienda.list.no_results')}</p>
+            </div>
+          ) : (
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+              {items.map((evento) => (
+                <EventoListCard evento={evento} lang={lang} ctaLabel={tr('tienda.list.buy')} />
+              ))}
+            </div>
+          )
+        }
+
+        <div class="mt-8">
+          <TiendaPaginator {basePath} {totalPages} currentPage={pag} {filtros} {orden} />
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

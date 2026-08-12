@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { validateContact, type ContactField, type ContactErrorCode } from '@/lib/contacto/validation';
+import { fetchSedes } from '@/lib/nodehive/sedes';
 
 const RATE_LIMIT_WINDOW = 60_000;
 const RATE_LIMIT_MAX = 5;
@@ -81,6 +82,18 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    const sedeName = typeof body.sede === 'string' ? body.sede.trim() : '';
+    let sedeCorreo = 'contacto@egrem.co.cu';
+    if (sedeName) {
+      try {
+        const sedes = await fetchSedes('es');
+        const match = sedes.find((s) => s.title.trim().toLowerCase() === sedeName.toLowerCase());
+        if (match?.correo) sedeCorreo = match.correo;
+      } catch (e) {
+        console.warn('[Contacto] Failed to resolve sede correo:', e);
+      }
+    }
+
     const payload = {
       webform_id: 'contacto',
       inquiry: body.inquiry ?? '',
@@ -88,8 +101,8 @@ export const POST: APIRoute = async ({ request }) => {
       email: (body.email as string).trim(),
       phone: ((body.phone as string) ?? '').trim(),
       company: body.empresa ?? body.company ?? '',
-      sede: body.sede ?? '',
-      sede_correo: body.sede_correo ?? 'contacto@egrem.co.cu',
+      sede: sedeName,
+      sede_correo: sedeCorreo,
       message: (body.message as string).trim(),
     };
 

@@ -1,0 +1,69 @@
+---
+/**
+ * TiendaPaginator.astro — Paginación SSR que preserva los filtros activos.
+ */
+import type { TiendaFilters, TiendaSort } from '@/lib/tienda/filters';
+
+interface Props {
+  basePath: string;
+  totalPages: number;
+  currentPage: number;
+  filtros: TiendaFilters;
+  orden: TiendaSort;
+}
+
+const { basePath, totalPages, currentPage, filtros, orden } = Astro.props;
+
+function pageHref(page: number): string {
+  const params = new URLSearchParams();
+  if (filtros.tipo) params.set('tipo', filtros.tipo);
+  if (filtros.sede) params.set('sede', filtros.sede);
+  if (filtros.precioMin) params.set('precioMin', filtros.precioMin);
+  if (filtros.precioMax) params.set('precioMax', filtros.precioMax);
+  if (filtros.disponibilidad) params.set('disponibilidad', filtros.disponibilidad);
+  if (filtros.q) params.set('q', filtros.q);
+  if (orden && orden !== 'proximos') params.set('orden', orden);
+  params.set('pag', String(page));
+  return `${basePath}?${params.toString()}`;
+}
+---
+
+{
+  totalPages > 1 && (
+    <div class="flex justify-center border-t border-egrem-gray/20 pt-6">
+      <nav class="flex items-center gap-2">
+        {currentPage > 1 && (
+          <a
+            href={pageHref(currentPage - 1)}
+            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            aria-label="Previous page"
+          >
+            <span style="font-family:'Material Symbols Outlined';">chevron_left</span>
+          </a>
+        )}
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <a
+            href={pageHref(p)}
+            class:list={[
+              'w-10 h-10 flex items-center justify-center rounded-xl no-underline',
+              p === currentPage
+                ? 'border-b-2 border-egrem-red text-egrem-red font-bold'
+                : 'border border-transparent hover:bg-egrem-gray-light text-egrem-black font-bold',
+            ]}
+          >
+            {p}
+          </a>
+        ))}
+        {currentPage < totalPages && (
+          <a
+            href={pageHref(currentPage + 1)}
+            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            aria-label="Next page"
+          >
+            <span style="font-family:'Material Symbols Outlined';">chevron_right</span>
+          </a>
+        )}
+      </nav>
+    </div>
+  )
+}

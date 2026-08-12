@@ -50,7 +50,7 @@ export async function updateUserProfile(
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     // Build the PATCH payload for Drupal REST
-    const fieldData: Record<string, Array<{ value: string }>> = {};
+    const fieldData: Record<string, Array<{ value: string; existing?: string }>> = {};
 
     if (data.displayName) {
       fieldData.name = [{ value: data.displayName }];
@@ -58,11 +58,8 @@ export async function updateUserProfile(
     if (data.mail) {
       fieldData.mail = [{ value: data.mail }];
     }
-    if (data.currentPassword) {
-      fieldData.pass = [{ value: data.currentPassword }];
-    }
-    if (data.newPassword) {
-      fieldData.pass = [{ value: data.newPassword }];
+    if (data.newPassword && data.currentPassword) {
+      fieldData.pass = [{ value: data.newPassword, existing: data.currentPassword }];
     }
 
     const res = await fetch(`${getBaseUrl()}/user/${uid}?_format=json`, {

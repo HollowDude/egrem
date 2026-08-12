@@ -65,9 +65,12 @@ function formatRango(inicio: string, fin: string): string {
 
 const fechaDisplay = formatRango(evento.fechaInicio, evento.fechaFin);
 const esPasado = esEventoPasado(evento.fechaFin, new Date().toISOString().slice(0, 10));
-const mapQuery = encodeURIComponent(evento.direccionCompleta || evento.lugar);
-const mapUrl = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-const mapLink = `https://maps.google.com/maps?q=${mapQuery}`;
+const lugarHero = evento.local?.nombre || evento.lugarTexto;
+const mapQuery = evento.local?.direccion
+  ? encodeURIComponent(`${evento.local.nombre}, ${evento.local.direccion}`)
+  : '';
+const mapUrl = mapQuery ? `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '';
+const mapLink = mapQuery ? `https://maps.google.com/maps?q=${mapQuery}` : '';
 const pageTitle = `${evento.title} | EGREM`;
 const tipoLabel = evento.esInternacional
   ? tr('evento.detail.internacional')
@@ -124,10 +127,10 @@ const tipoLabel = evento.esInternacional
                 {evento.hora && <span>· {evento.hora}</span>}
               </p>
             )}
-            {evento.lugar && (
+            {lugarHero && (
               <p class="font-display text-small text-white/80 m-0 mt-1 flex items-center gap-2">
                 <span style="font-family: 'Material Symbols Outlined'; font-size: 16px;">location_on</span>
-                {evento.lugar}
+                {lugarHero}
               </p>
             )}
           </div>
@@ -212,39 +215,47 @@ const tipoLabel = evento.esInternacional
             </div>
           )}
 
-          <div class="bg-white border border-egrem-gray/20 rounded-xl shadow-sm overflow-hidden">
-            <div class="p-6 pb-4 border-b border-egrem-gray/20">
-              <h3 class="text-h3 text-egrem-black m-0 flex items-center gap-2 uppercase">
-                <span class="text-egrem-red" style="font-family: 'Material Symbols Outlined';">location_on</span>
-                {tr('evento.detail.location')}
-              </h3>
-            </div>
-            <div class="relative" style="height: 220px;">
-              <iframe
-                src={mapUrl}
-                width="100%"
-                height="100%"
-                style="border:0; display:block;"
-                allowfullscreen
-                loading="lazy"
-                title={evento.lugar}
-              ></iframe>
-              <div class="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-egrem-gray/20 max-w-[240px]">
-                <p class="font-display text-small text-egrem-black m-0 leading-snug">
-                  {evento.direccionCompleta || evento.lugar}
-                </p>
-                <a
-                  href={mapLink}
-                  target="_blank"
-                  rel="noopener"
-                  class="inline-flex items-center gap-1 mt-1.5 text-small text-egrem-red hover:underline no-underline font-semibold"
-                >
-                  <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">open_in_new</span>
-                  {tr('evento.detail.location_open')}
-                </a>
+          {evento.local && (
+            <div class="bg-white border border-egrem-gray/20 rounded-xl shadow-sm overflow-hidden">
+              <div class="p-6 pb-4 border-b border-egrem-gray/20">
+                <h3 class="text-h3 text-egrem-black m-0 flex items-center gap-2 uppercase">
+                  <span class="text-egrem-red" style="font-family: 'Material Symbols Outlined';">location_on</span>
+                  {tr('evento.detail.location')}
+                </h3>
               </div>
+              {evento.local.direccion ? (
+                <div class="relative" style="height: 220px;">
+                  <iframe
+                    src={mapUrl}
+                    width="100%"
+                    height="100%"
+                    style="border:0; display:block;"
+                    allowfullscreen
+                    loading="lazy"
+                    title={evento.local.nombre}
+                  ></iframe>
+                  <div class="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-egrem-gray/20 max-w-[240px]">
+                    <p class="font-display text-small text-egrem-black m-0 leading-snug">
+                      {evento.local.nombre} — {evento.local.direccion}
+                    </p>
+                    <a
+                      href={mapLink}
+                      target="_blank"
+                      rel="noopener"
+                      class="inline-flex items-center gap-1 mt-1.5 text-small text-egrem-red hover:underline no-underline font-semibold"
+                    >
+                      <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">open_in_new</span>
+                      {tr('evento.detail.location_open')}
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div class="p-6">
+                  <p class="font-display text-small text-egrem-gray m-0">{evento.local.nombre}</p>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </aside>
       </div>
 

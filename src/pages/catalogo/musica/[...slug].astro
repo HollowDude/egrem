@@ -145,14 +145,8 @@ const artistRef = album.artista ?? album.interprete;
 
           {album.externalApps.map((app) => {
             const isSpotifyEmbed = app.platform === 'spotify' && Boolean(app.embedUrl);
-            return (
-              <button
-                {...(isSpotifyEmbed
-                  ? { 'data-embed-url': app.embedUrl!, 'data-embed-platform': app.platform }
-                  : {})}
-                class="inline-flex items-center gap-2 px-5 py-2.5 border border-egrem-red text-egrem-red font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red hover:text-white hover:scale-105 active:scale-[0.97] transition-all duration-200"
-                {...(!isSpotifyEmbed ? { onclick: `window.open('${app.url}', '_blank')` } : {})}
-              >
+            const content = (
+              <>
                 {app.platform === 'apple_music' ? (
                   <AppleMusicIcon class="w-[18px] h-[18px]" />
                 ) : app.platform === 'spotify' ? (
@@ -161,7 +155,22 @@ const artistRef = album.artista ?? album.interprete;
                   <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">music_note</span>
                 )}
                 {app.title}
+              </>
+            );
+            const className =
+              'inline-flex items-center gap-2 px-5 py-2.5 border border-egrem-red text-egrem-red font-display font-bold text-[11px] uppercase tracking-wider rounded-xl hover:bg-egrem-red hover:text-white hover:scale-105 active:scale-[0.97] transition-all duration-200';
+            return isSpotifyEmbed ? (
+              <button
+                data-embed-url={app.embedUrl}
+                data-embed-platform={app.platform}
+                class={className}
+              >
+                {content}
               </button>
+            ) : (
+              <a href={app.url} target="_blank" rel="noopener" class={className}>
+                {content}
+              </a>
             );
           })}
         </div>

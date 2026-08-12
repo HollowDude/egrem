@@ -192,14 +192,14 @@ function parseEventoHome(resource: JsonApiResource): NhEvento {
   const path = a.path as { alias?: string } | undefined;
   const fieldFecha = a.field_fecha as string | { value?: string; end_value?: string } | undefined;
   const startDate = typeof fieldFecha === 'string' ? fieldFecha : fieldFecha?.value;
-  const endDate = typeof fieldFecha === 'object' ? fieldFecha.end_value : undefined;
+  const endDate = typeof fieldFecha === 'object' && fieldFecha !== null ? fieldFecha.end_value : undefined;
   const fieldHora = a.field_hora as string | undefined;
   const fieldLugar = a.field_lugar as string | undefined;
   return {
     id: resource.id,
     title: (a.title as string) ?? '',
     venue: (fieldLugar as string) ?? '',
-    date: startDate ?? (a.created as string) ?? '',
+    date: startDate ?? '',
     endDate,
     time: fieldHora ?? '',
     href: path?.alias ?? `/evento/${a.drupal_internal__nid}`,
@@ -219,13 +219,22 @@ async function fetchEventoHomeByUuid(uuid: string, lang: string): Promise<NhEven
 
 async function fetchEventosFromDrupal(lang = 'es'): Promise<NhEvento[]> {
   try {
+    const hoy = new Date();
+    const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(
+      hoy.getDate(),
+    ).padStart(2, '0')}`;
     const res = await jsonApiFetch<Record<string, unknown>>(
-      'node/evento?sort=field_fecha.value&page[limit]=5',
+      `node/evento?filter[field_fecha.end_value][value]=${hoyStr}&filter[field_fecha.end_value][operator]=%3E%3D&sort=field_fecha.value&page[limit]=20`,
       lang,
     );
     const data = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
 
-    return data.map((r) => parseEventoHome(r as JsonApiResource));
+    // Descartar eventos sin field_fecha (null): la fecha es la base de las mini-cards
+    // y caer a `created` producía fechas inválidas en el renderizado.
+    return data
+      .map((r) => parseEventoHome(r as JsonApiResource))
+      .filter((e) => e.date)
+      .slice(0, 5);
   } catch (e) {
     if (e instanceof Error && e.message.includes('404')) {
       console.debug('[NodeHive] fetchEventos: endpoint node/evento not available on Drupal');

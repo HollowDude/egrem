@@ -72,13 +72,14 @@ const tr = useTranslations(lang);
 </aside>
 
 <script>
-  const card = document.querySelector<HTMLElement>('[data-newsletter-card]');
-  if (!card) throw new Error('missing newsletter card');
+  (() => {
+    const card = document.querySelector<HTMLElement>('[data-newsletter-card]');
+    if (!card) return;
 
-  const lang = card.dataset.newsletterLang || 'es';
-  const submitBtn = card.querySelector<HTMLButtonElement>('[data-newsletter-submit]');
-  const feedback = card.querySelector<HTMLParagraphElement>('[data-newsletter-feedback]');
-  if (!submitBtn || !feedback) throw new Error('missing newsletter elements');
+    const lang = card.dataset.newsletterLang || 'es';
+    const submitBtn = card.querySelector<HTMLButtonElement>('[data-newsletter-submit]');
+    const feedback = card.querySelector<HTMLParagraphElement>('[data-newsletter-feedback]');
+    if (!submitBtn || !feedback) return;
 
   const STRINGS: Record<
     string,
@@ -147,4 +148,5 @@ const tr = useTranslations(lang);
       submitBtn.disabled = false;
     }
   });
+  })();
 </script>
