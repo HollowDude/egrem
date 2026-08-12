@@ -1,7 +1,8 @@
 ---
 /**
- * EventoListCard.astro — Tarjeta de "Próximos Eventos" del listado.
- * Imagen grayscale→color al hover, badge AGOTADO, fecha, precio "desde".
+ * EventoListCard.astro — Tarjeta de producto/entrada estilo maqueta EGREM.
+ * Imagen con padding, badge de estado arriba-izquierda, precio en gold,
+ * botón redondo de agregar (icono add_shopping_cart).
  */
 import type { NhEventoListItem } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
@@ -31,61 +32,51 @@ const fechaDisplay =
     ? `${formatFecha(evento.fechaInicio)} - ${formatFecha(evento.fechaFin)}`
     : formatFecha(evento.fechaInicio);
 
+const subtitulo = evento.artistas.length
+  ? evento.artistas.join(', ')
+  : evento.lugarTexto;
+
 const precio = evento.precioDesde !== null ? `$${evento.precioDesde.toFixed(2)}` : null;
 ---
 
-<article class="group bg-white border border-egrem-gray/20 rounded-2xl overflow-hidden shadow-sm hover:border-egrem-gold hover:shadow-md transition-all">
-  <div class="relative aspect-[16/9] overflow-hidden bg-egrem-gray-light">
+<article class="group flex flex-col bg-white border border-form-border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-egrem-red">
+  <div class="relative aspect-square overflow-hidden bg-egrem-gray-light p-4">
     {evento.thumbnail?.url ? (
       <img
         src={evento.thumbnail.url}
         alt={evento.thumbnail.alt || evento.title}
-        class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+        class="w-full h-full object-cover shadow-sm transition-transform duration-500 group-hover:scale-105"
         loading="lazy"
         decoding="async"
       />
     ) : (
       <div class="w-full h-full flex items-center justify-center">
-        <span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">event</span>
+        <span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">confirmation_number</span>
       </div>
     )}
-    {evento.agotado && (
-      <span class="absolute top-0 right-0 bg-egrem-red text-white font-display font-bold text-[10px] px-2.5 py-1 uppercase tracking-widest rounded-bl-lg">
-        {tr('evento.list.sold_out')}
-      </span>
-    )}
+    {evento.agotado && <span class="tienda-badge">{tr('evento.list.sold_out')}</span>}
   </div>
 
-  <div class="p-5">
-    <p class="font-display font-bold text-[11px] text-egrem-gold uppercase tracking-widest m-0 mb-2">
-      {fechaDisplay}
-    </p>
-    <h3 class="font-display font-bold text-h4 text-egrem-black m-0 mb-1.5 group-hover:text-egrem-red transition-colors">
+  <div class="p-6 flex flex-col flex-grow">
+    <h3 class="font-display font-bold text-[20px] text-egrem-black mb-1 line-clamp-1 uppercase">
       {evento.title}
     </h3>
-    {evento.lugarTexto && (
-      <p class="font-display text-small m-0 mb-2 flex items-center gap-1" style="color: var(--color-text-secondary);">
-        <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">location_on</span>
-        {evento.lugarTexto}
-      </p>
+    {subtitulo && (
+      <p class="font-display text-sm text-text-secondary mb-4 line-clamp-2 uppercase">{subtitulo}</p>
     )}
-    {evento.descripcionCorta && (
-      <p class="font-display text-small text-egrem-gray m-0 mb-4 line-clamp-2">{evento.descripcionCorta}</p>
-    )}
-    <div class="flex items-center justify-between pt-3 border-t border-egrem-gray/15">
+    <div class="mt-auto flex items-center justify-between">
       {precio ? (
-        <span class="font-display font-bold text-body text-egrem-red">
-          {tr('evento.list.from')} {precio}
-        </span>
+        <span class="font-display text-[22px] text-egrem-gold font-bold">{precio}</span>
       ) : (
         <span></span>
       )}
       <a
         href={evento.href}
-        class="inline-flex items-center gap-1.5 font-display font-bold text-[11px] uppercase tracking-wider text-egrem-red no-underline hover:underline transition-colors"
+        aria-label={ctaLabel ?? tr('tienda.list.buy')}
+        title={ctaLabel ?? tr('tienda.list.buy')}
+        class="bg-egrem-red text-white p-2 rounded-2xl hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold flex items-center justify-center no-underline"
       >
-        {ctaLabel ?? tr('evento.list.details')}
-        <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">arrow_forward</span>
+        <span style="font-family: 'Material Symbols Outlined';" class="text-[20px]">add_shopping_cart</span>
       </a>
     </div>
   </div>

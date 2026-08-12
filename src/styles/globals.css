@@ -717,6 +717,75 @@
     background: #950100;
   }
 
+  /* ── Tienda: clases compartidas (maqueta EGREM) ─────────────────── */
+
+  /* Chip de categoría (fila superior) */
+  .tienda-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid var(--color-form-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .tienda-chip:hover {
+    border-color: var(--color-egrem-red);
+    color: var(--color-egrem-red);
+  }
+  .tienda-chip--active {
+    background: var(--color-egrem-red-dark);
+    border-color: var(--color-egrem-red-dark);
+    color: #ffffff;
+  }
+
+  /* Badge de estado en esquina superior-izquierda (AGOTADO) */
+  .tienda-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: var(--color-surface-container);
+    color: var(--color-egrem-black);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-form-border);
+  }
+
+  /* Botón de paginación activo — rojo relleno */
+  .tienda-pagination-active {
+    background: var(--color-egrem-red);
+    border-color: var(--color-egrem-red);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  /* Bloque de resultado vacío */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 1rem;
+    text-align: center;
+    background: var(--color-egrem-gray-light);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 1rem;
+  }
+
   /* ─── High contrast mode ──────────────────────────────────────────── */
   html.high-contrast {
     filter: contrast(1.5) grayscale(0.2);

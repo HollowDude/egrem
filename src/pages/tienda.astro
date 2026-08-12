@@ -2,8 +2,7 @@
 export const prerender = false;
 
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import SectionHeader from '@/components/ui/SectionHeader.astro';
-import TiendaFilterBar from '@/components/tienda/TiendaFilterBar.astro';
+import TiendaSidebar from '@/components/tienda/TiendaSidebar.astro';
 import TiendaPaginator from '@/components/tienda/TiendaPaginator.astro';
 import EventoListCard from '@/components/evento/EventoListCard.astro';
 import { fetchEventosListado, slugify } from '@/lib/nodehive';
@@ -43,49 +42,90 @@ for (const e of eventos) {
 const tipos = [...tiposUnicos]
   .map(([slug, label]) => ({ slug, label }))
   .sort((a, b) => a.label.localeCompare(b.label));
-const sedes = [...sedesUnicas]
-  .map(([slug, label]) => ({ slug, label }))
-  .sort((a, b) => a.label.localeCompare(b.label));
+
+const chips = [{ slug: '', label: tr('tienda.filter.tipo.all') }, ...tipos];
+
+function buildQuery(overrides: Record<string, string>): string {
+  const params = new URLSearchParams();
+  if (filtros.tipo) params.set('tipo', filtros.tipo);
+  if (filtros.disponibilidad) params.set('disponibilidad', filtros.disponibilidad);
+  if (filtros.precioMin) params.set('precioMin', filtros.precioMin);
+  if (filtros.precioMax) params.set('precioMax', filtros.precioMax);
+  if (filtros.q) params.set('q', filtros.q);
+  if (orden && orden !== 'proximos') params.set('orden', orden);
+  for (const [k, v] of Object.entries(overrides)) {
+    if (v) params.set(k, v);
+    else params.delete(k);
+  }
+  return `${basePath}?${params.toString()}`;
+}
 
 const aplicados = applyFilters(eventos, filtros, orden);
 const { items, totalPages } = paginate(aplicados, pag, 9);
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
-  <main id="main-content">
-    <section class="bg-egrem-dark text-white">
-      <div class="container-site py-14 md:py-20 text-center">
-        <p class="font-display font-bold text-[11px] uppercase tracking-[0.3em] text-egrem-gold m-0 mb-3">
-          {tr('tienda.hero.eyebrow')}
-        </p>
-        <h1 class="font-display font-bold text-h1 m-0 mb-4">{tr('tienda.hero.title')}</h1>
-        <p class="font-display text-body text-egrem-gray-light max-w-2xl mx-auto m-0">
-          {tr('tienda.hero.subtitle')}
-        </p>
+  <main id="main-content" class="pb-20 px-4 md:px-16 max-w-container-max mx-auto">
+    <!-- Chips de categoría -->
+    <section class="pt-8 mb-8">
+      <div class="flex items-center gap-2 flex-wrap">
+        {chips.map((c) => (
+          <a
+            href={buildQuery({ tipo: c.slug })}
+            class:list={['tienda-chip', filtros.tipo === c.slug ? 'tienda-chip--active' : '']}
+          >
+            <span class="material-symbols-outlined text-[15px]" style="font-family: 'Material Symbols Outlined';">
+              {c.slug ? 'confirmation_number' : 'apps'}
+            </span>
+            {c.label}
+          </a>
+        ))}
       </div>
     </section>
 
-    <TiendaFilterBar {tipos} {sedes} {filtros} {orden} {basePath} />
+    <div class="flex flex-col lg:flex-row gap-12">
+      <!-- Sidebar -->
+      <aside class="w-full lg:w-64 flex-shrink-0">
+        <div class="lg:sticky lg:top-24">
+          <TiendaSidebar {tipos} {filtros} {orden} {basePath} />
+        </div>
+      </aside>
 
-    <section class="section-py bg-egrem-gray-light">
-      <div class="container-site">
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-          <SectionHeader title={tr('tienda.list.title')} accent="red" />
-          {aplicados.length > 0 && (
-            <p class="font-display text-small text-egrem-gray m-0">
-              {tr('tienda.list.results', { count: aplicados.length })}
-            </p>
-          )}
+      <!-- Grid de productos -->
+      <div class="flex-grow">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-egrem-gray-light">
+          <span class="font-display text-text-secondary" data-product-count>
+            {tr('tienda.list.showing', { count: aplicados.length })}
+          </span>
+          <form method="GET" action={basePath} class="flex items-center gap-3">
+            {tipo && <input type="hidden" name="tipo" value={tipo} />}
+            {disponibilidad && <input type="hidden" name="disponibilidad" value={disponibilidad} />}
+            {precioMin && <input type="hidden" name="precioMin" value={precioMin} />}
+            {precioMax && <input type="hidden" name="precioMax" value={precioMax} />}
+            {q && <input type="hidden" name="q" value={q} />}
+            <span class="font-display text-text-secondary">{tr('tienda.filter.orden')}:</span>
+            <select
+              name="orden"
+              class="bg-white border border-form-border text-egrem-black font-display py-1 pl-2 pr-8 rounded-xl focus:border-egrem-red focus:ring-1 focus:ring-egrem-red outline-none"
+              onchange="this.form.submit()"
+            >
+              <option value="proximos" selected={orden === 'proximos'}>{tr('tienda.filter.orden.proximos')}</option>
+              <option value="precio-asc" selected={orden === 'precio-asc'}>{tr('tienda.filter.orden.precio-asc')}</option>
+              <option value="precio-desc" selected={orden === 'precio-desc'}>{tr('tienda.filter.orden.precio-desc')}</option>
+            </select>
+          </form>
         </div>
 
         {
           aplicados.length === 0 ? (
-            <div class="flex flex-col items-center justify-center py-16 text-center bg-white border border-egrem-gray/20 rounded-2xl">
-              <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">confirmation_number</span>
-              <p class="text-egrem-gray text-body m-0">{eventos.length === 0 ? tr('tienda.list.empty') : tr('tienda.list.no_results')}</p>
+            <div class="empty-state">
+              <span class="material-symbols-outlined text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">search_off</span>
+              <p class="text-egrem-gray text-body m-0">
+                {eventos.length === 0 ? tr('tienda.list.empty') : tr('tienda.list.no_results')}
+              </p>
             </div>
           ) : (
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 mb-12">
               {items.map((evento) => (
                 <EventoListCard evento={evento} lang={lang} ctaLabel={tr('tienda.list.buy')} />
               ))}
@@ -93,10 +133,8 @@ const { items, totalPages } = paginate(aplicados, pag, 9);
           )
         }
 
-        <div class="mt-8">
-          <TiendaPaginator {basePath} {totalPages} currentPage={pag} {filtros} {orden} />
-        </div>
+        <TiendaPaginator {basePath} {totalPages} currentPage={pag} {filtros} {orden} />
       </div>
-    </section>
+    </div>
   </main>
 </BaseLayout>

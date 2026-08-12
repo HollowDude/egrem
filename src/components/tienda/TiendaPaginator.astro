@@ -35,7 +35,7 @@ function pageHref(page: number): string {
         {currentPage > 1 && (
           <a
             href={pageHref(currentPage - 1)}
-            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            class="w-10 h-10 flex items-center justify-center rounded-2xl border border-form-border text-egrem-gray hover:border-egrem-red hover:text-egrem-red no-underline transition-colors"
             aria-label="Previous page"
           >
             <span style="font-family:'Material Symbols Outlined';">chevron_left</span>
@@ -45,10 +45,10 @@ function pageHref(page: number): string {
           <a
             href={pageHref(p)}
             class:list={[
-              'w-10 h-10 flex items-center justify-center rounded-xl no-underline',
+              'w-10 h-10 flex items-center justify-center rounded-2xl no-underline border',
               p === currentPage
-                ? 'border-b-2 border-egrem-red text-egrem-red font-bold'
-                : 'border border-transparent hover:bg-egrem-gray-light text-egrem-black font-bold',
+                ? 'tienda-pagination-active font-bold'
+                : 'border-form-border text-egrem-black hover:border-egrem-red hover:text-egrem-red',
             ]}
           >
             {p}
@@ -57,7 +57,7 @@ function pageHref(page: number): string {
         {currentPage < totalPages && (
           <a
             href={pageHref(currentPage + 1)}
-            class="w-10 h-10 flex items-center justify-center rounded-xl border border-egrem-gray/30 text-egrem-gray hover:bg-egrem-gray-light no-underline"
+            class="w-10 h-10 flex items-center justify-center rounded-2xl border border-form-border text-egrem-gray hover:border-egrem-red hover:text-egrem-red no-underline transition-colors"
             aria-label="Next page"
           >
             <span style="font-family:'Material Symbols Outlined';">chevron_right</span>
