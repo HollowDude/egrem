@@ -2,139 +2,289 @@
 export const prerender = false;
 
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import TiendaCategoriaChips from '@/components/tienda/TiendaCategoriaChips.astro';
 import TiendaSidebar from '@/components/tienda/TiendaSidebar.astro';
-import TiendaPaginator from '@/components/tienda/TiendaPaginator.astro';
-import EventoListCard from '@/components/evento/EventoListCard.astro';
-import { fetchEventosListado, slugify } from '@/lib/nodehive';
-import { applyFilters, paginate, type TiendaFilters, type TiendaSort } from '@/lib/tienda/filters';
+import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
+import { fetchEventosListado } from '@/lib/nodehive';
+import { MOCK_PRODUCTOS, entradaToProducto } from '@/lib/tienda/mockProducts';
+import type { TiendaProducto } from '@/types/tienda';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
-const basePath = Astro.url.pathname.split('?')[0];
 
-const get = (k: string) => Astro.url.searchParams.get(k) ?? '';
-
-const tipo = get('tipo');
-const sede = get('sede');
-const precioMin = get('precioMin');
-const precioMax = get('precioMax');
-const disponibilidad = get('disponibilidad');
-const q = get('q');
-const ordenParam = get('orden');
-const orden: TiendaSort =
-  ordenParam === 'precio-asc' || ordenParam === 'precio-desc' ? ordenParam : 'proximos';
-const pagRaw = Number(get('pag')) || 1;
-const pag = pagRaw > 0 ? Math.floor(pagRaw) : 1;
-
-const filtros: TiendaFilters = { tipo, sede, precioMin, precioMax, disponibilidad, q };
-
-const eventos = await fetchEventosListado(lang);
-
-const tiposUnicos = new Map<string, string>();
-const sedesUnicas = new Map<string, string>();
-for (const e of eventos) {
-  const ts = slugify(e.categoria);
-  if (ts && !tiposUnicos.has(ts)) tiposUnicos.set(ts, e.categoria);
-  const ss = slugify(e.lugarTexto);
-  if (ss && !sedesUnicas.has(ss)) sedesUnicas.set(ss, e.lugarTexto);
-}
-const tipos = [...tiposUnicos]
-  .map(([slug, label]) => ({ slug, label }))
-  .sort((a, b) => a.label.localeCompare(b.label));
-
-const chips = [{ slug: '', label: tr('tienda.filter.tipo.all') }, ...tipos];
-
-function buildQuery(overrides: Record<string, string>): string {
-  const params = new URLSearchParams();
-  if (filtros.tipo) params.set('tipo', filtros.tipo);
-  if (filtros.disponibilidad) params.set('disponibilidad', filtros.disponibilidad);
-  if (filtros.precioMin) params.set('precioMin', filtros.precioMin);
-  if (filtros.precioMax) params.set('precioMax', filtros.precioMax);
-  if (filtros.q) params.set('q', filtros.q);
-  if (orden && orden !== 'proximos') params.set('orden', orden);
-  for (const [k, v] of Object.entries(overrides)) {
-    if (v) params.set(k, v);
-    else params.delete(k);
-  }
-  return `${basePath}?${params.toString()}`;
-}
-
-const aplicados = applyFilters(eventos, filtros, orden);
-const { items, totalPages } = paginate(aplicados, pag, 9);
+const entradasReales = (await fetchEventosListado(lang)).map(entradaToProducto);
+const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
   <main id="main-content" class="pb-20 px-4 md:px-16 max-w-container-max mx-auto">
+    <!-- Hero simple -->
+    <section class="pt-12 pb-8">
+      <p class="font-display text-egrem-gold uppercase tracking-widest text-sm mb-2">{tr('tienda.hero.eyebrow')}</p>
+      <h1 class="text-h1 text-egrem-black m-0">{tr('tienda.hero.title')}</h1>
+      <p class="font-display text-body text-text-secondary mt-3 max-w-2xl">{tr('tienda.hero.subtitle')}</p>
+    </section>
+
     <!-- Chips de categoría -->
-    <section class="pt-8 mb-8">
-      <div class="flex items-center gap-2 flex-wrap">
-        {chips.map((c) => (
-          <a
-            href={buildQuery({ tipo: c.slug })}
-            class:list={['tienda-chip', filtros.tipo === c.slug ? 'tienda-chip--active' : '']}
-          >
-            <span class="material-symbols-outlined text-[15px]" style="font-family: 'Material Symbols Outlined';">
-              {c.slug ? 'confirmation_number' : 'apps'}
-            </span>
-            {c.label}
-          </a>
-        ))}
-      </div>
+    <section class="mb-8">
+      <TiendaCategoriaChips />
     </section>
 
     <div class="flex flex-col lg:flex-row gap-12">
       <!-- Sidebar -->
-      <aside class="w-full lg:w-64 flex-shrink-0">
-        <div class="lg:sticky lg:top-24">
-          <TiendaSidebar {tipos} {filtros} {orden} {basePath} />
-        </div>
-      </aside>
+      <TiendaSidebar />
 
       <!-- Grid de productos -->
       <div class="flex-grow">
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-egrem-gray-light">
           <span class="font-display text-text-secondary" data-product-count>
-            {tr('tienda.list.showing', { count: aplicados.length })}
+            {tr('tienda.list.showing', { count: productos.length })}
           </span>
-          <form method="GET" action={basePath} class="flex items-center gap-3">
-            {tipo && <input type="hidden" name="tipo" value={tipo} />}
-            {disponibilidad && <input type="hidden" name="disponibilidad" value={disponibilidad} />}
-            {precioMin && <input type="hidden" name="precioMin" value={precioMin} />}
-            {precioMax && <input type="hidden" name="precioMax" value={precioMax} />}
-            {q && <input type="hidden" name="q" value={q} />}
+          <div class="flex items-center gap-3">
             <span class="font-display text-text-secondary">{tr('tienda.filter.orden')}:</span>
             <select
-              name="orden"
+              data-tienda-sort
               class="bg-white border border-form-border text-egrem-black font-display py-1 pl-2 pr-8 rounded-xl focus:border-egrem-red focus:ring-1 focus:ring-egrem-red outline-none"
-              onchange="this.form.submit()"
             >
-              <option value="proximos" selected={orden === 'proximos'}>{tr('tienda.filter.orden.proximos')}</option>
-              <option value="precio-asc" selected={orden === 'precio-asc'}>{tr('tienda.filter.orden.precio-asc')}</option>
-              <option value="precio-desc" selected={orden === 'precio-desc'}>{tr('tienda.filter.orden.precio-desc')}</option>
+              <option value="recomendados">{tr('tienda.sort.recomendados')}</option>
+              <option value="novedades">{tr('tienda.sort.novedades')}</option>
+              <option value="precio-asc">{tr('tienda.filter.orden.precio-asc')}</option>
+              <option value="precio-desc">{tr('tienda.filter.orden.precio-desc')}</option>
             </select>
-          </form>
+          </div>
         </div>
 
-        {
-          aplicados.length === 0 ? (
-            <div class="empty-state">
-              <span class="material-symbols-outlined text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">search_off</span>
-              <p class="text-egrem-gray text-body m-0">
-                {eventos.length === 0 ? tr('tienda.list.empty') : tr('tienda.list.no_results')}
-              </p>
-            </div>
-          ) : (
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 mb-12">
-              {items.map((evento) => (
-                <EventoListCard evento={evento} lang={lang} ctaLabel={tr('tienda.list.buy')} />
-              ))}
-            </div>
-          )
-        }
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 mb-12">
+          {productos.map((p) => (
+            <TiendaProductCard producto={p} lang={lang} ctaLabel={tr('tienda.list.buy')} />
+          ))}
+        </div>
 
-        <TiendaPaginator {basePath} {totalPages} currentPage={pag} {filtros} {orden} />
+        <div id="tienda-pagination" class="flex justify-center items-center gap-2 mb-12"></div>
+
+        <div id="tienda-empty" class="empty-state hidden">
+          <span class="icon text-5xl text-egrem-gray/40 mb-4">search_off</span>
+          <p class="text-egrem-gray text-body m-0">{tr('tienda.list.no_results')}</p>
+        </div>
       </div>
     </div>
   </main>
+
+  <script>
+    const grid = document.getElementById('product-grid');
+    const countEl = document.querySelector('[data-product-count]');
+    const pagEl = document.getElementById('tienda-pagination');
+    const emptyEl = document.getElementById('tienda-empty');
+    const sidebar = document.querySelector('[data-tienda-sidebar]');
+    const chipsWrap = document.querySelector('[data-cat-chips]');
+    if (grid && sidebar && chipsWrap && countEl && pagEl && emptyEl) {
+      const cards = Array.from(grid.querySelectorAll('[data-category]')) as HTMLElement[];
+      const PAGE_SIZE = 9;
+      const isEn = document.documentElement.lang && document.documentElement.lang.startsWith('en');
+
+      const state = {
+        chip: '',
+        maxPrice: 200,
+        avail: new Set(),
+        query: '',
+        sort: 'recomendados',
+        page: 1,
+      };
+
+      const priceLabel = sidebar.querySelector('[data-tienda-price-label]');
+      const priceInput = sidebar.querySelector('[data-tienda-price]') as HTMLInputElement | null;
+
+      const matches = (c: HTMLElement) => {
+        const cat = c.dataset.category || '';
+        const chipOk = state.chip === '' || cat === state.chip;
+        if (!chipOk) return false;
+
+        const price = c.dataset.price || '';
+        if (price !== '' && parseFloat(price) > state.maxPrice) return false;
+
+        if (state.avail.size > 0 && !state.avail.has(c.dataset.availability || '')) return false;
+
+        if (state.query) {
+          const hay = `${c.dataset.title || ''} ${c.dataset.subtitle || ''}`.toLowerCase();
+          if (!hay.includes(state.query)) return false;
+        }
+        return true;
+      }
+
+      const sortCards = (list: HTMLElement[]) => {
+        const arr = list.slice();
+        if (state.sort === 'precio-asc') {
+          arr.sort((a, b) => (parseFloat(a.dataset.price || 'Infinity')) - (parseFloat(b.dataset.price || 'Infinity')));
+        } else if (state.sort === 'precio-desc') {
+          arr.sort((a, b) => (parseFloat(b.dataset.price || '-1')) - (parseFloat(a.dataset.price || '-1')));
+        } else if (state.sort === 'novedades') {
+          arr.sort((a, b) => (parseInt(b.dataset.novedad || '0') - parseInt(a.dataset.novedad || '0')));
+        }
+        return arr;
+      }
+
+      const render = () => {
+        const filtered = sortCards(cards.filter(matches));
+        const total = filtered.length;
+        const visible = filtered.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE);
+
+        cards.forEach((c) => (c.style.display = 'none'));
+        visible.forEach((c) => (c.style.display = ''));
+
+        countEl.textContent = isEn
+          ? `Showing ${total} product${total === 1 ? '' : 's'}`
+          : `Mostrando ${total} producto${total === 1 ? '' : 's'}`;
+        emptyEl.classList.toggle('hidden', total !== 0);
+        grid.classList.toggle('hidden', total === 0);
+
+        renderPagination(total);
+      }
+
+      const renderPagination = (total: number) => {
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (totalPages <= 1) {
+          pagEl.innerHTML = '';
+          return;
+        }
+        if (state.page > totalPages) state.page = totalPages;
+
+        const btn = (label: string, page: number, opts?: { active?: boolean; disabled?: boolean }) => {
+          opts = opts || {};
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = label;
+          b.className = [
+            'w-10 h-10 flex items-center justify-center border font-display font-bold rounded-2xl transition-colors',
+            opts.active
+              ? 'border-egrem-red bg-egrem-red text-white'
+              : 'border-form-border text-egrem-black hover:border-egrem-red hover:text-egrem-red',
+          ].join(' ');
+          if (opts.disabled) b.setAttribute('disabled', 'true');
+          else b.addEventListener('click', () => { state.page = page; render(); });
+          return b;
+        };
+
+        pagEl.innerHTML = '';
+        const prev = btn('', Math.max(1, state.page - 1), { disabled: state.page === 1 });
+        prev.innerHTML = '<span class="icon text-sm">chevron_left</span>';
+        prev.addEventListener('click', () => { if (state.page > 1) { state.page--; render(); } });
+        pagEl.appendChild(prev);
+
+        for (let p = 1; p <= totalPages; p++) {
+          pagEl.appendChild(btn(String(p), p, { active: p === state.page }));
+        }
+
+        const next = btn('', Math.min(totalPages, state.page + 1), { disabled: state.page === totalPages });
+        next.innerHTML = '<span class="icon text-sm">chevron_right</span>';
+        next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; render(); } });
+        pagEl.appendChild(next);
+      }
+
+      // ── Chips ──
+      (chipsWrap.querySelectorAll('[data-filter]') as unknown as HTMLElement[]).forEach((chip) => {
+        chip.addEventListener('click', () => {
+          state.chip = chip.dataset.filter || '';
+          state.page = 1;
+          (chipsWrap.querySelectorAll('[data-filter]') as unknown as HTMLElement[]).forEach((c) => {
+            const active = c === chip;
+            c.classList.toggle('tienda-chip--active', active);
+            c.setAttribute('aria-pressed', String(active));
+          });
+          render();
+        });
+      });
+
+      // ── Sidebar: búsqueda ──
+      const search = sidebar.querySelector('[data-tienda-search]') as HTMLInputElement | null;
+      if (search) {
+        search.addEventListener('input', () => {
+          state.query = (search.value || '').toLowerCase().trim();
+          state.page = 1;
+          render();
+        });
+      }
+
+      // ── Sidebar: precio ──
+      if (priceInput) {
+        priceInput.addEventListener('input', () => {
+          state.maxPrice = parseInt(priceInput.value, 10) || 200;
+          if (priceLabel) priceLabel.textContent = state.maxPrice >= 200 ? '$200+' : `$${state.maxPrice}`;
+          state.page = 1;
+          render();
+        });
+      }
+
+      // ── Sidebar: disponibilidad ──
+      (sidebar.querySelectorAll('[data-tienda-avail]') as unknown as HTMLInputElement[]).forEach((cb) => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) state.avail.add(cb.value);
+          else state.avail.delete(cb.value);
+          state.page = 1;
+          render();
+        });
+      });
+
+      // ── Limpiar ──
+      const clearBtn = sidebar.querySelector('[data-tienda-clear]');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          state.chip = '';
+          state.avail.clear();
+          state.query = '';
+          state.maxPrice = 200;
+          state.page = 1;
+          if (search) search.value = '';
+          if (priceInput) priceInput.value = '200';
+          if (priceLabel) priceLabel.textContent = '$200+';
+          (sidebar.querySelectorAll('input[type=checkbox]') as unknown as HTMLInputElement[]).forEach((cb) => (cb.checked = false));
+          (chipsWrap.querySelectorAll('[data-filter]') as unknown as HTMLElement[]).forEach((c) => {
+            const active = (c.dataset.filter || '') === '';
+            c.classList.toggle('tienda-chip--active', active);
+            c.setAttribute('aria-pressed', String(active));
+          });
+          render();
+        });
+      }
+
+      // ── Ordenar ──
+      const sortSel = document.querySelector('[data-tienda-sort]') as HTMLSelectElement | null;
+      if (sortSel) {
+        sortSel.addEventListener('change', () => {
+          state.sort = sortSel.value;
+          state.page = 1;
+          render();
+        });
+      }
+
+      render();
+    }
+
+    // ── Agregar al carrito (optimista, contador local) ──
+    document.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement | null;
+      const btn = t ? (t.closest('[data-add-to-cart]') as HTMLElement | null) : null;
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const count = (parseInt(localStorage.getItem('egrem-cart') || '0', 10) + 1).toString();
+      localStorage.setItem('egrem-cart', count);
+      const badge = document.getElementById('cart-count');
+      if (badge) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      }
+      window.dispatchEvent(new CustomEvent('cart:add', { detail: { id: btn.dataset.productId, title: btn.dataset.productTitle } }));
+      const icon = btn.querySelector('.icon');
+      if (icon) {
+        const prev = icon.textContent;
+        icon.textContent = 'check';
+        btn.classList.add('bg-egrem-gold');
+        setTimeout(() => {
+          icon.textContent = prev;
+          btn.classList.remove('bg-egrem-gold');
+        }, 900);
+      }
+    });
+  </script>
 </BaseLayout>

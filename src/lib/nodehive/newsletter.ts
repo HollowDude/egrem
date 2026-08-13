@@ -3,15 +3,20 @@ import { isValidLang, DEFAULT_LANG } from '@/i18n';
 
 const NODE_TYPE = 'suscripcion_boletin';
 const MAIL_FIELD = 'field_correo_electronico';
+const BLOG_FIELD = 'field_blog';
 
 function safeLang(lang: string): string {
   return isValidLang(lang) ? lang : DEFAULT_LANG;
 }
 
-export async function isSubscribed(mail: string, lang = 'es'): Promise<boolean> {
+function blogFilter(blogId: number): string {
+  return `&filter[${BLOG_FIELD}][value]=${encodeURIComponent(blogId)}`;
+}
+
+export async function isSubscribed(mail: string, blogId: number, lang = 'es'): Promise<boolean> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
-      `node/${NODE_TYPE}?filter[${MAIL_FIELD}][value]=${encodeURIComponent(mail)}&page[limit]=1`,
+      `node/${NODE_TYPE}?filter[${MAIL_FIELD}][value]=${encodeURIComponent(mail)}${blogFilter(blogId)}&page[limit]=1`,
       safeLang(lang),
     );
     return Array.isArray(res.data) ? res.data.length > 0 : Boolean(res.data);
@@ -23,6 +28,7 @@ export async function isSubscribed(mail: string, lang = 'es'): Promise<boolean> 
 
 export async function subscribe(
   mail: string,
+  blogId: number,
   accessToken: string,
   csrfToken: string,
   lang = 'es',
@@ -44,8 +50,9 @@ export async function subscribe(
         data: {
           type: `node--${NODE_TYPE}`,
           attributes: {
-            title: mail,
+            title: `${mail} · blog ${blogId}`,
             field_correo_electronico: mail,
+            field_blog: blogId,
           },
         },
       }),
@@ -68,9 +75,10 @@ export async function subscribe(
       },
       body: JSON.stringify({
         type: [{ target_id: NODE_TYPE }],
-        title: [{ value: mail }],
+        title: [{ value: `${mail} · blog ${blogId}` }],
         status: [{ value: 1 }],
         field_correo_electronico: [{ value: mail }],
+        field_blog: [{ value: blogId }],
       }),
     });
   } catch (e) {
@@ -89,6 +97,7 @@ export async function subscribe(
 
 export async function unsubscribe(
   mail: string,
+  blogId: number,
   accessToken: string,
   csrfToken: string,
   lang = 'es',
@@ -99,7 +108,7 @@ export async function unsubscribe(
   let listRes: Awaited<ReturnType<typeof jsonApiFetch>>;
   try {
     listRes = await jsonApiFetch<{ data: { id: string }[] }>(
-      `node/${NODE_TYPE}?filter[${MAIL_FIELD}][value]=${encodeURIComponent(mail)}&page[limit]=1`,
+      `node/${NODE_TYPE}?filter[${MAIL_FIELD}][value]=${encodeURIComponent(mail)}${blogFilter(blogId)}&page[limit]=1`,
       lang,
     );
   } catch (e) {

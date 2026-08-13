@@ -1,0 +1,189 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
+import EventoListCard from '@/components/evento/EventoListCard.astro';
+import TicketConfigurator from '@/components/tienda/TicketConfigurator.tsx';
+import {
+  fetchEventoByPath,
+  fetchEventoByNid,
+  fetchEventosListado,
+} from '@/lib/nodehive';
+import type { NhEventoDetalle, NhEventoListItem } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+let evento: NhEventoDetalle | null = null;
+
+try {
+  const slug = Astro.url.pathname
+    .replace(/^\/?(?:es\/|en\/)?tienda\/entrada\//, '')
+    .replace(/\/$/, '');
+  const isNumeric = /^\d+$/.test(slug);
+
+  if (isNumeric) {
+    evento = await fetchEventoByNid(parseInt(slug, 10), lang);
+  } else {
+    const eventoPath = Astro.url.pathname.replace(/tienda\/entrada/, 'evento');
+    evento = await fetchEventoByPath(eventoPath, lang);
+  }
+
+  if (!evento) return Astro.rewrite('/404');
+} catch (e) {
+  console.error('[tienda/entrada/[...slug]] Failed:', e);
+  return Astro.rewrite('/404');
+}
+
+function formatFecha(fecha: string): string {
+  const d = new Date(`${fecha}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return fecha;
+  return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function formatRango(inicio: string, fin: string): string {
+  if (!inicio) return '';
+  if (!fin || fin === inicio) return formatFecha(inicio);
+  const dInicio = new Date(`${inicio}T12:00:00`);
+  const dFin = new Date(`${fin}T12:00:00`);
+  if (Number.isNaN(dInicio.getTime()) || Number.isNaN(dFin.getTime())) return formatFecha(inicio);
+  const sameMonth =
+    dInicio.getMonth() === dFin.getMonth() && dInicio.getFullYear() === dFin.getFullYear();
+  const diaInicio = dInicio.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric' });
+  const diaFin = dFin.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric' });
+  const mes = dFin
+    .toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long' })
+    .replace(/^./, (c) => c.toUpperCase());
+  const anio = dFin.getFullYear();
+  return sameMonth
+    ? `${diaInicio} - ${diaFin} ${mes}, ${anio}`
+    : `${diaInicio} ${dInicio.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long' }).replace(/^./, (c) => c.toUpperCase())} - ${diaFin} ${mes}, ${anio}`;
+}
+
+const fechaDisplay = formatRango(evento.fechaInicio, evento.fechaFin);
+const lugarHero = evento.local?.nombre || evento.lugarTexto;
+const pageTitle = `${evento.title} | EGREM`;
+const entradaSku = Astro.url.searchParams.get('entrada') ?? undefined;
+
+const todos = await fetchEventosListado(lang);
+const mismaCat = todos.filter((e) => e.id !== evento.id && e.categoria === evento.categoria);
+const otros = todos.filter((e) => e.id !== evento.id && e.categoria !== evento.categoria);
+const relacionados: NhEventoListItem[] = [...mismaCat, ...otros].slice(0, 4);
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={evento.descripcion.replace(/<[^>]*>/g, '').slice(0, 160) || evento.title}
+  ogImage={evento.heroImage?.url}
+  canonical={Astro.url.href}
+>
+  <main id="main-content">
+    <nav class="container-site pt-6 text-small font-display text-text-secondary" aria-label="Breadcrumb">
+      <ol class="flex items-center gap-2 flex-wrap m-0 p-0 list-none">
+        <li>
+          <a href="/tienda" class="hover:text-egrem-red no-underline">{tr('tienda.product.breadcrumb_tienda')}</a>
+        </li>
+        <li class="text-egrem-gray">/</li>
+        <li>
+          <a href="/tienda" class="hover:text-egrem-red no-underline">{tr('tienda.product.breadcrumb_entradas')}</a>
+        </li>
+        <li class="text-egrem-gray">/</li>
+        <li class="text-egrem-black font-bold" aria-current="page">{evento.title}</li>
+      </ol>
+    </nav>
+
+    <section class="container-site py-8 md:py-12">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
+        <div class="md:col-span-7 space-y-6">
+          <NodeHiveEntity
+            entityType="node"
+            bundle="evento"
+            id={evento.id}
+            internalId={evento.internalId}
+            lang={lang}
+            tag="div"
+            class="relative aspect-video overflow-hidden rounded-lg border border-form-border bg-egrem-dark"
+            editLabel="Editar Evento"
+            editField="title"
+          >
+            {evento.heroImage?.url && (
+              <img
+                src={evento.heroImage.url}
+                alt={evento.heroImage.alt || evento.title}
+                class="absolute inset-0 w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
+            )}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+            {evento.categoria && (
+              <span class="absolute top-4 left-4 bg-egrem-red text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
+                {evento.categoria}
+              </span>
+            )}
+          </NodeHiveEntity>
+
+          {evento.descripcion && (
+            <div class="bg-white border border-egrem-gray/20 rounded-xl p-6 md:p-8 shadow-sm">
+              <h2 class="text-h3 text-egrem-red uppercase m-0 mb-4 border-b-2 border-egrem-red pb-2 inline-block">
+                {tr('tienda.product.descripcion')}
+              </h2>
+              <div
+                class="font-display text-body leading-relaxed text-egrem-gray [&_p]:mb-3 [&_p:last-child]:mb-0"
+                set:html={evento.descripcion}
+              />
+            </div>
+          )}
+        </div>
+
+        <div class="md:col-span-5">
+          <div class="lg:sticky lg:top-24 bg-white border border-egrem-gray/20 rounded-xl p-6 shadow-sm">
+            <span class="bg-egrem-gold text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded inline-block mb-3">
+              {tr('tienda.product.entrada')}
+            </span>
+            <h1 class="text-h2 text-egrem-black m-0">{evento.title}</h1>
+            <p class="font-display text-body text-text-secondary mt-2 flex flex-wrap items-center gap-2">
+              {lugarHero && (
+                <span class="inline-flex items-center gap-1">
+                  <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined'; font-size: 18px;">location_on</span>
+                  {lugarHero}
+                </span>
+              )}
+              {fechaDisplay && <span>· {fechaDisplay}</span>}
+            </p>
+
+            <hr class="border-egrem-gray-light my-5" />
+
+            <TicketConfigurator
+              tiposEntrada={evento.tiposEntrada}
+              lang={lang}
+              entradaSku={entradaSku}
+              client:load
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {
+      relacionados.length > 0 && (
+        <section class="container-site pb-20">
+          <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2 border-b-2 border-egrem-red pb-2 inline-block">
+            {tr('tienda.product.relacionados')}
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {relacionados.map((e) => (
+              <EventoListCard evento={e} lang={lang} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+  </main>
+</BaseLayout>

@@ -94,6 +94,23 @@ function parseTags(
     .filter((t): t is NhActualidadTag => t !== null);
 }
 
+function parseRelatedContent(
+  resource: { relationships?: Record<string, JsonApiRelationship> },
+  included: JsonApiResource[] | undefined,
+): NhActualidadItem[] | undefined {
+  const refs = resolveRelIds(resource.relationships?.field_articulos_relacionados);
+  if (refs.length === 0) return undefined;
+
+  const items: NhActualidadItem[] = [];
+  for (const ref of refs) {
+    const node = findIncluded(included, ref.type, ref.id);
+    if (!node) continue;
+    const parsed = parseActualidadNode(node as unknown as JsonApiResource<RawNodeAttrs>, included);
+    if (parsed) items.push(parsed);
+  }
+  return items.length > 0 ? items : undefined;
+}
+
 export function parseActualidadNode(
   resource: JsonApiResource<RawNodeAttrs>,
   included: JsonApiResource[] | undefined,
@@ -202,6 +219,10 @@ export function parseActualidadNode(
     tags: parseTags(resource, included),
     relatedArtists: parseArtists(resource, included),
     relatedEvents: [],
+    relatedContent:
+      bundle === 'noticia' || bundle === 'article'
+        ? parseRelatedContent(resource, included)
+        : undefined,
   };
 }
 
@@ -432,10 +453,19 @@ export async function fetchActualidadItemByPath(
 const ARTIST_INCLUDES =
   'field_artistas_relacionados,field_artistas_relacionados.field_imagen,field_artistas_relacionados.field_imagen.field_media_image';
 
+const REL_CONTENT_INCLUDES = [
+  'field_articulos_relacionados',
+  'field_articulos_relacionados.field_imagen_o_multimedia',
+  'field_articulos_relacionados.field_imagen_o_multimedia.field_media_image',
+  'field_articulos_relacionados.field_imagen_o_multimedia.field_media_video_file',
+  'field_articulos_relacionados.field_tags',
+  ...ARTIST_INCLUDES.split(',').map((p) => `field_articulos_relacionados.${p}`),
+].join(',');
+
 export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadItem[]> {
   const bundleIncludes: Record<string, string> = {
-    noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES}`,
-    article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES}`,
+    noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES},${REL_CONTENT_INCLUDES}`,
+    article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES},${REL_CONTENT_INCLUDES}`,
     blog: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES}`,
     boletin_archivo: 'field_boletin',
   };

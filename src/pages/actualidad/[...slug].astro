@@ -8,7 +8,7 @@ import {
   fetchActualidadItems,
   fetchActualidadItemByPath,
   fetchActualidadItemPathInLang,
-  getRelatedItems,
+  resolveRelated,
   fetchEventos,
 } from '@/lib/nodehive';
 import type { NhActualidadItem, NhEvento } from '@/lib/nodehive';
@@ -34,7 +34,7 @@ try {
   }
 
   const allItems = await fetchActualidadItems(lang);
-  related = getRelatedItems(item, allItems);
+  related = resolveRelated(item, allItems);
 
   // Language switching: compute the alternate URL
   const itemPath = item.path || `/actualidad/${item.bundle}/${item.nid}`;
@@ -60,7 +60,7 @@ try {
   userName = session?.name ?? '';
   userMail = session?.mail ?? '';
   if (isAuthenticated && userMail && item.bundle === 'blog') {
-    subscribed = await isSubscribed(userMail, lang);
+    subscribed = await isSubscribed(userMail, item.nid, lang);
   }
 } catch (e) {
   console.error('[actualidad/[...slug]] Failed:', e);

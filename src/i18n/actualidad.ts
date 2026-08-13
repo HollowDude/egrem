@@ -41,13 +41,12 @@ export const actualidad: Record<Lang, Record<string, string>> = {
     'actualidad.detail.comments_reply': 'Responder',
     'actualidad.detail.comments_confirmation':
       'Comentario recibido. Está pendiente de aprobación y se publicará cuando un moderador lo apruebe.',
-    'actualidad.detail.newsletter_title': 'Boletín',
-    'actualidad.detail.newsletter_subtitle':
-      'Recibe en tu correo las novedades del blog de EGREM.',
+    'actualidad.detail.newsletter_title': 'Suscríbete a este blog',
+    'actualidad.detail.newsletter_subtitle': 'Recibe en tu correo las novedades de este blog.',
     'actualidad.detail.newsletter_email_label': 'Tu correo',
-    'actualidad.detail.newsletter_subscribe': 'Suscribirme',
-    'actualidad.detail.newsletter_unsubscribe': 'Darse de baja',
-    'actualidad.detail.newsletter_login_required': 'Inicia sesión para suscribirte',
+    'actualidad.detail.newsletter_subscribe': 'Suscribirme a este blog',
+    'actualidad.detail.newsletter_unsubscribe': 'Darme de baja de este blog',
+    'actualidad.detail.newsletter_login_required': 'Inicia sesión para suscribirte a este blog',
   },
   en: {
     'actualidad.page_title': 'News | EGREM',
@@ -89,12 +88,11 @@ export const actualidad: Record<Lang, Record<string, string>> = {
     'actualidad.detail.comments_reply': 'Reply',
     'actualidad.detail.comments_confirmation':
       'Comment received. It is pending approval and will be published once a moderator approves it.',
-    'actualidad.detail.newsletter_title': 'Newsletter',
-    'actualidad.detail.newsletter_subtitle':
-      'Get EGREM blog news delivered to your inbox.',
+    'actualidad.detail.newsletter_title': 'Subscribe to this blog',
+    'actualidad.detail.newsletter_subtitle': 'Get this blog news delivered to your inbox.',
     'actualidad.detail.newsletter_email_label': 'Your email',
-    'actualidad.detail.newsletter_subscribe': 'Subscribe',
-    'actualidad.detail.newsletter_unsubscribe': 'Unsubscribe',
-    'actualidad.detail.newsletter_login_required': 'Log in to subscribe',
+    'actualidad.detail.newsletter_subscribe': 'Subscribe to this blog',
+    'actualidad.detail.newsletter_unsubscribe': 'Unsubscribe from this blog',
+    'actualidad.detail.newsletter_login_required': 'Log in to subscribe to this blog',
   },
 };

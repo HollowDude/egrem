@@ -6,10 +6,19 @@ interface Props {
   isAuthenticated: boolean;
   isSubscribed?: boolean;
   userMail?: string;
+  blogId: number;
+  blogTitle?: string;
   lang?: Lang;
 }
 
-const { isAuthenticated, isSubscribed = false, userMail = '', lang = 'es' } = Astro.props;
+const {
+  isAuthenticated,
+  isSubscribed = false,
+  userMail = '',
+  blogId,
+  blogTitle = '',
+  lang = 'es',
+} = Astro.props;
 const tr = useTranslations(lang);
 ---
 
@@ -17,6 +26,7 @@ const tr = useTranslations(lang);
   class="card card--no-zoom p-6"
   data-newsletter-card
   data-newsletter-lang={lang}
+  data-newsletter-blog={blogId}
 >
   <h3 class="font-display font-bold text-xl text-egrem-black mb-4 flex items-center gap-2 border-b border-egrem-gray/20 pb-3">
     <span class="text-egrem-red" style="font-family:'Material Symbols Outlined';">
@@ -26,7 +36,14 @@ const tr = useTranslations(lang);
   </h3>
 
   <p class="text-body text-egrem-gray m-0 mb-4">
-    {tr('actualidad.detail.newsletter_subtitle')}
+    {blogTitle ? (
+      <>
+        <span class="font-bold text-egrem-black">{blogTitle}</span>{' '}
+        {tr('actualidad.detail.newsletter_subtitle')}
+      </>
+    ) : (
+      tr('actualidad.detail.newsletter_subtitle')
+    )}
   </p>
 
   {
@@ -77,24 +94,25 @@ const tr = useTranslations(lang);
     if (!card) return;
 
     const lang = card.dataset.newsletterLang || 'es';
+    const blogId = Number(card.dataset.newsletterBlog || '');
     const submitBtn = card.querySelector<HTMLButtonElement>('[data-newsletter-submit]');
     const feedback = card.querySelector<HTMLParagraphElement>('[data-newsletter-feedback]');
-    if (!submitBtn || !feedback) return;
+    if (!submitBtn || !feedback || !blogId) return;
 
   const STRINGS: Record<
     string,
     Record<'success' | 'already' | 'unsubscribed' | 'error', string>
   > = {
     es: {
-      success: '¡Te has suscrito al boletín!',
-      already: 'Ya estás suscrito al boletín.',
-      unsubscribed: 'Te has dado de baja del boletín.',
+      success: '¡Te has suscrito a este blog!',
+      already: 'Ya estás suscrito a este blog.',
+      unsubscribed: 'Te has dado de baja de este blog.',
       error: 'Ocurrió un error al procesar tu solicitud. Inténtalo de nuevo.',
     },
     en: {
-      success: "You're subscribed to the newsletter!",
-      already: 'You are already subscribed.',
-      unsubscribed: 'You have unsubscribed from the newsletter.',
+      success: "You're subscribed to this blog!",
+      already: 'You are already subscribed to this blog.',
+      unsubscribed: 'You have unsubscribed from this blog.',
       error: 'An error occurred while processing your request. Please try again.',
     },
   };
@@ -122,7 +140,7 @@ const tr = useTranslations(lang);
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lang }),
+          body: JSON.stringify({ lang, blogId: Number.isFinite(blogId) ? blogId : undefined }),
         },
       );
       const data = await res.json().catch(() => ({}));

@@ -75,6 +75,12 @@ const pageTitle = `${evento.title} | EGREM`;
 const tipoLabel = evento.esInternacional
   ? tr('evento.detail.internacional')
   : tr('evento.detail.nacional');
+
+const productHref = evento.href.replace(/\/evento\//, '/tienda/entrada/');
+const entradasDisponibles = evento.tiposEntrada.filter((t) => t.disponibles !== 0);
+const entradaDefault = entradasDisponibles[0] ?? evento.tiposEntrada[0];
+const storeCtaLabel = esPasado ? tr('evento.detail.view_tienda') : tr('evento.detail.buy_tickets');
+const storeCtaHref = `${productHref}?entrada=${encodeURIComponent(entradaDefault?.sku ?? '')}`;
 ---
 
 <BaseLayout
@@ -135,13 +141,6 @@ const tipoLabel = evento.esInternacional
             )}
           </div>
 
-          {evento.tiposEntrada.length > 0 && !esPasado && (
-            <div class="shrink-0">
-              <Button variant="primary" size="lg" href="#entradas">
-                {tr('evento.detail.buy_tickets')}
-              </Button>
-            </div>
-          )}
           {esPasado && (
             <span class="shrink-0 bg-white/15 backdrop-blur-sm text-white font-display font-bold text-[12px] uppercase tracking-widest rounded px-3 py-2">
               {tr('evento.detail.finished')}
@@ -192,26 +191,25 @@ const tipoLabel = evento.esInternacional
         </div>
 
         <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
-          {evento.tiposEntrada.length > 0 && !esPasado && (
+          {evento.tiposEntrada.length > 0 && (
             <div id="entradas" class="bg-white border border-egrem-gray/20 rounded-xl p-6 shadow-sm scroll-mt-28">
               <h3 class="text-h3 text-egrem-black m-0 pb-3 border-b border-egrem-gray/20 uppercase">
                 {tr('evento.detail.tickets_title')}
               </h3>
               <div class="space-y-4 mt-4">
                 {evento.tiposEntrada.map((entrada) => (
-                  <EventoTicketCard entrada={entrada} lang={lang} />
+                  <EventoTicketCard entrada={entrada} lang={lang} seleccionable />
                 ))}
               </div>
-              <button
-                type="button"
-                data-open-checkout-inquiry
-                data-event-title={evento.title}
-                data-inquiry-message={tr('evento.detail.checkout_inquiry', { title: evento.title })}
-                class="w-full mt-6 inline-flex items-center justify-center gap-2 bg-egrem-red text-white font-display font-bold text-[13px] uppercase tracking-wider px-6 py-3 rounded-xl hover:bg-egrem-red-dark hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer border-none shadow-sm"
+              <Button
+                variant="primary"
+                size="md"
+                href={storeCtaHref}
+                data-cta-tienda
+                class="w-full mt-6"
               >
-                <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">shopping_cart_checkout</span>
-                {tr('evento.detail.checkout')}
-              </button>
+                {storeCtaLabel}
+              </Button>
             </div>
           )}
 
@@ -268,19 +266,49 @@ const tipoLabel = evento.esInternacional
   </main>
 </BaseLayout>
 
-<script>
-  document.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-open-checkout-inquiry]');
-    if (!btn) return;
-    const title = btn.dataset.eventTitle ?? '';
-    window.dispatchEvent(
-      new CustomEvent('open-contact-modal', {
-        detail: {
-          variant: 'form-only',
-          inquiry: 'Consulta sobre entradas: ' + title,
-          message: btn.dataset.inquiryMessage ?? '',
-        },
-      }),
-    );
-  });
+<script is:inline define:vars={{ defaultSku: entradaDefault?.sku ?? '' }}>
+  const cards = Array.from(document.querySelectorAll('[data-entrada-card]'));
+  const ctaEls = Array.from(document.querySelectorAll('[data-cta-tienda]'));
+
+  const ENTRADA_ACTIVE = 'entrada-card--active';
+
+  const marca = (card, activa) => {
+    card.classList.toggle(ENTRADA_ACTIVE, activa);
+    const check = card.querySelector('.entrada-check');
+    if (check) check.style.display = activa ? 'inline-flex' : 'none';
+  };
+
+  const actualizaCta = (sku) => {
+    ctaEls.forEach((cta) => {
+      const base = cta.href.split('?')[0];
+      cta.href = `${base}?entrada=${encodeURIComponent(sku || '')}`;
+    });
+  };
+
+  if (cards.length > 0) {
+    cards.forEach((card) => {
+      card.addEventListener('click', () => {
+        const sku = card.dataset.entradaSku ?? '';
+        const yaActiva = card.classList.contains(ENTRADA_ACTIVE);
+        if (yaActiva) {
+          marca(card, false);
+          actualizaCta(defaultSku);
+          return;
+        }
+        cards.forEach((c) => marca(c, false));
+        marca(card, true);
+        actualizaCta(sku);
+      });
+    });
+
+    const inicial = cards.find((c) => (c.dataset.entradaSku ?? '') === defaultSku) ?? cards[0];
+    if (inicial && defaultSku) marca(inicial, true);
+  }
 </script>
+
+<style>
+  .entrada-card--active {
+    border-color: var(--color-egrem-red) !important;
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.25);
+  }
+</style>

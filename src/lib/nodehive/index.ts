@@ -40,7 +40,7 @@ export {
   fetchPatrimonioSection,
   fetchActualidadHero,
 } from './actualidad';
-export { getRelatedItems } from './related';
+export { getRelatedItems, resolveRelated } from './related';
 
 // Utilities
 export { resolveFileUrl, normalizeDrupalUri } from './parsers';

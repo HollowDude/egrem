@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getRelatedItems } from '../related';
+import { getRelatedItems, resolveRelated } from '../related';
+import { parseActualidadNode } from '../actualidad';
 import type { NhActualidadItem } from '../entities';
 
 function makeItem(overrides: Partial<NhActualidadItem>): NhActualidadItem {
@@ -20,6 +21,148 @@ function makeItem(overrides: Partial<NhActualidadItem>): NhActualidadItem {
     ...overrides,
   };
 }
+
+function nodeResource(overrides: Record<string, unknown>) {
+  const {
+    id = 'n-1',
+    nid = 1,
+    title = 'Node',
+    type = 'node--noticia',
+    relationships = {},
+  } = overrides as {
+    id: string;
+    nid: number;
+    title: string;
+    type: string;
+    relationships: Record<string, unknown>;
+  };
+  return {
+    type,
+    id,
+    attributes: {
+      drupal_internal__nid: nid,
+      title,
+      created: '2024-10-12T12:00:00+00:00',
+      changed: '2024-10-12T12:00:00+00:00',
+      status: true,
+      body: { value: '<p>x</p>', summary: '' },
+      path: { alias: null },
+    },
+    relationships,
+  };
+}
+
+function relatedRel(refs: { id: string; type: string }[]) {
+  return {
+    field_articulos_relacionados: { data: refs.map((r) => ({ type: r.type, id: r.id })) },
+  };
+}
+
+describe('parseActualidadNode relatedContent', () => {
+  it('resolves field_articulos_relacionados into relatedContent (noticia)', () => {
+    const included = [
+      nodeResource({
+        id: 'a1',
+        nid: 101,
+        title: 'Artículo relacionado',
+        type: 'node--article',
+        relationships: {},
+      }),
+      nodeResource({
+        id: 'b1',
+        nid: 102,
+        title: 'Blog relacionado',
+        type: 'node--blog',
+        relationships: {},
+      }),
+    ];
+    const resource = nodeResource({
+      id: 'n1',
+      nid: 1,
+      title: 'Noticia padre',
+      type: 'node--noticia',
+      relationships: relatedRel([
+        { id: 'a1', type: 'node--article' },
+        { id: 'b1', type: 'node--blog' },
+      ]),
+    });
+
+    const item = parseActualidadNode(resource, included);
+
+    expect(item?.relatedContent).toHaveLength(2);
+    expect(item?.relatedContent?.[0]).toMatchObject({
+      id: 'a1',
+      nid: 101,
+      title: 'Artículo relacionado',
+      bundle: 'article',
+    });
+    expect(item?.relatedContent?.[1]).toMatchObject({ id: 'b1', bundle: 'blog' });
+  });
+
+  it('skips refs not present in included', () => {
+    const resource = nodeResource({
+      id: 'n1',
+      nid: 1,
+      title: 'Noticia padre',
+      type: 'node--noticia',
+      relationships: relatedRel([{ id: 'missing', type: 'node--article' }]),
+    });
+
+    const item = parseActualidadNode(resource, []);
+    expect(item?.relatedContent).toBeUndefined();
+  });
+
+  it('leaves relatedContent undefined when the field is empty', () => {
+    const resource = nodeResource({
+      id: 'n1',
+      nid: 1,
+      title: 'Noticia padre',
+      type: 'node--noticia',
+      relationships: {},
+    });
+
+    const item = parseActualidadNode(resource, []);
+    expect(item?.relatedContent).toBeUndefined();
+    expect((item?.relatedContent ?? []).length).toBe(0);
+  });
+
+  it('does not parse relatedContent for blog bundle', () => {
+    const resource = nodeResource({
+      id: 'n1',
+      nid: 1,
+      title: 'Blog',
+      type: 'node--blog',
+      relationships: relatedRel([{ id: 'a1', type: 'node--article' }]),
+    });
+
+    const item = parseActualidadNode(resource, [
+      nodeResource({ id: 'a1', nid: 101, title: 'Artículo', type: 'node--article' }),
+    ]);
+    expect(item?.relatedContent).toBeUndefined();
+  });
+});
+
+describe('resolveRelated', () => {
+  it('uses curated relatedContent when present', () => {
+    const curated = makeItem({ id: '9', title: 'Curado' });
+    const current = makeItem({ id: '1', relatedContent: [curated] });
+
+    expect(resolveRelated(current, [current])).toEqual([curated]);
+  });
+
+  it('falls back to getRelatedItems when relatedContent is empty', () => {
+    const current = makeItem({ id: '1', tags: [{ slug: 'musica', label: 'Música' }] });
+    const matching = makeItem({
+      id: '2',
+      title: 'Matching',
+      tags: [{ slug: 'musica', label: 'Música' }],
+      date: '2024-10-13T00:00:00Z',
+    });
+
+    const result = resolveRelated(current, [current, matching]);
+    expect(result).toEqual([matching]);
+  });
+});
 
 describe('getRelatedItems', () => {
   it('returns items sharing tags, sorted by date', () => {

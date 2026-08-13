@@ -131,6 +131,7 @@ export interface NhActualidadItem extends NhBase {
   tags: NhActualidadTag[];
   relatedArtists?: NhArtist[];
   relatedEvents?: NhEvento[];
+  relatedContent?: NhActualidadItem[];
   attachment?: NhMediaFile | null;
 }
 

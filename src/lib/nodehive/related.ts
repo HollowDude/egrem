@@ -18,3 +18,18 @@ export function getRelatedItems(
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, limit);
 }
+
+/**
+ * Contenido relacionado del detalle: usa el curado en Drupal
+ * (field_articulos_relacionados) y, si no hay, cae al cálculo actual.
+ */
+export function resolveRelated(
+  current: NhActualidadItem,
+  all: NhActualidadItem[],
+  limit = 3,
+): NhActualidadItem[] {
+  if (current.relatedContent && current.relatedContent.length > 0) {
+    return current.relatedContent;
+  }
+  return getRelatedItems(current, all, limit);
+}

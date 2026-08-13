@@ -22,16 +22,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   let lang = 'es';
+  let blogId: number | undefined;
   try {
     const body = await request.json();
     if (typeof body?.lang === 'string') lang = body.lang;
+    if (typeof body?.blogId === 'number') blogId = body.blogId;
+    else if (typeof body?.blogId === 'string' && body.blogId !== '') blogId = Number(body.blogId);
   } catch {
     // ignore malformed body, default lang
   }
   lang = isValidLang(lang) ? lang : DEFAULT_LANG;
 
+  if (!blogId || !Number.isFinite(blogId)) {
+    return new Response(JSON.stringify({ error: 'blogId is required.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
-    const result = await unsubscribe(mail, session.accessToken, session.csrfToken, lang);
+    const result = await unsubscribe(mail, blogId, session.accessToken, session.csrfToken, lang);
     if (!result.ok) {
       return new Response(JSON.stringify({ error: result.error || 'Could not unsubscribe.' }), {
         status: 500,

@@ -22,16 +22,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   let lang = 'es';
+  let blogId: number | undefined;
   try {
     const body = await request.json();
     if (typeof body?.lang === 'string') lang = body.lang;
+    if (typeof body?.blogId === 'number') blogId = body.blogId;
+    else if (typeof body?.blogId === 'string' && body.blogId !== '') blogId = Number(body.blogId);
   } catch {
     // ignore malformed body, default lang
   }
   lang = isValidLang(lang) ? lang : DEFAULT_LANG;
 
+  if (!blogId || !Number.isFinite(blogId)) {
+    return new Response(JSON.stringify({ error: 'blogId is required.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
-    const already = await isSubscribed(mail, lang);
+    const already = await isSubscribed(mail, blogId, lang);
     if (already) {
       return new Response(JSON.stringify({ success: true, already: true }), {
         status: 200,
@@ -39,7 +49,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const result = await subscribe(mail, session.accessToken, session.csrfToken, lang);
+    const result = await subscribe(mail, blogId, session.accessToken, session.csrfToken, lang);
     if (!result.ok) {
       return new Response(JSON.stringify({ error: result.error || 'Could not subscribe.' }), {
         status: 500,

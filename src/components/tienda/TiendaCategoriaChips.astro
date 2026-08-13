@@ -1,0 +1,31 @@
+---
+/**
+ * TiendaCategoriaChips.astro — Fila de chips de categoría (maqueta Tienda/code.html 626-645).
+ * Filtrado client-side: cada chip lleva data-filter; el script en tienda.astro maneja el estado activo.
+ */
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+const chips = [
+  { filter: '', icon: 'apps', label: tr('tienda.filter.tipo.all') },
+  { filter: 'musica', icon: 'album', label: tr('tienda.chip.musica') },
+  { filter: 'merchandising', icon: 'checkroom', label: tr('tienda.chip.merchandising') },
+  { filter: 'entradas', icon: 'confirmation_number', label: tr('tienda.chip.entradas') },
+];
+---
+
+<div class="flex items-center gap-2 flex-wrap" data-cat-chips>
+  {chips.map((c) => (
+    <button
+      type="button"
+      data-filter={c.filter}
+      class:list={['tienda-chip', c.filter === '' ? 'tienda-chip--active' : '']}
+      aria-pressed={c.filter === ''}
+    >
+      <span class="icon text-[15px]">{c.icon}</span>
+      {c.label}
+    </button>
+  ))}
+</div>

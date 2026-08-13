@@ -743,8 +743,8 @@
     color: var(--color-egrem-red);
   }
   .tienda-chip--active {
-    background: var(--color-egrem-red-dark);
-    border-color: var(--color-egrem-red-dark);
+    background: var(--color-egrem-red);
+    border-color: var(--color-egrem-red);
     color: #ffffff;
   }
 
@@ -765,7 +765,7 @@
     border: 1px solid var(--color-form-border);
   }
 
-  /* Botón de paginación activo — rojo relleno */
+  /* Botón de paginación activo — rojo primario relleno */
   .tienda-pagination-active {
     background: var(--color-egrem-red);
     border-color: var(--color-egrem-red);

@@ -1,0 +1,77 @@
+---
+/**
+ * TiendaProductCard.astro — Tarjeta de producto genérica (maqueta Tienda/code.html 741-758).
+ * Badge esquina superior-izquierda, imagen cuadrada con padding, precio dorado,
+ * botón circular de agregar (bg-egrem-red). Card clicable vía stretched-link al detalle.
+ * Reutilizable para cualquier categoría.
+ */
+import type { TiendaProducto } from '@/types/tienda';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  producto: TiendaProducto;
+  lang?: 'es' | 'en';
+  ctaLabel?: string;
+}
+
+const { producto, lang = 'es', ctaLabel } = Astro.props;
+const tr = useTranslations(lang);
+
+const precio = producto.precio !== null ? `$${producto.precio.toFixed(2)}` : tr('tienda.product.consultar');
+const esNovedad = producto.badge === 'Novedad' || producto.badge === 'Oferta';
+const detailHref = producto.href ?? '';
+---
+
+<article
+  class="group relative flex flex-col bg-white border border-form-border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-egrem-red"
+  data-category={producto.categoria}
+  data-price={producto.precio ?? ''}
+  data-availability={producto.disponibilidad}
+  data-title={producto.titulo}
+  data-subtitle={producto.subtitulo}
+  data-novedad={esNovedad ? '1' : '0'}
+>
+  <div class="relative aspect-square overflow-hidden bg-egrem-gray-light p-4">
+    {producto.imagen ? (
+      <img
+        src={producto.imagen}
+        alt={producto.titulo}
+        class="w-full h-full object-cover shadow-sm transition-transform duration-500 group-hover:scale-105"
+        loading="lazy"
+        decoding="async"
+      />
+    ) : (
+      <div class="w-full h-full flex items-center justify-center">
+        <span class="icon text-5xl text-egrem-gray/40">confirmation_number</span>
+      </div>
+    )}
+    {producto.badge && <span class="tienda-badge">{producto.badge}</span>}
+  </div>
+
+  <div class="p-6 flex flex-col flex-grow">
+    <h3 class="font-display font-bold text-[20px] text-egrem-black mb-1 line-clamp-1 uppercase">
+      {producto.titulo}
+    </h3>
+    {producto.subtitulo && (
+      <p class="font-display text-sm text-text-secondary mb-4 line-clamp-2 uppercase">{producto.subtitulo}</p>
+    )}
+    <div class="mt-auto flex items-center justify-between">
+      <span class="font-display text-[22px] text-egrem-gold font-bold">{precio}</span>
+      <button
+        type="button"
+        data-add-to-cart
+        data-product-id={producto.id}
+        data-product-title={producto.titulo}
+        aria-label={ctaLabel ?? tr('tienda.list.buy')}
+        title={ctaLabel ?? tr('tienda.list.buy')}
+        class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
+      >
+        <span class="icon text-[22px]">add_shopping_cart</span>
+      </button>
+    </div>
+  </div>
+
+  {detailHref && (
+    <a href={detailHref} aria-label={producto.titulo} class="absolute inset-0 z-10"></a>
+  )}
+</article>

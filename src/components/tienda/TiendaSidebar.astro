@@ -1,136 +1,75 @@
 ---
 /**
- * TiendaSidebar.astro — Barra lateral de filtros (maqueta EGREM).
- * Form GET que preserva los filtros activos y re-renderiza en SSR.
+ * TiendaSidebar.astro — Sidebar de filtros (maqueta Tienda/code.html 646-724).
+ * Client-side: los inputs usan data-attrs que el script de tienda.astro lee.
+ * Instrumentos y Libros se renderizan pero sin data-sidebar-cat (inertes, 0 productos).
  */
 import { useTranslations } from '@/i18n/translations';
-import type { TiendaFilters, TiendaSort } from '@/lib/tienda/filters';
 
-interface Opcion {
-  slug: string;
-  label: string;
-}
-
-interface Props {
-  tipos: Opcion[];
-  filtros: TiendaFilters;
-  orden: TiendaSort;
-  basePath: string;
-}
-
-const tr = useTranslations(Astro.locals.lang);
-const { tipos, filtros, orden, basePath } = Astro.props;
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
 ---
 
-<form method="GET" action={basePath} class="space-y-8">
-  <input type="hidden" name="orden" value={orden} />
-
-  <!-- Buscar -->
-  <div>
-    <h3 class="font-display text-xl uppercase font-bold text-egrem-black mb-4">{tr('tienda.filter.search')}</h3>
-    <div class="relative">
-      <input
-        type="text"
-        name="q"
-        value={filtros.q}
-        placeholder={tr('tienda.filter.search_placeholder')}
-        class="w-full bg-white border border-form-border rounded-xl py-2 pl-3 pr-10 text-egrem-black font-display focus:border-egrem-red focus:ring-1 focus:ring-egrem-red outline-none"
-      />
-      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]" style="font-family: 'Material Symbols Outlined';">search</span>
+<aside class="w-full lg:w-64 flex-shrink-0" data-tienda-sidebar>
+  <div class="lg:sticky lg:top-24 space-y-8">
+    <!-- Buscar -->
+    <div>
+      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">{tr('tienda.filter.search')}</h3>
+      <div class="relative">
+        <input
+          type="text"
+          data-tienda-search
+          placeholder={tr('tienda.filter.search_placeholder')}
+          class="w-full bg-white border border-form-border rounded-xl py-2 pl-3 pr-10 text-egrem-black font-display outline-none focus:border-egrem-red focus:ring-1 focus:ring-egrem-red"
+        />
+        <span class="icon absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">search</span>
+      </div>
     </div>
-  </div>
 
-  <!-- Categorías -->
-  <div>
-    <h3 class="font-display text-xl uppercase font-bold text-egrem-black mb-4">{tr('tienda.filter.tipo')}</h3>
-    <ul class="space-y-2 font-display text-text-secondary">
-      <li>
-        <label class="flex items-center gap-3 cursor-pointer group">
-          <input type="radio" name="tipo" value="" checked={!filtros.tipo} class="sr-only peer" />
-          <span class="w-4 h-4 rounded border border-form-border peer-checked:bg-egrem-red-dark peer-checked:border-egrem-red-dark flex items-center justify-center text-white flex-shrink-0">
-            <span class="material-symbols-outlined text-[14px]" style="font-family: 'Material Symbols Outlined';">check</span>
-          </span>
-          <span class="group-hover:text-egrem-red transition-colors text-sm uppercase">{tr('tienda.filter.tipo.all')}</span>
-        </label>
-      </li>
-      {tipos.map((t) => (
+    <!-- Precio -->
+    <div>
+      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">{tr('tienda.filter.precio')}</h3>
+      <div class="px-2">
+        <input
+          type="range"
+          min="0"
+          max="200"
+          value="200"
+          data-tienda-price
+          class="w-full accent-egrem-red cursor-pointer"
+        />
+        <div class="flex justify-between text-text-secondary font-display mt-2">
+          <span>$0</span>
+          <span data-tienda-price-label>$200+</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disponibilidad -->
+    <div>
+      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">{tr('tienda.filter.disponibilidad')}</h3>
+      <ul class="space-y-2 font-display text-text-secondary">
         <li>
           <label class="flex items-center gap-3 cursor-pointer group">
-            <input type="radio" name="tipo" value={t.slug} checked={filtros.tipo === t.slug} class="sr-only peer" />
-            <span class="w-4 h-4 rounded border border-form-border peer-checked:bg-egrem-red-dark peer-checked:border-egrem-red-dark flex items-center justify-center text-white flex-shrink-0">
-              <span class="material-symbols-outlined text-[14px]" style="font-family: 'Material Symbols Outlined';">check</span>
-            </span>
-            <span class="group-hover:text-egrem-red transition-colors text-sm uppercase">{t.label}</span>
+            <input type="checkbox" value="stock" data-tienda-avail class="w-5 h-5 rounded accent-egrem-red cursor-pointer" />
+            <span class="group-hover:text-egrem-red transition-colors">{tr('tienda.filter.disponibilidad.disponibles')}</span>
           </label>
         </li>
-      ))}
-    </ul>
-  </div>
-
-  <!-- Precio -->
-  <div>
-    <h3 class="font-display text-xl uppercase font-bold text-egrem-black mb-4">{tr('tienda.filter.precio')}</h3>
-    <div class="flex items-center gap-2">
-      <input
-        type="number"
-        name="precioMin"
-        value={filtros.precioMin ?? ''}
-        min="0"
-        placeholder={tr('tienda.filter.precio.min')}
-        aria-label={tr('tienda.filter.precio.min')}
-        class="w-full bg-white border border-form-border rounded-xl py-2 px-3 text-egrem-black font-display focus:border-egrem-red focus:ring-1 focus:ring-egrem-red outline-none"
-      />
-      <span class="text-egrem-gray font-display">–</span>
-      <input
-        type="number"
-        name="precioMax"
-        value={filtros.precioMax ?? ''}
-        min="0"
-        placeholder={tr('tienda.filter.precio.max')}
-        aria-label={tr('tienda.filter.precio.max')}
-        class="w-full bg-white border border-form-border rounded-xl py-2 px-3 text-egrem-black font-display focus:border-egrem-red focus:ring-1 focus:ring-egrem-red outline-none"
-      />
+        <li>
+          <label class="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" value="preventa" data-tienda-avail class="w-5 h-5 rounded accent-egrem-red cursor-pointer" />
+            <span class="group-hover:text-egrem-red transition-colors">{tr('tienda.filter.disponibilidad.preventa')}</span>
+          </label>
+        </li>
+      </ul>
     </div>
-  </div>
 
-  <!-- Disponibilidad -->
-  <div>
-    <h3 class="font-display text-xl uppercase font-bold text-egrem-black mb-4">{tr('tienda.filter.disponibilidad')}</h3>
-    <ul class="space-y-2 font-display text-text-secondary">
-      <li>
-        <label class="flex items-center gap-3 cursor-pointer group">
-          <input type="radio" name="disponibilidad" value="" checked={!filtros.disponibilidad} class="sr-only peer" />
-          <span class="w-4 h-4 rounded border border-form-border peer-checked:bg-egrem-red-dark peer-checked:border-egrem-red-dark flex items-center justify-center text-white flex-shrink-0">
-            <span class="material-symbols-outlined text-[14px]" style="font-family: 'Material Symbols Outlined';">check</span>
-          </span>
-          <span class="group-hover:text-egrem-red transition-colors text-sm uppercase">{tr('tienda.filter.disponibilidad.all')}</span>
-        </label>
-      </li>
-      <li>
-        <label class="flex items-center gap-3 cursor-pointer group">
-          <input type="radio" name="disponibilidad" value="disponibles" checked={filtros.disponibilidad === 'disponibles'} class="sr-only peer" />
-          <span class="w-4 h-4 rounded border border-form-border peer-checked:bg-egrem-red-dark peer-checked:border-egrem-red-dark flex items-center justify-center text-white flex-shrink-0">
-            <span class="material-symbols-outlined text-[14px]" style="font-family: 'Material Symbols Outlined';">check</span>
-          </span>
-          <span class="group-hover:text-egrem-red transition-colors text-sm uppercase">{tr('tienda.filter.disponibilidad.disponibles')}</span>
-        </label>
-      </li>
-      <li>
-        <label class="flex items-center gap-3 cursor-pointer group">
-          <input type="radio" name="disponibilidad" value="agotados" checked={filtros.disponibilidad === 'agotados'} class="sr-only peer" />
-          <span class="w-4 h-4 rounded border border-form-border peer-checked:bg-egrem-red-dark peer-checked:border-egrem-red-dark flex items-center justify-center text-white flex-shrink-0">
-            <span class="material-symbols-outlined text-[14px]" style="font-family: 'Material Symbols Outlined';">check</span>
-          </span>
-          <span class="group-hover:text-egrem-red transition-colors text-sm uppercase">{tr('tienda.filter.disponibilidad.agotados')}</span>
-        </label>
-      </li>
-    </ul>
+    <button
+      type="button"
+      data-tienda-clear
+      class="w-full border border-form-border text-egrem-black font-display font-bold text-[13px] uppercase tracking-wider py-2.5 rounded-xl hover:border-egrem-red hover:text-egrem-red transition-colors"
+    >
+      {tr('tienda.filter.clear')}
+    </button>
   </div>
-
-  <button
-    type="submit"
-    class="w-full inline-flex justify-center px-5 py-2.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-2xl hover:bg-egrem-red-dark transition-colors"
-  >
-    {tr('tienda.filter.submit')}
-  </button>
-</form>
+</aside>

@@ -258,7 +258,7 @@ export default function HeaderNav({
                 {/* Carrito */}
                 <a
                   href="/carrito"
-                  className="action-btn relative no-underline p-2 rounded-2xl flex items-center justify-center"
+                  className="action-btn relative no-underline w-12 h-12 rounded-full flex items-center justify-center"
                   style={{ color: '#1b1b1b' }}
                   aria-label={`${tr('nav.cart')} (${cartCount})`}
                 >
