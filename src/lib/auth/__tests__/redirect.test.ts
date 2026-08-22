@@ -16,7 +16,9 @@ describe('sanitizeRedirect', () => {
   });
 
   it('should preserve query strings (filters)', () => {
-    expect(sanitizeRedirect('/catalogo/musica?decada=1960s&disco=2')).toBe('/catalogo/musica?decada=1960s&disco=2');
+    expect(sanitizeRedirect('/catalogo/musica?decada=1960s&disco=2')).toBe(
+      '/catalogo/musica?decada=1960s&disco=2',
+    );
   });
 
   it('should reject protocol-relative URLs (open redirect)', () => {

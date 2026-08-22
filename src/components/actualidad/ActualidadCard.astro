@@ -12,17 +12,7 @@ interface Props {
   ctaLabel?: string;
 }
 
-const {
-  nid,
-  title,
-  bundle,
-  date,
-  summary,
-  image,
-  path,
-  featured = false,
-  ctaLabel,
-} = Astro.props;
+const { nid, title, bundle, date, summary, image, path, featured = false, ctaLabel } = Astro.props;
 
 const ctaText = ctaLabel ?? (bundle === 'noticia' ? 'Ver más' : 'Leer más');
 

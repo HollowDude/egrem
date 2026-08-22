@@ -3,7 +3,8 @@ import type { Lang } from './index';
 export const videos: Record<Lang, Record<string, string>> = {
   es: {
     'videos.page_title': 'Catálogo de Videos | EGREM',
-    'videos.page_description': 'Explora los videoclips y materiales audiovisuales del catálogo EGREM.',
+    'videos.page_description':
+      'Explora los videoclips y materiales audiovisuales del catálogo EGREM.',
     'videos.hero.title': 'VIDEOS',
     'videos.hero.subtitle': '',
     'videos.destacado.label': 'Destacado',
@@ -25,7 +26,8 @@ export const videos: Record<Lang, Record<string, string>> = {
   },
   en: {
     'videos.page_title': 'Video Catalog | EGREM',
-    'videos.page_description': 'Explore video clips and audiovisual materials from the EGREM catalog.',
+    'videos.page_description':
+      'Explore video clips and audiovisual materials from the EGREM catalog.',
     'videos.hero.title': 'VIDEOS',
     'videos.hero.subtitle': '',
     'videos.destacado.label': 'Featured',

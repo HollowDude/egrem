@@ -9,8 +9,17 @@ vi.mock('../client', () => ({
 
 import { fetchAlbumesCatalogo } from '../musica';
 
-function albumResource(id: string, attrs: Record<string, unknown>, rels: Record<string, unknown> = {}) {
-  return { type: 'node--album', id, attributes: { title: 'Album', field_year: null, path: null, ...attrs }, relationships: rels };
+function albumResource(
+  id: string,
+  attrs: Record<string, unknown>,
+  rels: Record<string, unknown> = {},
+) {
+  return {
+    type: 'node--album',
+    id,
+    attributes: { title: 'Album', field_year: null, path: null, ...attrs },
+    relationships: rels,
+  };
 }
 
 const SELLO_UNO = {
@@ -81,12 +90,19 @@ const TRACK_PARAGRAPH = {
 function albumA(): ReturnType<typeof albumResource> {
   return albumResource(
     'album-a',
-    { title: 'Álbum 1962', field_year: 1962, field_album_number: 1, field_artist_name: 'Artista A' },
+    {
+      title: 'Álbum 1962',
+      field_year: 1962,
+      field_album_number: 1,
+      field_artist_name: 'Artista A',
+    },
     {
       field_artista: { data: { type: 'node--artista', id: 'artista-a' } },
       field_interprete: { data: { type: 'node--artista', id: 'artista-a' } },
       field_sello: { data: { type: 'taxonomy_term--sello_discografico', id: 'sello-uno' } },
-      field_tipo_lanzamiento: { data: { type: 'taxonomy_term--tipo_de_lanzamiento', id: 'lanzamiento-1' } },
+      field_tipo_lanzamiento: {
+        data: { type: 'taxonomy_term--tipo_de_lanzamiento', id: 'lanzamiento-1' },
+      },
       field_track_list: { data: [{ type: 'paragraph--lanzamiento_track', id: 'para-track-1' }] },
     },
   );
@@ -95,7 +111,12 @@ function albumA(): ReturnType<typeof albumResource> {
 function albumB(): ReturnType<typeof albumResource> {
   return albumResource(
     'album-b',
-    { title: 'Álbum 1975', field_year: 1975, field_album_number: 2, field_artist_name: 'Artista B' },
+    {
+      title: 'Álbum 1975',
+      field_year: 1975,
+      field_album_number: 2,
+      field_artist_name: 'Artista B',
+    },
     {
       field_artista: { data: { type: 'node--artista', id: 'artista-b' } },
       field_interprete: { data: { type: 'node--artista', id: 'artista-b' } },
@@ -107,7 +128,18 @@ function albumB(): ReturnType<typeof albumResource> {
 function mockResponse(data: ReturnType<typeof albumResource>[]) {
   mockJsonApiFetch.mockResolvedValueOnce({
     data,
-    included: [SELLO_UNO, ARTISTA_A, ARTISTA_B, AGENCIA_1, AGENCIA_2, LANZAMIENTO_ALBUM, AUDIO_FILE, AUDIO_MEDIA, TRACK_NODE, TRACK_PARAGRAPH],
+    included: [
+      SELLO_UNO,
+      ARTISTA_A,
+      ARTISTA_B,
+      AGENCIA_1,
+      AGENCIA_2,
+      LANZAMIENTO_ALBUM,
+      AUDIO_FILE,
+      AUDIO_MEDIA,
+      TRACK_NODE,
+      TRACK_PARAGRAPH,
+    ],
   });
 }
 
@@ -230,7 +262,16 @@ describe('fetchAlbumesCatalogo', () => {
     };
     mockJsonApiFetch.mockResolvedValueOnce({
       data: [albumA()],
-      included: [SELLO_UNO, withAlias, AGENCIA_1, LANZAMIENTO_ALBUM, AUDIO_FILE, AUDIO_MEDIA, TRACK_NODE, TRACK_PARAGRAPH],
+      included: [
+        SELLO_UNO,
+        withAlias,
+        AGENCIA_1,
+        LANZAMIENTO_ALBUM,
+        AUDIO_FILE,
+        AUDIO_MEDIA,
+        TRACK_NODE,
+        TRACK_PARAGRAPH,
+      ],
     });
     const result = await fetchAlbumesCatalogo({}, 'es');
 

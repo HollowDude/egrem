@@ -64,10 +64,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, commentId: result.id, status: result.status }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ success: true, commentId: result.id, status: result.status }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   } catch (e) {
     console.error('[api/actualidad/comments]', e);
     return new Response(JSON.stringify({ error: 'Ocurrió un error.' }), {

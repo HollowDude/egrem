@@ -3,9 +3,11 @@ import type { Lang } from './index';
 export const artistas: Record<Lang, Record<string, string>> = {
   es: {
     'artistas.page_title': 'Artistas Exclusivos | EGREM',
-    'artistas.page_description': 'Explora el talento incomparable de los artistas exclusivos de EGREM, la casa de la música cubana.',
+    'artistas.page_description':
+      'Explora el talento incomparable de los artistas exclusivos de EGREM, la casa de la música cubana.',
     'artistas.hero.title': 'ARTISTAS EXCLUSIVOS',
-    'artistas.hero.subtitle': 'Explora el talento incomparable que define el sonido de Cuba. Desde leyendas consagradas hasta las voces más innovadoras de nuestra agencia.',
+    'artistas.hero.subtitle':
+      'Explora el talento incomparable que define el sonido de Cuba. Desde leyendas consagradas hasta las voces más innovadoras de nuestra agencia.',
     'artistas.filter.all': 'Todos',
     'artistas.filter.agencia': 'Agencia:',
     'artistas.filter.genero': 'Género:',
@@ -40,9 +42,11 @@ export const artistas: Record<Lang, Record<string, string>> = {
   },
   en: {
     'artistas.page_title': 'Exclusive Artists | EGREM',
-    'artistas.page_description': 'Explore the incomparable talent of EGREM\'s exclusive artists, the home of Cuban music.',
+    'artistas.page_description':
+      "Explore the incomparable talent of EGREM's exclusive artists, the home of Cuban music.",
     'artistas.hero.title': 'EXCLUSIVE ARTISTS',
-    'artistas.hero.subtitle': 'Explore the incomparable talent that defines the sound of Cuba. From legendary icons to the most innovative voices of our agency.',
+    'artistas.hero.subtitle':
+      'Explore the incomparable talent that defines the sound of Cuba. From legendary icons to the most innovative voices of our agency.',
     'artistas.filter.all': 'All',
     'artistas.filter.agencia': 'Agency:',
     'artistas.filter.genero': 'Genre:',

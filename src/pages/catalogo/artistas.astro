@@ -50,9 +50,7 @@ if (activeLetra !== 'todas') {
   if (activeLetra === 'num') {
     filtered = filtered.filter((a) => /^[^a-zA-Z]/.test(a.name));
   } else {
-    filtered = filtered.filter((a) =>
-      a.name.toLowerCase().startsWith(activeLetra),
-    );
+    filtered = filtered.filter((a) => a.name.toLowerCase().startsWith(activeLetra));
   }
 }
 
@@ -69,10 +67,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
 const pageItems = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
 ---
 
-<BaseLayout
-  title={tr('artistas.page_title')}
-  description={tr('artistas.page_description')}
->
+<BaseLayout title={tr('artistas.page_title')} description={tr('artistas.page_description')}>
   <main id="main-content">
     <HeroCatalogo
       title={hero?.title || tr('artistas.hero.title')}
@@ -81,7 +76,9 @@ const pageItems = filtered.slice((currentPage - 1) * perPage, currentPage * perP
       nhEntity={hero || undefined}
     />
 
-    <section class="section-py !py-4 bg-white/95 backdrop-blur-sm border-b border-egrem-gray/20 sticky top-16 lg:top-[4.5rem] z-40">
+    <section
+      class="section-py !py-4 bg-white/95 backdrop-blur-sm border-b border-egrem-gray/20 sticky top-16 lg:top-[4.5rem] z-40"
+    >
       <div class="container-site">
         <FilterBarArtistas
           agencias={agencias}

@@ -84,7 +84,7 @@ function placeholders(tr: (key: string) => string): NhActualidadItem[] {
   ];
 }
 
-const items: NhActualidadItem[] = noticias?.length ? noticias : placeholders(tr);
+const items: NhActualidadItem[] = (noticias?.length ? noticias : placeholders(tr)).slice(0, 3);
 ---
 
 <NodeHiveEntity

@@ -126,7 +126,7 @@ export async function unsubscribe(
       Authorization: `Bearer ${accessToken}`,
       Accept: 'application/vnd.api+json',
     },
-  }).catch(() => ({ ok: false, status: 0 } as Response));
+  }).catch(() => ({ ok: false, status: 0 }) as Response);
 
   if (res.ok) return { ok: true };
   return { ok: false, error: 'No se pudo dar de baja la suscripción.' };

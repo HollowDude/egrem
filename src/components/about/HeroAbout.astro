@@ -27,30 +27,42 @@ const bundle = nhEntity?.bundle ?? '_component_about_hero';
   editLabel="Editar Hero"
   editField="field_title"
 >
-  {photo?.url ? (
-    <div class="absolute inset-0">
-      <img
-        src={resolveFileUrl(photo.url)}
-        alt=""
-        class="w-full h-full object-cover opacity-40 mix-blend-multiply"
-        loading="lazy"
-        decoding="async"
-      />
-      <div class="absolute inset-0 bg-gradient-to-t from-[#f9f9f9] via-[#f9f9f9]/80 to-transparent" />
-    </div>
-  ) : (
-    <div class="absolute inset-0 bg-[#e8e8e8]">
-      <div class="absolute inset-0 bg-gradient-to-t from-[#f9f9f9] via-[#f9f9f9]/80 to-transparent" />
-    </div>
-  )}
-  <div class="relative z-10 max-w-[1280px] mx-auto px-4 md:px-16 text-center flex flex-col items-center">
-    {tag ? (
-      <span class="inline-block px-4 py-1 mb-6 bg-[#f3f3f3] text-[#1b1b1b] text-[12px] uppercase tracking-widest border border-[#ebbbb4] rounded-md" data-nodehive-field="field_tag">
-        {tag}
-      </span>
-    ) : null}
+  {
+    photo?.url ? (
+      <div class="absolute inset-0">
+        <img
+          src={resolveFileUrl(photo.url)}
+          alt=""
+          class="w-full h-full object-cover opacity-40 mix-blend-multiply"
+          loading="lazy"
+          decoding="async"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#f9f9f9] via-[#f9f9f9]/80 to-transparent" />
+      </div>
+    ) : (
+      <div class="absolute inset-0 bg-[#e8e8e8]">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#f9f9f9] via-[#f9f9f9]/80 to-transparent" />
+      </div>
+    )
+  }
+  <div
+    class="relative z-10 max-w-[1280px] mx-auto px-4 md:px-16 text-center flex flex-col items-center"
+  >
+    {
+      tag ? (
+        <span
+          class="inline-block px-4 py-1 mb-6 bg-[#f3f3f3] text-[#1b1b1b] text-[12px] uppercase tracking-widest border border-[#ebbbb4] rounded-md"
+          data-nodehive-field="field_tag"
+        >
+          {tag}
+        </span>
+      ) : null
+    }
     <h1 class="text-h1 text-[#FF0000] mb-2 uppercase" data-nodehive-field="field_title">{title}</h1>
-    <p class="font-script text-[#CC9933] text-[clamp(1.125rem,2.5vw,1.5rem)] max-w-2xl mx-auto" data-nodehive-field="field_subtitle">
+    <p
+      class="font-script text-[#CC9933] text-[clamp(1.125rem,2.5vw,1.5rem)] max-w-2xl mx-auto"
+      data-nodehive-field="field_subtitle"
+    >
       {subtitle}
     </p>
   </div>

@@ -44,7 +44,16 @@ describe('detectSocialNetwork', () => {
 
 describe('socialIconPath', () => {
   it('should return a non-empty path for every network', () => {
-    for (const n of ['facebook', 'instagram', 'youtube', 'x', 'tiktok', 'spotify', 'soundcloud', 'web']) {
+    for (const n of [
+      'facebook',
+      'instagram',
+      'youtube',
+      'x',
+      'tiktok',
+      'spotify',
+      'soundcloud',
+      'web',
+    ]) {
       expect(socialIconPath(n as Parameters<typeof socialIconPath>[0])).toBeTruthy();
     }
   });

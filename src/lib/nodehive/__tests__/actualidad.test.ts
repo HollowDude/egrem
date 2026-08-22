@@ -142,6 +142,113 @@ describe('parseActualidadNode relatedContent', () => {
   });
 });
 
+function eventoRel(refs: { id: string }[]) {
+  return {
+    field_eventos_relacionados: { data: refs.map((r) => ({ type: 'node--evento', id: r.id })) },
+  };
+}
+
+function eventoNode(overrides: Record<string, unknown>) {
+  const {
+    id = 'e1',
+    nid = 200,
+    title = 'Evento',
+    relationships = {},
+  } = overrides as {
+    id: string;
+    nid: number;
+    title: string;
+    relationships: Record<string, unknown>;
+  };
+  return {
+    type: 'node--evento',
+    id,
+    attributes: {
+      drupal_internal__nid: nid,
+      title,
+      path: { alias: null },
+      field_fecha: { value: '2026-05-10', end_value: '2026-05-12' },
+      field_hora: '21:00',
+    },
+    relationships,
+  };
+}
+
+describe('parseActualidadNode relatedEvents', () => {
+  it('leaves relatedEvents empty when field is absent', () => {
+    const item = parseActualidadNode(
+      nodeResource({ id: 'n1', nid: 1, title: 'Noticia', type: 'node--noticia' }),
+      [],
+    );
+    expect(item?.relatedEvents).toEqual([]);
+  });
+
+  it('maps related event fields (title, venue, date, href, endDate)', () => {
+    const local = {
+      type: 'node--local',
+      id: 'local-1',
+      attributes: { title: 'Teatro Amadeo' },
+    };
+    const evt = eventoNode({
+      id: 'e1',
+      nid: 200,
+      title: 'Festival de la Salsa',
+      relationships: { field_venue_bat: { data: { type: 'node--local', id: 'local-1' } } },
+    });
+    const resource = nodeResource({
+      id: 'n1',
+      nid: 1,
+      title: 'Noticia padre',
+      type: 'node--noticia',
+      relationships: eventoRel([{ id: 'e1' }]),
+    });
+
+    const item = parseActualidadNode(resource, [evt, local]);
+
+    expect(item?.relatedEvents).toHaveLength(1);
+    expect(item?.relatedEvents[0]).toEqual({
+      id: 'e1',
+      title: 'Festival de la Salsa',
+      venue: 'Teatro Amadeo',
+      date: '2026-05-10',
+      endDate: '2026-05-12',
+      time: '21:00',
+      href: '/evento/200',
+    });
+  });
+
+  it('skips related event nodes missing from included', () => {
+    const resource = nodeResource({
+      id: 'n1',
+      nid: 1,
+      title: 'Noticia padre',
+      type: 'node--noticia',
+      relationships: eventoRel([{ id: 'missing' }]),
+    });
+
+    const item = parseActualidadNode(resource, []);
+    expect(item?.relatedEvents).toEqual([]);
+  });
+
+  it('uses path alias for related event href when present', () => {
+    const evt = eventoNode({ id: 'e2', nid: 201, title: 'Evento Alias' });
+    evt.attributes = {
+      ...(evt.attributes as Record<string, unknown>),
+      path: { alias: '/eventos/festival-alias' },
+    };
+    const resource = nodeResource({
+      id: 'n1',
+      nid: 1,
+      title: 'Noticia padre',
+      type: 'node--noticia',
+      relationships: eventoRel([{ id: 'e2' }]),
+    });
+
+    const item = parseActualidadNode(resource, [evt]);
+    expect(item?.relatedEvents[0].href).toBe('/eventos/festival-alias');
+  });
+});
+
 describe('resolveRelated', () => {
   it('uses curated relatedContent when present', () => {
     const curated = makeItem({ id: '9', title: 'Curado' });

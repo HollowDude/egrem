@@ -63,6 +63,8 @@
   --color-egrem-red: #ff0000;
   --color-egrem-red-dark: #cc0000;
   --color-egrem-gold: #cc9933;
+  /* Gold safe for text on light surfaces (WCAG AA ~4.9:1 vs white) */
+  --color-egrem-gold-text: #8a6320;
   --color-egrem-gray: #808080;
   --color-egrem-gray-light: #f5f5f5;
   --color-egrem-black: #000000;
@@ -165,9 +167,9 @@
     font-weight: 400;
   }
 
-  /* Enlace: dorado como color de acento premium */
+  /* Enlace: rojo institucional (accesible WCAG AA sobre blanco) */
   a {
-    color: var(--color-egrem-gold);
+    color: var(--color-brand-primary);
     text-underline-offset: 3px;
     text-decoration-color: transparent;
     transition:
@@ -261,6 +263,11 @@
     @media (min-width: 1024px) {
       padding-inline: 2rem;
     }
+  }
+
+  /* Ancho máximo para superficies amplias (Tienda). mx-auto ya lo centra. */
+  .max-w-container-max {
+    max-width: 1440px;
   }
 
   /* Sistema de rejilla 12 columnas */
@@ -413,7 +420,7 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     background: rgba(204, 153, 51, 0.1);
-    color: var(--color-egrem-gold);
+    color: var(--color-egrem-gold-text);
     border: 1px solid rgba(204, 153, 51, 0.3);
   }
 
@@ -437,7 +444,7 @@
 
   .badge--outline {
     background: transparent;
-    color: var(--color-egrem-gold);
+    color: var(--color-egrem-gold-text);
     border-color: var(--color-egrem-gold);
   }
 
@@ -515,7 +522,7 @@
   /* Eyebrow — etiqueta gold en Licorice sobre títulos de sección */
   .eyebrow {
     font-family: var(--font-script);
-    color: var(--color-egrem-gold);
+    color: var(--color-egrem-gold-text);
     font-weight: 400;
     font-size: 1.25rem;
     line-height: 1.2;
@@ -784,6 +791,120 @@
     background: var(--color-egrem-gray-light);
     border: 1px solid rgba(128, 128, 128, 0.2);
     border-radius: 1rem;
+  }
+
+  /* ─── Rich text (cuerpos WYSIWYG de Drupal: p, citas, listas, imágenes, tablas) ─── */
+  .egrem-richtext p {
+    margin-bottom: 1.25rem;
+  }
+  .egrem-richtext h2 {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-family: var(--font-display);
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+    color: var(--color-egrem-black);
+  }
+  .egrem-richtext h3 {
+    font-size: clamp(1.1rem, 2vw, 1.375rem);
+    font-family: var(--font-display);
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-egrem-black);
+  }
+  .egrem-richtext h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.125rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-egrem-black);
+  }
+  .egrem-richtext blockquote {
+    background: rgba(204, 153, 51, 0.06);
+    padding: 0.75rem 1.25rem;
+    margin: 2rem 0;
+    font-style: italic;
+    color: var(--color-egrem-black);
+    opacity: 0.85;
+  }
+  .egrem-richtext blockquote footer {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    font-style: normal;
+    color: var(--color-egrem-gray);
+  }
+  .egrem-richtext a {
+    color: var(--color-brand-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .egrem-richtext a:hover {
+    color: var(--color-egrem-red);
+  }
+  .egrem-richtext ul,
+  .egrem-richtext ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .egrem-richtext li {
+    margin-bottom: 0.25rem;
+  }
+  .egrem-richtext img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+    margin: 1.5rem 0;
+  }
+  .egrem-richtext figure {
+    margin: 1.5rem 0;
+  }
+  .egrem-richtext figcaption {
+    font-size: 0.875rem;
+    color: var(--color-egrem-gray);
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+  .egrem-richtext table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9375rem;
+  }
+  .egrem-richtext th,
+  .egrem-richtext td {
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+  .egrem-richtext th {
+    font-family: var(--font-display);
+    font-weight: 700;
+    background: var(--color-egrem-gray-light);
+  }
+  .egrem-richtext hr {
+    border: none;
+    border-top: 1px solid rgba(128, 128, 128, 0.25);
+    margin: 2rem 0;
+  }
+  .egrem-richtext iframe {
+    max-width: 100%;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    border-radius: 0.75rem;
+    margin: 1.5rem 0;
+  }
+  .egrem-dropcap > p:first-of-type::first-letter {
+    font-size: 3.5em;
+    font-weight: 700;
+    float: left;
+    line-height: 0.8;
+    padding-right: 0.5rem;
+    color: var(--color-egrem-red);
+    font-family: var(--font-display);
   }
 
   /* ─── High contrast mode ──────────────────────────────────────────── */

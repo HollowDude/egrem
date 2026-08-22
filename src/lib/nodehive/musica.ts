@@ -76,7 +76,9 @@ function parseAgencia(
   if (!rel) return undefined;
   const artistRes = findIncluded(included, 'node--artista', rel.id);
   if (!artistRes) return undefined;
-  const agRel = artistRes.relationships?.field_agencia?.data as JsonApiResourceIdentifier | undefined;
+  const agRel = artistRes.relationships?.field_agencia?.data as
+    | JsonApiResourceIdentifier
+    | undefined;
   if (!agRel) return undefined;
   const term = findIncluded(included, 'taxonomy_term--agencias', agRel.id);
   if (!term) return undefined;
@@ -97,11 +99,14 @@ function parseTrackResource(
 ): NhTrack | null {
   if (!trackRes) return null;
   const ta = trackRes.attributes as Record<string, unknown>;
-  const title = (ta.field_title as string) ?? (ta.title as string) ?? (ta.field_track_title as string) ?? '';
+  const title =
+    (ta.field_title as string) ?? (ta.title as string) ?? (ta.field_track_title as string) ?? '';
   if (!title) return null;
   const duration = (ta.field_duracion as number | null) ?? null;
 
-  const audioRel = trackRes.relationships?.field_track_url?.data as JsonApiResourceIdentifier | undefined;
+  const audioRel = trackRes.relationships?.field_track_url?.data as
+    | JsonApiResourceIdentifier
+    | undefined;
   let audioUrl: string | null = null;
   if (audioRel) {
     const media = findIncluded(included, 'media--audio', audioRel.id);
@@ -135,30 +140,34 @@ export function parseAlbumResource(
   const a = resource.attributes as Record<string, unknown>;
   const rels = resource.relationships as Record<string, JsonApiRelationship> | undefined;
 
-  const tracks: NhTrack[] = resolveRelIds(rels?.field_track_list).map((ref) => {
-    const p =
-      findIncluded(included, 'paragraph--lanzamiento_track', ref.id) ??
-      findIncluded(included, 'paragraph--album_tracks', ref.id);
-    if (!p) return null;
-    const trackRel = p.relationships?.field_track?.data as JsonApiResourceIdentifier | undefined;
-    const track = trackRel ? findIncluded(included, 'node--track', trackRel.id) : undefined;
-    return track ? parseTrackResource(track, included) : parseTrackResource(p, included);
-  }).filter((t): t is NhTrack => t !== null);
+  const tracks: NhTrack[] = resolveRelIds(rels?.field_track_list)
+    .map((ref) => {
+      const p =
+        findIncluded(included, 'paragraph--lanzamiento_track', ref.id) ??
+        findIncluded(included, 'paragraph--album_tracks', ref.id);
+      if (!p) return null;
+      const trackRel = p.relationships?.field_track?.data as JsonApiResourceIdentifier | undefined;
+      const track = trackRel ? findIncluded(included, 'node--track', trackRel.id) : undefined;
+      return track ? parseTrackResource(track, included) : parseTrackResource(p, included);
+    })
+    .filter((t): t is NhTrack => t !== null);
 
-  const externalApps: NhExternalApp[] = resolveRelIds(rels?.field_external_apps).map((ref) => {
-    const p = findIncluded(included, 'paragraph--external_apps', ref.id);
-    const pa = p?.attributes as Record<string, unknown> | undefined;
-    const link = pa?.field_app_link as { uri?: string; title?: string } | undefined;
-    const url = link?.uri ? normalizeDrupalUri(link.uri) : '';
-    if (!url) return null;
-    const platform = detectPlatform(url);
-    return {
-      title: (pa?.field_titulo as string) ?? '',
-      url,
-      platform,
-      embedUrl: buildEmbedUrl(url),
-    };
-  }).filter((e): e is NhExternalApp => e !== null);
+  const externalApps: NhExternalApp[] = resolveRelIds(rels?.field_external_apps)
+    .map((ref) => {
+      const p = findIncluded(included, 'paragraph--external_apps', ref.id);
+      const pa = p?.attributes as Record<string, unknown> | undefined;
+      const link = pa?.field_app_link as { uri?: string; title?: string } | undefined;
+      const url = link?.uri ? normalizeDrupalUri(link.uri) : '';
+      if (!url) return null;
+      const platform = detectPlatform(url);
+      return {
+        title: (pa?.field_titulo as string) ?? '',
+        url,
+        platform,
+        embedUrl: buildEmbedUrl(url),
+      };
+    })
+    .filter((e): e is NhExternalApp => e !== null);
 
   const selloRel = rels?.field_sello?.data as JsonApiResourceIdentifier | undefined;
   let sello: { name: string; tid: number; slug: string } | undefined;
@@ -167,19 +176,26 @@ export function parseAlbumResource(
     if (term) {
       const ta = term.attributes as Record<string, unknown>;
       const selloName = (ta.name as string) ?? '';
-      sello = { name: selloName, tid: (ta.drupal_internal__tid as number) ?? 0, slug: selloName.toLowerCase().replace(/\s+/g, '-') };
+      sello = {
+        name: selloName,
+        tid: (ta.drupal_internal__tid as number) ?? 0,
+        slug: selloName.toLowerCase().replace(/\s+/g, '-'),
+      };
     }
   }
 
   const bodyRel = a.body as { value?: string } | undefined;
-  const href = (a.path as { alias?: string | null })?.alias ?? `/catalogo/musica/${a.drupal_internal__nid}`;
+  const href =
+    (a.path as { alias?: string | null })?.alias ?? `/catalogo/musica/${a.drupal_internal__nid}`;
 
   const year = (a.field_year as number | null) ?? null;
   const artistaRef = parseArtistaRef(resource, 'field_artista', included);
   const interpreteRef = parseArtistaRef(resource, 'field_interprete', included);
   const agencia = parseAgencia(resource, included);
 
-  const lanzamientoRel = rels?.field_tipo_lanzamiento?.data as JsonApiResourceIdentifier | undefined;
+  const lanzamientoRel = rels?.field_tipo_lanzamiento?.data as
+    | JsonApiResourceIdentifier
+    | undefined;
   let lanzamiento: { name: string; tid: number; slug: string } | undefined;
   if (lanzamientoRel) {
     const term = findIncluded(included, 'taxonomy_term--tipo_de_lanzamiento', lanzamientoRel.id);
@@ -204,7 +220,10 @@ export function parseAlbumResource(
     albumNumber: (a.field_album_number as number | null) ?? null,
     decada: parseDecada(year),
     body: bodyRel?.value ?? '',
-    cover: parseAlbumCover(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
+    cover: parseAlbumCover(
+      resource as { relationships?: Record<string, JsonApiRelationship> },
+      included,
+    ),
     sello: sello && sello.name ? sello : undefined,
     lanzamiento,
     artista: artistaRef,
@@ -243,7 +262,11 @@ export async function fetchAlbumesCatalogo(
 
       const rels = resource.relationships as Record<string, JsonApiRelationship> | undefined;
       if (rels?.field_sello?.data && !Array.isArray(rels.field_sello.data)) {
-        const term = findIncluded(included, 'taxonomy_term--sello_discografico', rels.field_sello.data.id);
+        const term = findIncluded(
+          included,
+          'taxonomy_term--sello_discografico',
+          rels.field_sello.data.id,
+        );
         if (term) {
           const ta = term.attributes as Record<string, unknown>;
           const name = (ta.name as string) ?? '';
@@ -277,9 +300,10 @@ export async function fetchAlbumesCatalogo(
 
     if (params.search) {
       const q = params.search.toLowerCase();
-      albums = albums.filter((a) =>
-        a.title.toLowerCase().includes(q) ||
-        (a.artistName && a.artistName.toLowerCase().includes(q))
+      albums = albums.filter(
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          (a.artistName && a.artistName.toLowerCase().includes(q)),
       );
     }
 
@@ -318,9 +342,15 @@ export async function fetchAlbumesCatalogo(
       availableSellos: Array.from(allSellos.values()).sort((a, b) => a.name.localeCompare(b.name)),
       availableDecadas: Array.from(allDecadas).sort((a, b) => parseInt(a) - parseInt(b)),
       availableDiscos: Array.from(allDiscos).sort((a, b) => parseInt(a) - parseInt(b)),
-      availableArtistas: Array.from(allArtistas.values()).sort((a, b) => a.name.localeCompare(b.name)),
-      availableAgencias: Array.from(allAgencias.values()).sort((a, b) => a.name.localeCompare(b.name)),
-      availableInterpretes: Array.from(allInterpretes.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      availableArtistas: Array.from(allArtistas.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+      availableAgencias: Array.from(allAgencias.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+      availableInterpretes: Array.from(allInterpretes.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
     };
   } catch (e) {
     console.warn('[NodeHive] fetchAlbumesCatalogo failed:', e);

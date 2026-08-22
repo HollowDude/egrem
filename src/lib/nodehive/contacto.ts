@@ -24,9 +24,7 @@ export async function fetchContactoPage(lang = 'es'): Promise<NhContactoPage | n
     const included = res.included;
 
     const componentRefs = resolveRelIds(data.relationships?.field_components);
-    const contactoRef = componentRefs.find(
-      (r) => r.type === 'paragraph--_component_contacto',
-    );
+    const contactoRef = componentRefs.find((r) => r.type === 'paragraph--_component_contacto');
     if (!contactoRef) return null;
 
     const contactoComp = findIncluded(included, 'paragraph--_component_contacto', contactoRef.id);

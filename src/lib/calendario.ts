@@ -57,12 +57,7 @@ export function construirGrillaMes(anio: number, mes: number): DiaCelda[] {
 }
 
 /** ¿El evento (rango de fechas inclusivo) solapa el mes? */
-export function solapaConMes(
-  inicio: string,
-  fin: string,
-  anio: number,
-  mes: number,
-): boolean {
+export function solapaConMes(inicio: string, fin: string, anio: number, mes: number): boolean {
   if (!inicio) return false;
   const finMes = fechaISO(anio, mes, diasEnMes(anio, mes));
   const inicioMes = fechaISO(anio, mes, 1);

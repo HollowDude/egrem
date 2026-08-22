@@ -114,9 +114,7 @@ describe('fetchAllArtistVideos', () => {
     );
     expect(result).toHaveLength(1);
     expect(result[0].title).toBe('Test Video');
-    expect(result[0].artistas).toEqual([
-      { name: 'Marisney Elvira', href: '/artista/7', nid: 7 },
-    ]);
+    expect(result[0].artistas).toEqual([{ name: 'Marisney Elvira', href: '/artista/7', nid: 7 }]);
     expect(result[0].body).toBe('<p>Es un video</p>');
     expect(result[0].youtubeId).toBe('abc123defgh');
   });
@@ -171,10 +169,12 @@ describe('fetchAllArtistVideos', () => {
       (inc as Array<{ type: string; id: string }>).find((r) => r.type === type && r.id === id),
     );
     const { resolveRelIds } = await import('../helpers');
-    vi.mocked(resolveRelIds).mockImplementation((rel: { data: unknown[] | unknown } | undefined) => {
-      if (!rel?.data) return [];
-      return Array.isArray(rel.data) ? rel.data : [rel.data];
-    });
+    vi.mocked(resolveRelIds).mockImplementation(
+      (rel: { data: unknown[] | unknown } | undefined) => {
+        if (!rel?.data) return [];
+        return Array.isArray(rel.data) ? rel.data : [rel.data];
+      },
+    );
 
     const result = await fetchAllArtistVideos('es');
     expect(result).toHaveLength(1);
@@ -250,7 +250,10 @@ describe('fetchVideosCatalogo', () => {
           },
           {
             field_artistas: {
-              data: [{ type: 'node--artista', id: 'n1' }, { type: 'node--artista', id: 'n2' }],
+              data: [
+                { type: 'node--artista', id: 'n1' },
+                { type: 'node--artista', id: 'n2' },
+              ],
             },
           },
         ),
@@ -262,10 +265,12 @@ describe('fetchVideosCatalogo', () => {
     vi.mocked(findIncluded).mockImplementation((inc: unknown[], type: string, id: string) =>
       (inc as Array<{ type: string; id: string }>).find((r) => r.type === type && r.id === id),
     );
-    vi.mocked(resolveRelIds).mockImplementation((rel: { data: unknown[] | unknown } | undefined) => {
-      if (!rel?.data) return [];
-      return Array.isArray(rel.data) ? rel.data : [rel.data];
-    });
+    vi.mocked(resolveRelIds).mockImplementation(
+      (rel: { data: unknown[] | unknown } | undefined) => {
+        if (!rel?.data) return [];
+        return Array.isArray(rel.data) ? rel.data : [rel.data];
+      },
+    );
 
     const result = await fetchVideosCatalogo({ artista: 'artista-uno' }, 'es');
     expect(result.videos).toHaveLength(2);
@@ -293,7 +298,12 @@ describe('fetchVideosCatalogo', () => {
     };
 
     mockJsonApiFetch.mockResolvedValue({
-      data: [videoNode({}, { field_tipo_video: { data: { type: 'taxonomy_term--tipo_video', id: 'tipo-1' } } })],
+      data: [
+        videoNode(
+          {},
+          { field_tipo_video: { data: { type: 'taxonomy_term--tipo_video', id: 'tipo-1' } } },
+        ),
+      ],
       included: [artistNode, tipoNode],
     });
 
@@ -301,10 +311,12 @@ describe('fetchVideosCatalogo', () => {
     vi.mocked(findIncluded).mockImplementation((inc: unknown[], type: string, id: string) =>
       (inc as Array<{ type: string; id: string }>).find((r) => r.type === type && r.id === id),
     );
-    vi.mocked(resolveRelIds).mockImplementation((rel: { data: unknown[] | unknown } | undefined) => {
-      if (!rel?.data) return [];
-      return Array.isArray(rel.data) ? rel.data : [rel.data];
-    });
+    vi.mocked(resolveRelIds).mockImplementation(
+      (rel: { data: unknown[] | unknown } | undefined) => {
+        if (!rel?.data) return [];
+        return Array.isArray(rel.data) ? rel.data : [rel.data];
+      },
+    );
 
     const result = await fetchVideosCatalogo({}, 'es');
     expect(result.videos[0].tipo).toEqual({ name: 'Documentales', slug: 'documentales' });
@@ -325,12 +337,23 @@ describe('fetchVideosCatalogo', () => {
         thumbnail: { url: '', alt: '', filename: '' },
       });
 
-    const tipoDoc = { type: 'taxonomy_term--tipo_video', id: 'tipo-1', attributes: { name: 'Documentales' } };
-    const tipoClip = { type: 'taxonomy_term--tipo_video', id: 'tipo-2', attributes: { name: 'Videoclips' } };
+    const tipoDoc = {
+      type: 'taxonomy_term--tipo_video',
+      id: 'tipo-1',
+      attributes: { name: 'Documentales' },
+    };
+    const tipoClip = {
+      type: 'taxonomy_term--tipo_video',
+      id: 'tipo-2',
+      attributes: { name: 'Videoclips' },
+    };
 
     mockJsonApiFetch.mockResolvedValue({
       data: [
-        videoNode({}, { field_tipo_video: { data: { type: 'taxonomy_term--tipo_video', id: 'tipo-1' } } }),
+        videoNode(
+          {},
+          { field_tipo_video: { data: { type: 'taxonomy_term--tipo_video', id: 'tipo-1' } } },
+        ),
         videoNode(
           {
             id: 'v2',
@@ -349,10 +372,12 @@ describe('fetchVideosCatalogo', () => {
     vi.mocked(findIncluded).mockImplementation((inc: unknown[], type: string, id: string) =>
       (inc as Array<{ type: string; id: string }>).find((r) => r.type === type && r.id === id),
     );
-    vi.mocked(resolveRelIds).mockImplementation((rel: { data: unknown[] | unknown } | undefined) => {
-      if (!rel?.data) return [];
-      return Array.isArray(rel.data) ? rel.data : [rel.data];
-    });
+    vi.mocked(resolveRelIds).mockImplementation(
+      (rel: { data: unknown[] | unknown } | undefined) => {
+        if (!rel?.data) return [];
+        return Array.isArray(rel.data) ? rel.data : [rel.data];
+      },
+    );
 
     const result = await fetchVideosCatalogo({ tipo: 'videoclips' }, 'es');
     expect(result.videos).toHaveLength(1);
@@ -387,10 +412,12 @@ describe('fetchVideosCatalogo', () => {
     vi.mocked(findIncluded).mockImplementation((inc: unknown[], type: string, id: string) =>
       (inc as Array<{ type: string; id: string }>).find((r) => r.type === type && r.id === id),
     );
-    vi.mocked(resolveRelIds).mockImplementation((rel: { data: unknown[] | unknown } | undefined) => {
-      if (!rel?.data) return [];
-      return Array.isArray(rel.data) ? rel.data : [rel.data];
-    });
+    vi.mocked(resolveRelIds).mockImplementation(
+      (rel: { data: unknown[] | unknown } | undefined) => {
+        if (!rel?.data) return [];
+        return Array.isArray(rel.data) ? rel.data : [rel.data];
+      },
+    );
 
     const page1 = await fetchVideosCatalogo({ page: 1 }, 'es');
     expect(page1.videos).toHaveLength(10);

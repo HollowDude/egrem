@@ -6,7 +6,8 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.page_description': 'Entradas para los eventos y conciertos de la música cubana.',
     'tienda.hero.eyebrow': 'Catálogo Oficial',
     'tienda.hero.title': 'Tienda EGREM',
-    'tienda.hero.subtitle': 'Explora el catálogo oficial de EGREM: entradas para los mejores eventos de música cubana en vivo.',
+    'tienda.hero.subtitle':
+      'Explora el catálogo oficial de EGREM: entradas para los mejores eventos de música cubana en vivo.',
     'tienda.filter.title': 'Filtros',
     'tienda.filter.tipo': 'Tipo',
     'tienda.filter.tipo.all': 'Todos',
@@ -46,6 +47,7 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.product.breadcrumb_tienda': 'Tienda',
     'tienda.product.breadcrumb_entradas': 'Entradas',
     'tienda.product.entrada': 'Entrada',
+    'tienda.product.evento': 'Evento',
     'tienda.product.descripcion': 'Descripción',
     'tienda.product.selecciona_tipo': 'Selecciona el tipo de entrada',
     'tienda.product.personas': 'Personas',
@@ -56,6 +58,8 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.product.sin_seleccion': 'Selecciona al menos una entrada',
     'tienda.product.consultar': 'Consultar',
     'tienda.product.sin_entradas': 'No hay entradas disponibles para este evento.',
+    'tienda.product.sin_entradas_dia': 'Sin entradas para este día',
+    'tienda.product.seleccion_varios_dias': 'Selecciona día y cantidad para cada entrada.',
     'tienda.product.relacionados': 'Productos Relacionados',
   },
   en: {
@@ -63,7 +67,8 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.page_description': 'Tickets for Cuban music events and concerts.',
     'tienda.hero.eyebrow': 'Official Catalog',
     'tienda.hero.title': 'EGREM Store',
-    'tienda.hero.subtitle': "Explore EGREM's official catalog: tickets for the best live Cuban music events.",
+    'tienda.hero.subtitle':
+      "Explore EGREM's official catalog: tickets for the best live Cuban music events.",
     'tienda.filter.title': 'Filters',
     'tienda.filter.tipo': 'Type',
     'tienda.filter.tipo.all': 'All',
@@ -103,6 +108,7 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.product.breadcrumb_tienda': 'Store',
     'tienda.product.breadcrumb_entradas': 'Tickets',
     'tienda.product.entrada': 'Ticket',
+    'tienda.product.evento': 'Event',
     'tienda.product.descripcion': 'Description',
     'tienda.product.selecciona_tipo': 'Select the ticket type',
     'tienda.product.personas': 'People',
@@ -113,6 +119,8 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.product.sin_seleccion': 'Select at least one ticket',
     'tienda.product.consultar': 'Inquire',
     'tienda.product.sin_entradas': 'No tickets available for this event.',
+    'tienda.product.sin_entradas_dia': 'No tickets for this day',
+    'tienda.product.seleccion_varios_dias': 'Select day and quantity for each ticket.',
     'tienda.product.relacionados': 'Related Products',
   },
 };

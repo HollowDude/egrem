@@ -23,11 +23,7 @@ const subtitle = hero?.subtitle ?? tr('about.hero.subtitle');
 const tag = hero?.tag ?? tr('about.hero.tag');
 ---
 
-<BaseLayout
-  title={tr('about.page_title')}
-  description={tr('about.page_description')}
-  lang={lang}
->
+<BaseLayout title={tr('about.page_title')} description={tr('about.page_description')} lang={lang}>
   <HeroAbout
     title={title}
     subtitle={subtitle}

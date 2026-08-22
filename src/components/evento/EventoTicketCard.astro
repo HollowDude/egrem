@@ -45,65 +45,66 @@ function textoDisponibilidad(disponibles: number): string {
   <div class="flex justify-between items-start gap-3 mb-2">
     <div class="min-w-0">
       <h4 class="font-display font-bold text-h4 text-egrem-black m-0">{entrada.nombre}</h4>
-      {entrada.destacado && (
-        <span
-          class="mt-1 inline-block bg-egrem-gold text-white font-display font-bold text-[10px] px-2 py-0.5 uppercase tracking-widest rounded"
-        >
-          {tr('evento.detail.tickets_recommended')}
-        </span>
-      )}
-      {entrada.descripcion && (
-        <p class="font-display text-small text-egrem-gray m-0 mt-0.5">{entrada.descripcion}</p>
-      )}
+      {
+        entrada.destacado && (
+          <span class="mt-1 inline-block bg-egrem-gold text-white font-display font-bold text-[10px] px-2 py-0.5 uppercase tracking-widest rounded">
+            {tr('evento.detail.tickets_recommended')}
+          </span>
+        )
+      }
+      {
+        entrada.descripcion && (
+          <p class="font-display text-small text-egrem-gray m-0 mt-0.5">{entrada.descripcion}</p>
+        )
+      }
     </div>
     <div class="flex shrink-0 items-center gap-2 mt-1">
-      {seleccionable && (
-        <span
-          class="entrada-check w-5 h-5 rounded-full bg-egrem-red text-white inline-flex items-center justify-center shrink-0"
-          style="display: none;"
-          aria-hidden="true"
-        >
-          <span class="icon text-[12px]" style="font-family: 'Material Symbols Outlined';">check</span>
-        </span>
-      )}
-      {precio && (
-        <span class="font-display font-bold text-xl text-egrem-red leading-none">
-          {precio}
-        </span>
-      )}
+      {
+        precio && (
+          <span class="font-display font-bold text-xl text-egrem-red leading-none">{precio}</span>
+        )
+      }
     </div>
   </div>
 
   <div class="flex justify-between items-center pt-3 border-t border-egrem-gray/15 mt-3">
-    {entrada.capacidad !== null && (
-      <span class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
-        {tr('evento.detail.tickets_capacity', { count: formatDisponibles(entrada.capacidad) })}
-      </span>
-    )}
-    {agotada ? (
-      <span class="font-display font-bold text-[11px] text-egrem-red uppercase tracking-widest">
-        {tr('evento.list.sold_out')}
-      </span>
-    ) : entrada.disponibles !== null ? (
-      <span
-        class="font-display text-[11px] uppercase tracking-wider font-semibold"
-        style="color: var(--color-text-secondary);"
-      >
-        {textoDisponibilidad(entrada.disponibles)}
-      </span>
-    ) : (
-      <span class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
-        {tr('evento.detail.tickets_not_set')}
-      </span>
-    )}
+    {
+      entrada.capacidad !== null && (
+        <span class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
+          {tr('evento.detail.tickets_capacity', { count: formatDisponibles(entrada.capacidad) })}
+        </span>
+      )
+    }
+    {
+      agotada ? (
+        <span class="font-display font-bold text-[11px] text-egrem-red uppercase tracking-widest">
+          {tr('evento.list.sold_out')}
+        </span>
+      ) : entrada.disponibles !== null ? (
+        <span
+          class="font-display text-[11px] uppercase tracking-wider font-semibold"
+          style="color: var(--color-text-secondary);"
+        >
+          {textoDisponibilidad(entrada.disponibles)}
+        </span>
+      ) : (
+        <span class="font-display text-[11px] text-egrem-gray uppercase tracking-wider">
+          {tr('evento.detail.tickets_not_set')}
+        </span>
+      )
+    }
   </div>
 
-  {seleccionable && (
-    <span
-      class="entrada-check absolute top-3 right-3 w-5 h-5 rounded-full bg-egrem-red text-white items-center justify-center hidden"
-      aria-hidden="true"
-    >
-      <span class="icon text-[12px]" style="font-family: 'Material Symbols Outlined';">check</span>
-    </span>
-  )}
+  {
+    seleccionable && (
+      <span
+        class="entrada-check absolute top-3 right-3 w-5 h-5 rounded-full bg-egrem-red text-white items-center justify-center hidden"
+        aria-hidden="true"
+      >
+        <span class="icon text-[12px]" style="font-family: 'Material Symbols Outlined';">
+          check
+        </span>
+      </span>
+    )
+  }
 </div>

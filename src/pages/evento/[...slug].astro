@@ -7,8 +7,10 @@ import NodeHiveEntity from '@/components/nodehive/NodeHiveEntity.astro';
 import EventoPrograma from '@/components/evento/EventoPrograma.astro';
 import EventoLineupCard from '@/components/evento/EventoLineupCard.astro';
 import EventoTicketCard from '@/components/evento/EventoTicketCard.astro';
+import EventoEventosRelacionados from '@/components/evento/EventoEventosRelacionados.astro';
 import { fetchEventoByPath, fetchEventoByNid, esEventoPasado } from '@/lib/nodehive';
 import type { NhEventoDetalle } from '@/lib/nodehive';
+import { resolveCtaCompra } from '@/lib/tienda/cta';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
@@ -51,8 +53,11 @@ function formatRango(inicio: string, fin: string): string {
   const dInicio = new Date(`${inicio}T12:00:00`);
   const dFin = new Date(`${fin}T12:00:00`);
   if (Number.isNaN(dInicio.getTime()) || Number.isNaN(dFin.getTime())) return formatFecha(inicio);
-  const sameMonth = dInicio.getMonth() === dFin.getMonth() && dInicio.getFullYear() === dFin.getFullYear();
-  const diaInicio = dInicio.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric' });
+  const sameMonth =
+    dInicio.getMonth() === dFin.getMonth() && dInicio.getFullYear() === dFin.getFullYear();
+  const diaInicio = dInicio.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', {
+    day: 'numeric',
+  });
   const diaFin = dFin.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric' });
   const mes = dFin
     .toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long' })
@@ -69,18 +74,20 @@ const lugarHero = evento.local?.nombre || evento.lugarTexto;
 const mapQuery = evento.local?.direccion
   ? encodeURIComponent(`${evento.local.nombre}, ${evento.local.direccion}`)
   : '';
-const mapUrl = mapQuery ? `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed` : '';
+const mapUrl = mapQuery
+  ? `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+  : '';
 const mapLink = mapQuery ? `https://maps.google.com/maps?q=${mapQuery}` : '';
 const pageTitle = `${evento.title} | EGREM`;
 const tipoLabel = evento.esInternacional
   ? tr('evento.detail.internacional')
   : tr('evento.detail.nacional');
 
-const productHref = evento.href.replace(/\/evento\//, '/tienda/entrada/');
-const entradasDisponibles = evento.tiposEntrada.filter((t) => t.disponibles !== 0);
-const entradaDefault = entradasDisponibles[0] ?? evento.tiposEntrada[0];
-const storeCtaLabel = esPasado ? tr('evento.detail.view_tienda') : tr('evento.detail.buy_tickets');
-const storeCtaHref = `${productHref}?entrada=${encodeURIComponent(entradaDefault?.sku ?? '')}`;
+const cta = resolveCtaCompra(evento, lang, esPasado);
+const ctaLabel =
+  cta.tipo === 'checkout_directo'
+    ? tr('evento.detail.buy_now')
+    : tr('evento.detail.view_options');
 ---
 
 <BaseLayout
@@ -101,51 +108,71 @@ const storeCtaHref = `${productHref}?entrada=${encodeURIComponent(entradaDefault
       editLabel="Editar Evento"
       editField="title"
     >
-      {evento.heroImage?.url && (
-        <img
-          src={evento.heroImage.url}
-          alt={evento.heroImage.alt || evento.title}
-          class="absolute inset-0 w-full h-full object-cover"
-          loading="eager"
-          decoding="async"
-        />
-      )}
-      <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+      {
+        evento.heroImage?.url && (
+          <img
+            src={evento.heroImage.url}
+            alt={evento.heroImage.alt || evento.title}
+            class="absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+            decoding="async"
+          />
+        )
+      }
+      <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent">
+      </div>
 
       <div class="relative z-10 w-full container-site pb-12 md:pb-16">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div class="max-w-2xl">
             <div class="flex flex-wrap gap-2 mb-4">
-              {evento.categoria && (
-                <span class="bg-egrem-red text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
-                  {evento.categoria}
-                </span>
-              )}
-              <span class="bg-white/15 backdrop-blur-sm text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
+              {
+                evento.categoria && (
+                  <span class="bg-egrem-red text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
+                    {evento.categoria}
+                  </span>
+                )
+              }
+              <span
+                class="bg-white/15 backdrop-blur-sm text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded"
+              >
                 {tipoLabel}
               </span>
             </div>
             <h1 class="text-h1 text-white m-0">{evento.title}</h1>
-            {fechaDisplay && (
-              <p class="font-display text-body lg:text-lg text-white/90 m-0 mt-3 flex items-center gap-2 flex-wrap">
-                <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined'; font-size: 20px;">calendar_month</span>
-                {fechaDisplay}
-                {evento.hora && <span>· {evento.hora}</span>}
-              </p>
-            )}
-            {lugarHero && (
-              <p class="font-display text-small text-white/80 m-0 mt-1 flex items-center gap-2">
-                <span style="font-family: 'Material Symbols Outlined'; font-size: 16px;">location_on</span>
-                {lugarHero}
-              </p>
-            )}
+            {
+              fechaDisplay && (
+                <p class="font-display text-body lg:text-lg text-white/90 m-0 mt-3 flex items-center gap-2 flex-wrap">
+                  <span
+                    class="text-egrem-gold"
+                    style="font-family: 'Material Symbols Outlined'; font-size: 20px;"
+                  >
+                    calendar_month
+                  </span>
+                  {fechaDisplay}
+                  {evento.hora && <span>· {evento.hora}</span>}
+                </p>
+              )
+            }
+            {
+              lugarHero && (
+                <p class="font-display text-small text-white/80 m-0 mt-1 flex items-center gap-2">
+                  <span style="font-family: 'Material Symbols Outlined'; font-size: 16px;">
+                    location_on
+                  </span>
+                  {lugarHero}
+                </p>
+              )
+            }
           </div>
 
-          {esPasado && (
-            <span class="shrink-0 bg-white/15 backdrop-blur-sm text-white font-display font-bold text-[12px] uppercase tracking-widest rounded px-3 py-2">
-              {tr('evento.detail.finished')}
-            </span>
-          )}
+          {
+            esPasado && (
+              <span class="shrink-0 bg-white/15 backdrop-blur-sm text-white font-display font-bold text-[12px] uppercase tracking-widest rounded px-3 py-2">
+                {tr('evento.detail.finished')}
+              </span>
+            )
+          }
         </div>
       </div>
     </NodeHiveEntity>
@@ -153,107 +180,133 @@ const storeCtaHref = `${productHref}?entrada=${encodeURIComponent(entradaDefault
     <section class="container-site py-12 md:py-16">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
         <div class="lg:col-span-2 space-y-12">
-          {evento.descripcion && (
-            <div class="bg-white border border-egrem-gray/20 rounded-xl p-6 md:p-8 shadow-sm">
-              <h2 class="text-h3 text-egrem-red uppercase m-0 mb-4 border-b-2 border-egrem-red pb-2 inline-block">
-                {tr('evento.detail.about')}
-              </h2>
-              <div
-                class="font-display text-body leading-relaxed text-egrem-gray [&_p]:mb-3 [&_p:last-child]:mb-0"
-                set:html={evento.descripcion}
-              />
-            </div>
-          )}
-
-          {evento.programa.length > 0 && (
-            <div>
-              <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2">
-                <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined';">event_note</span>
-                {tr('evento.detail.programa')}
-              </h2>
-              <EventoPrograma dias={evento.programa} lang={lang} />
-            </div>
-          )}
-
-          {evento.lineup.length > 0 && (
-            <div>
-              <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2">
-                <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined';">mic_external_on</span>
-                {tr('evento.detail.lineup')}
-              </h2>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {evento.lineup.map((entry) => (
-                  <EventoLineupCard artista={entry} />
-                ))}
+          {
+            evento.descripcion && (
+              <div class="bg-white border border-egrem-gray/20 rounded-xl p-6 md:p-8 shadow-sm">
+                <h2 class="text-h3 text-egrem-red uppercase m-0 mb-4 border-b-2 border-egrem-red pb-2 inline-block">
+                  {tr('evento.detail.about')}
+                </h2>
+                <div
+                  class="font-display text-body leading-relaxed text-egrem-gray [&_p]:mb-3 [&_p:last-child]:mb-0"
+                  set:html={evento.descripcion}
+                />
               </div>
-            </div>
-          )}
+            )
+          }
+
+          {
+            evento.programa.length > 0 && (
+              <div>
+                <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2">
+                  <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined';">
+                    event_note
+                  </span>
+                  {tr('evento.detail.programa')}
+                </h2>
+                <EventoPrograma dias={evento.programa} lang={lang} />
+              </div>
+            )
+          }
+
+          {
+            evento.lineup.length > 0 && (
+              <div>
+                <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2">
+                  <span class="text-egrem-gold" style="font-family: 'Material Symbols Outlined';">
+                    mic_external_on
+                  </span>
+                  {tr('evento.detail.lineup')}
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {evento.lineup.map((entry) => (
+                    <EventoLineupCard artista={entry} />
+                  ))}
+                </div>
+              </div>
+            )
+          }
         </div>
 
         <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
-          {evento.tiposEntrada.length > 0 && (
-            <div id="entradas" class="bg-white border border-egrem-gray/20 rounded-xl p-6 shadow-sm scroll-mt-28">
-              <h3 class="text-h3 text-egrem-black m-0 pb-3 border-b border-egrem-gray/20 uppercase">
-                {tr('evento.detail.tickets_title')}
-              </h3>
-              <div class="space-y-4 mt-4">
-                {evento.tiposEntrada.map((entrada) => (
-                  <EventoTicketCard entrada={entrada} lang={lang} seleccionable />
-                ))}
-              </div>
-              <Button
-                variant="primary"
-                size="md"
-                href={storeCtaHref}
-                data-cta-tienda
-                class="w-full mt-6"
+          {
+            evento.tiposEntrada.length > 0 && (
+              <div
+                id="entradas"
+                class="bg-white border border-egrem-gray/20 rounded-xl p-6 shadow-sm scroll-mt-28"
               >
-                {storeCtaLabel}
-              </Button>
-            </div>
-          )}
-
-          {evento.local && (
-            <div class="bg-white border border-egrem-gray/20 rounded-xl shadow-sm overflow-hidden">
-              <div class="p-6 pb-4 border-b border-egrem-gray/20">
-                <h3 class="text-h3 text-egrem-black m-0 flex items-center gap-2 uppercase">
-                  <span class="text-egrem-red" style="font-family: 'Material Symbols Outlined';">location_on</span>
-                  {tr('evento.detail.location')}
+                <h3 class="text-h3 text-egrem-black m-0 pb-3 border-b border-egrem-gray/20 uppercase">
+                  {tr('evento.detail.tickets_title')}
                 </h3>
-              </div>
-              {evento.local.direccion ? (
-                <div class="relative" style="height: 220px;">
-                  <iframe
-                    src={mapUrl}
-                    width="100%"
-                    height="100%"
-                    style="border:0; display:block;"
-                    allowfullscreen
-                    loading="lazy"
-                    title={evento.local.nombre}
-                  ></iframe>
-                  <div class="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-egrem-gray/20 max-w-[240px]">
-                    <p class="font-display text-small text-egrem-black m-0 leading-snug">
-                      {evento.local.nombre} — {evento.local.direccion}
-                    </p>
-                    <a
-                      href={mapLink}
-                      target="_blank"
-                      rel="noopener"
-                      class="inline-flex items-center gap-1 mt-1.5 text-small text-egrem-red hover:underline no-underline font-semibold"
+                <div class="space-y-4 mt-4">
+                  {evento.tiposEntrada.map((entrada) => (
+                    <EventoTicketCard entrada={entrada} lang={lang} />
+                  ))}
+                </div>
+                {
+                  esPasado ? (
+                    <p
+                      class="mt-6 text-center font-display text-small"
+                      style="color: var(--color-text-secondary);"
                     >
-                      <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">open_in_new</span>
-                      {tr('evento.detail.location_open')}
-                    </a>
+                      {tr('evento.detail.finished')}
+                    </p>
+                  ) : (
+                    <Button variant="primary" size="md" href={cta.href} class="w-full mt-6">
+                      {ctaLabel}
+                    </Button>
+                  )
+                }
+              </div>
+            )
+          }
+
+          {
+            evento.local && (
+              <div class="bg-white border border-egrem-gray/20 rounded-xl shadow-sm overflow-hidden">
+                <div class="p-6 pb-4 border-b border-egrem-gray/20">
+                  <h3 class="text-h3 text-egrem-black m-0 flex items-center gap-2 uppercase">
+                    <span class="text-egrem-red" style="font-family: 'Material Symbols Outlined';">
+                      location_on
+                    </span>
+                    {tr('evento.detail.location')}
+                  </h3>
+                </div>
+                {evento.local.direccion ? (
+                  <div class="relative" style="height: 220px;">
+                    <iframe
+                      src={mapUrl}
+                      width="100%"
+                      height="100%"
+                      style="border:0; display:block;"
+                      allowfullscreen
+                      loading="lazy"
+                      title={evento.local.nombre}
+                    />
+                    <div class="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-egrem-gray/20 max-w-[240px]">
+                      <p class="font-display text-small text-egrem-black m-0 leading-snug">
+                        {evento.local.nombre} — {evento.local.direccion}
+                      </p>
+                      <a
+                        href={mapLink}
+                        target="_blank"
+                        rel="noopener"
+                        class="inline-flex items-center gap-1 mt-1.5 text-small text-egrem-red hover:underline no-underline font-semibold"
+                      >
+                        <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">
+                          open_in_new
+                        </span>
+                        {tr('evento.detail.location_open')}
+                      </a>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div class="p-6">
-                  <p class="font-display text-small text-egrem-gray m-0">{evento.local.nombre}</p>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div class="p-6">
+                    <p class="font-display text-small text-egrem-gray m-0">{evento.local.nombre}</p>
+                  </div>
+                )}
+              </div>
+            )
+          }
         </aside>
       </div>
 
@@ -263,52 +316,7 @@ const storeCtaHref = `${productHref}?entrada=${encodeURIComponent(entradaDefault
         </Button>
       </div>
     </section>
+
+    <EventoEventosRelacionados eventos={evento.eventosRelacionados} lang={lang} />
   </main>
 </BaseLayout>
-
-<script is:inline define:vars={{ defaultSku: entradaDefault?.sku ?? '' }}>
-  const cards = Array.from(document.querySelectorAll('[data-entrada-card]'));
-  const ctaEls = Array.from(document.querySelectorAll('[data-cta-tienda]'));
-
-  const ENTRADA_ACTIVE = 'entrada-card--active';
-
-  const marca = (card, activa) => {
-    card.classList.toggle(ENTRADA_ACTIVE, activa);
-    const check = card.querySelector('.entrada-check');
-    if (check) check.style.display = activa ? 'inline-flex' : 'none';
-  };
-
-  const actualizaCta = (sku) => {
-    ctaEls.forEach((cta) => {
-      const base = cta.href.split('?')[0];
-      cta.href = `${base}?entrada=${encodeURIComponent(sku || '')}`;
-    });
-  };
-
-  if (cards.length > 0) {
-    cards.forEach((card) => {
-      card.addEventListener('click', () => {
-        const sku = card.dataset.entradaSku ?? '';
-        const yaActiva = card.classList.contains(ENTRADA_ACTIVE);
-        if (yaActiva) {
-          marca(card, false);
-          actualizaCta(defaultSku);
-          return;
-        }
-        cards.forEach((c) => marca(c, false));
-        marca(card, true);
-        actualizaCta(sku);
-      });
-    });
-
-    const inicial = cards.find((c) => (c.dataset.entradaSku ?? '') === defaultSku) ?? cards[0];
-    if (inicial && defaultSku) marca(inicial, true);
-  }
-</script>
-
-<style>
-  .entrada-card--active {
-    border-color: var(--color-egrem-red) !important;
-    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.25);
-  }
-</style>

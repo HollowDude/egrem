@@ -2,7 +2,16 @@
 export type { JsonApiResource, JsonApiResponse } from './client';
 
 // Parsers — primitives
-export type { NhLink, NhMediaImage, NhMediaFile, NhMediaVideo, NhRemoteVideo, NhButton, NhEntityMeta, NhBase } from './parsers';
+export type {
+  NhLink,
+  NhMediaImage,
+  NhMediaFile,
+  NhMediaVideo,
+  NhRemoteVideo,
+  NhButton,
+  NhEntityMeta,
+  NhBase,
+} from './parsers';
 
 // Fragments
 export type { NhRed, NhContacto, NhHeaderFragment, NhFooterFragment } from './fragments';
@@ -70,12 +79,31 @@ export { detectPlatform, buildEmbedUrl, platformLabel } from './music-embed';
 export type { MusicPlatform } from './music-embed';
 
 // Artistas
-export type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia, NhArtistaVideo, NhExternalApp, NhTrack } from './entities';
-export { fetchArtistas, fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist, fetchVideosByArtista } from './artistas';
+export type {
+  NhArtistaListItem,
+  NhArtistaDetail,
+  NhRedSocial,
+  NhAlbumDiscografia,
+  NhArtistaVideo,
+  NhExternalApp,
+  NhTrack,
+} from './entities';
+export {
+  fetchArtistas,
+  fetchArtistaByPath,
+  fetchArtistaByNid,
+  fetchAlbumsByArtist,
+  fetchVideosByArtista,
+} from './artistas';
 
 // Música (catálogo)
 export type { CatalogoMusicaParams, CatalogoMusicaResult } from './musica';
-export { fetchAlbumesCatalogo, fetchAlbumByPath, fetchAlbumByNid, parseAlbumResource } from './musica';
+export {
+  fetchAlbumesCatalogo,
+  fetchAlbumByPath,
+  fetchAlbumByNid,
+  parseAlbumResource,
+} from './musica';
 
 // Videos (catálogo)
 export type {
@@ -100,17 +128,31 @@ export {
   fetchEventosListado,
   fetchEventoByPath,
   fetchEventoByNid,
+  fetchEventoById,
   esEventoPasado,
   fetchEventosHero,
 } from './eventos';
 
 // Search
 export type { NhSearchResult, NhSearchResponse } from './search';
-export { searchContent, searchAlbums, searchArtistas, searchActualidad, searchVideos, clearSearchCache } from './search';
+export {
+  searchContent,
+  searchAlbums,
+  searchArtistas,
+  searchActualidad,
+  searchVideos,
+  clearSearchCache,
+} from './search';
 
 // About
 export type { NhAboutHero } from './about';
-export type { NhSede, NhSedeAddress, NhSedePhone, NhMisionVision, NhAboutFormHeader } from './entities';
+export type {
+  NhSede,
+  NhSedeAddress,
+  NhSedePhone,
+  NhMisionVision,
+  NhAboutFormHeader,
+} from './entities';
 export { fetchAboutHero, fetchAboutMisionVision, fetchAboutFormHeader } from './about';
 export { fetchSedes } from './sedes';
 

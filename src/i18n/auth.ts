@@ -89,7 +89,8 @@ export const auth: Record<Lang, Record<string, string>> = {
     'auth.forgotPassword.back_to_login': 'Volver al inicio de sesión',
     'auth.forgotPassword.error_empty': 'El correo es obligatorio.',
     'auth.forgotPassword.error_invalid_email': 'Ingresa un correo válido.',
-    'auth.forgotPassword.error_not_found': 'No se pudo procesar la solicitud. Verifica los datos e inténtalo de nuevo.',
+    'auth.forgotPassword.error_not_found':
+      'No se pudo procesar la solicitud. Verifica los datos e inténtalo de nuevo.',
     'auth.forgotPassword.error_server': 'No se pudo enviar el correo. Inténtalo de nuevo.',
     'auth.setPassword.eyebrow': 'Configurar Acceso',
     'auth.setPassword.heading': 'Establecer Contraseña',
@@ -203,7 +204,8 @@ export const auth: Record<Lang, Record<string, string>> = {
     'auth.forgotPassword.back_to_login': 'Back to login',
     'auth.forgotPassword.error_empty': 'Email is required.',
     'auth.forgotPassword.error_invalid_email': 'Enter a valid email.',
-    'auth.forgotPassword.error_not_found': 'We could not process your request. Please check your details and try again.',
+    'auth.forgotPassword.error_not_found':
+      'We could not process your request. Please check your details and try again.',
     'auth.forgotPassword.error_server': 'Could not send the email. Try again.',
     'auth.setPassword.eyebrow': 'Set Up Access',
     'auth.setPassword.heading': 'Set Password',

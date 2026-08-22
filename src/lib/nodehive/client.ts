@@ -52,3 +52,24 @@ export async function jsonApiFetch<A = Record<string, unknown>>(
 export function getBaseUrlValue(): string {
   return getBaseUrl();
 }
+
+export async function jsonApiPost<A = Record<string, unknown>, B = Record<string, unknown>>(
+  path: string,
+  body: B,
+  lang = 'es',
+): Promise<JsonApiResponse<A>> {
+  const url = `${getBaseUrl()}/${lang}/jsonapi/${path}`.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/vnd.api+json',
+      'Content-Type': 'application/vnd.api+json',
+      'X-Auth-Token': getApiKey(),
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`NodeHive POST failed: ${res.status} ${res.statusText} — ${url}`);
+  }
+  return res.json();
+}

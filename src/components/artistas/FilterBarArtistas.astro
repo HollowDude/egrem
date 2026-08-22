@@ -38,45 +38,53 @@ function filterUrl(params: Record<string, string | undefined>): string {
     >
       {tr('artistas.filter.all')}
     </a>
-    {agencias.map((ag) => (
-      <a
-        href={filterUrl({ agencia: ag.slug })}
-        class:list={[
-          'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
-          activeAgencia === ag.slug
-            ? 'bg-egrem-red text-white border-egrem-red'
-            : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
-        ]}
-      >
-        {ag.name}
-      </a>
-    ))}
+    {
+      agencias.map((ag) => (
+        <a
+          href={filterUrl({ agencia: ag.slug })}
+          class:list={[
+            'px-5 py-2 rounded-full font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-2 no-underline',
+            activeAgencia === ag.slug
+              ? 'bg-egrem-red text-white border-egrem-red'
+              : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+          ]}
+        >
+          {ag.name}
+        </a>
+      ))
+    }
   </nav>
 
   <nav class="flex flex-wrap gap-1 justify-center" aria-label="Filter by letter">
-    {letras.map((letra) => {
-      const letterKey = letra === '#' ? 'num' : letra.toLowerCase();
-      const hasArtists = availableLetters ? availableLetters.includes(letterKey) : true;
-      return (
-        <a
-          href={hasArtists ? filterUrl({ letra: letra === '#' ? undefined : letra.toLowerCase() }) : '#'}
-          role="link"
-          aria-disabled={!hasArtists}
-          class:list={[
-            'w-9 h-9 flex items-center justify-center rounded-lg font-display font-bold text-xs uppercase tracking-wider transition-all duration-200 no-underline',
-            !hasArtists && 'opacity-30 pointer-events-none',
-            letra === '#'
-              ? activeLetra === 'num'
-                ? 'bg-egrem-red text-white'
-                : 'bg-transparent text-egrem-gray border border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red'
-              : activeLetra === letra.toLowerCase()
-                ? 'bg-egrem-red text-white'
-                : 'bg-transparent text-egrem-black border border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
-          ]}
-        >
-          {letra === '#' ? '#' : letra}
-        </a>
-      );
-    })}
+    {
+      letras.map((letra) => {
+        const letterKey = letra === '#' ? 'num' : letra.toLowerCase();
+        const hasArtists = availableLetters ? availableLetters.includes(letterKey) : true;
+        return (
+          <a
+            href={
+              hasArtists
+                ? filterUrl({ letra: letra === '#' ? undefined : letra.toLowerCase() })
+                : '#'
+            }
+            role="link"
+            aria-disabled={!hasArtists}
+            class:list={[
+              'w-9 h-9 flex items-center justify-center rounded-lg font-display font-bold text-xs uppercase tracking-wider transition-all duration-200 no-underline',
+              !hasArtists && 'opacity-30 pointer-events-none',
+              letra === '#'
+                ? activeLetra === 'num'
+                  ? 'bg-egrem-red text-white'
+                  : 'bg-transparent text-egrem-gray border border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red'
+                : activeLetra === letra.toLowerCase()
+                  ? 'bg-egrem-red text-white'
+                  : 'bg-transparent text-egrem-black border border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
+            ]}
+          >
+            {letra === '#' ? '#' : letra}
+          </a>
+        );
+      })
+    }
   </nav>
 </div>

@@ -19,7 +19,9 @@ describe('normalizeDrupalUri', () => {
   it('strips internal: prefix', () => {
     expect(normalizeDrupalUri('internal:/catalogo')).toBe('/catalogo');
     expect(normalizeDrupalUri('internal:/node/123')).toBe('/node/123');
-    expect(normalizeDrupalUri('internal:/actualidad/noticias/test')).toBe('/actualidad/noticias/test');
+    expect(normalizeDrupalUri('internal:/actualidad/noticias/test')).toBe(
+      '/actualidad/noticias/test',
+    );
   });
 
   it('leaves external URLs unchanged', () => {

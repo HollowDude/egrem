@@ -26,7 +26,8 @@ function parseGeoField(raw: unknown): { lat: number; lon: number } | null {
 export function parsePhoneList(raw: unknown): NhSedePhone[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((item) => {
-    if (!item || typeof item !== 'object') return { phone_number: '', country_code: '', local_number: '' };
+    if (!item || typeof item !== 'object')
+      return { phone_number: '', country_code: '', local_number: '' };
     const i = item as Record<string, unknown>;
     return {
       phone_number: (i.phone_number as string) ?? '',

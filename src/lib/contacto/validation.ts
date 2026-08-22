@@ -36,7 +36,9 @@ export function validateField(field: ContactField, value: string): ContactErrorC
 
 const FIELDS: ContactField[] = ['inquiry', 'name', 'email', 'message'];
 
-export function validateContact(values: Partial<ContactValues>): Partial<Record<ContactField, ContactErrorCode>> {
+export function validateContact(
+  values: Partial<ContactValues>,
+): Partial<Record<ContactField, ContactErrorCode>> {
   const errors: Partial<Record<ContactField, ContactErrorCode>> = {};
   FIELDS.forEach((field) => {
     const code = validateField(field, values[field] ?? '');
@@ -45,6 +47,8 @@ export function validateContact(values: Partial<ContactValues>): Partial<Record<
   return errors;
 }
 
-export function hasValidationErrors(errors: Partial<Record<ContactField, ContactErrorCode>>): boolean {
+export function hasValidationErrors(
+  errors: Partial<Record<ContactField, ContactErrorCode>>,
+): boolean {
   return Object.values(errors).some((code) => code !== null && code !== undefined);
 }

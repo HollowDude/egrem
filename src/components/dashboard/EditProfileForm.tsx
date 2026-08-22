@@ -92,7 +92,7 @@ export default function EditProfileForm({ lang = 'es' }: Props) {
     <div>
       <header className="mb-8">
         <h3
-          className="text-h2 uppercase m-0 border-l-4 pl-4"
+          className="text-h2 uppercase m-0 border-b-2 border-egrem-gold pb-2"
           style={{ borderColor: CSS.egremGold }}
         >
           {tr('auth.dashboard.personal_info')}

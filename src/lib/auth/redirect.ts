@@ -1,9 +1,4 @@
-const AUTH_PATHS = [
-  '/login',
-  '/registro',
-  '/recuperar-contrasena',
-  '/reset-password',
-];
+const AUTH_PATHS = ['/login', '/registro', '/recuperar-contrasena', '/reset-password'];
 
 function stripQuery(path: string): string {
   const clean = path.startsWith('/') ? path : `/${path}`;

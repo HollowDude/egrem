@@ -16,7 +16,10 @@ const tr = useTranslations(lang);
 const artista = Astro.url.searchParams.get('artista') ?? '';
 const tipo = Astro.url.searchParams.get('tipo') ?? '';
 
-const result = await fetchVideosCatalogo({ artista: artista || undefined, tipo: tipo || undefined, page: 1 }, lang);
+const result = await fetchVideosCatalogo(
+  { artista: artista || undefined, tipo: tipo || undefined, page: 1 },
+  lang,
+);
 const { videos, total, hasMore, availableArtistas, availableTipos } = result;
 
 let hero = null;
@@ -34,10 +37,7 @@ try {
 }
 ---
 
-<BaseLayout
-  title={tr('videos.page_title')}
-  description={tr('videos.page_description')}
->
+<BaseLayout title={tr('videos.page_title')} description={tr('videos.page_description')}>
   <main id="main-content">
     <HeroCatalogo
       title={hero?.title || tr('videos.hero.title')}
@@ -46,50 +46,63 @@ try {
       nhEntity={hero || undefined}
     />
 
-    {destacado?.youtubeId ? (
-      <VideoDestacado video={destacado} />
-    ) : null}
+    {destacado?.youtubeId ? <VideoDestacado video={destacado} /> : null}
 
     <VideoFilterBar {availableArtistas} {artista} {availableTipos} {tipo} />
 
     <section class="section-py bg-white">
       <div class="container-site">
-        {videos.length === 0 ? (
-          <div class="flex flex-col items-center justify-center py-16 text-center">
-            <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">videocam_off</span>
-            <p class="text-egrem-gray text-body">{tr('videos.no_results')}</p>
-          </div>
-        ) : (
-          <>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5" data-videos-grid>
-              {videos.map((video) => (
-                <VideoCard video={video} />
-              ))}
+        {
+          videos.length === 0 ? (
+            <div class="flex flex-col items-center justify-center py-16 text-center">
+              <span
+                class="text-5xl text-egrem-gray/40 mb-4"
+                style="font-family: 'Material Symbols Outlined';"
+              >
+                videocam_off
+              </span>
+              <p class="text-egrem-gray text-body">{tr('videos.no_results')}</p>
             </div>
+          ) : (
+            <>
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5"
+                data-videos-grid
+              >
+                {videos.map((video) => (
+                  <VideoCard video={video} />
+                ))}
+              </div>
 
-            <div class="mt-12 flex flex-col items-center gap-4">
-              <p class="font-display text-[11px] text-egrem-gray uppercase tracking-wider" data-videos-count>
-                {tr('videos.showing')
-                  .replace('{count}', String(videos.length))
-                  .replace('{total}', String(total))}
-              </p>
-              {hasMore && (
-                <button
-                  type="button"
-                  data-load-more
-                  data-artista={artista}
-                  data-tipo={tipo}
-                  data-lang={lang}
-                  data-page="1"
-                  class="inline-flex items-center gap-2 px-8 py-3 bg-egrem-black text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-full hover:bg-egrem-red hover:scale-105 active:scale-[0.97] transition-all duration-200 cursor-pointer border-none"
+              <div class="mt-12 flex flex-col items-center gap-4">
+                <p
+                  class="font-display text-[11px] text-egrem-gray uppercase tracking-wider"
+                  data-videos-count
                 >
-                  <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">add</span>
-                  {tr('videos.pagination.load_more')}
-                </button>
-              )}
-            </div>
-          </>
-        )}
+                  {tr('videos.showing')
+                    .replace('{count}', String(videos.length))
+                    .replace('{total}', String(total))}
+                </p>
+                {hasMore && (
+                  <button
+                    type="button"
+                    data-load-more
+                    data-artista={artista}
+                    data-tipo={tipo}
+                    data-lang={lang}
+                    data-page="1"
+                    class="inline-flex items-center gap-2 px-8 py-3 bg-egrem-black text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-full hover:bg-egrem-red hover:scale-105 active:scale-[0.97] transition-all duration-200 cursor-pointer border-none"
+                  >
+                    <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">
+                      add
+                    </span>
+                    {tr('videos.pagination.load_more')}
+                  </button>
+                )}
+              </div>
+            </>
+          )
+        }
       </div>
     </section>
   </main>
@@ -102,36 +115,50 @@ try {
     const countEl = document.querySelector('[data-videos-count]');
     if (!grid || !loadMoreBtn) return;
 
-  const lang = loadMoreBtn.dataset.lang || 'es';
-  const STRINGS: Record<string, { loading: string; noMore: string; error: string; count: string }> = {
-    es: { loading: 'Cargando...', noMore: 'No hay más videos', error: 'Error al cargar videos', count: 'Mostrando {count} de {total} videos' },
-    en: { loading: 'Loading...', noMore: 'No more videos', error: 'Error loading videos', count: 'Showing {count} of {total} videos' },
-  };
-  const S = STRINGS[lang] ?? STRINGS.es;
-  const defaultLabel = loadMoreBtn.textContent ?? '';
+    const lang = loadMoreBtn.dataset.lang || 'es';
+    const STRINGS: Record<
+      string,
+      { loading: string; noMore: string; error: string; count: string }
+    > = {
+      es: {
+        loading: 'Cargando...',
+        noMore: 'No hay más videos',
+        error: 'Error al cargar videos',
+        count: 'Mostrando {count} de {total} videos',
+      },
+      en: {
+        loading: 'Loading...',
+        noMore: 'No more videos',
+        error: 'Error loading videos',
+        count: 'Showing {count} of {total} videos',
+      },
+    };
+    const S = STRINGS[lang] ?? STRINGS.es;
+    const defaultLabel = loadMoreBtn.textContent ?? '';
 
-  function escapeHtml(value: string): string {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
-  }
+    function escapeHtml(value: string): string {
+      return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
 
-  function videoCardHtml(v: {
-    youtubeId: string | null;
-    title: string;
-    thumbnail: string | null;
-    artistas: { name: string }[];
-  }): string {
-    const thumb = v.thumbnail
-      ? `<img src="${escapeHtml(v.thumbnail)}" alt="${escapeHtml(v.title)}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />`
-      : `<div class="w-full h-full flex items-center justify-center bg-egrem-dark"><span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">videocam</span></div>`;
-    const artistas = v.artistas.length > 0
-      ? `<p class="font-display text-small text-egrem-gray">${v.artistas.map((a) => escapeHtml(a.name)).join(', ')}</p>`
-      : '';
-    return `
+    function videoCardHtml(v: {
+      youtubeId: string | null;
+      title: string;
+      thumbnail: string | null;
+      artistas: { name: string }[];
+    }): string {
+      const thumb = v.thumbnail
+        ? `<img src="${escapeHtml(v.thumbnail)}" alt="${escapeHtml(v.title)}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />`
+        : `<div class="w-full h-full flex items-center justify-center bg-egrem-dark"><span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">videocam</span></div>`;
+      const artistas =
+        v.artistas.length > 0
+          ? `<p class="font-display text-small text-egrem-gray">${v.artistas.map((a) => escapeHtml(a.name)).join(', ')}</p>`
+          : '';
+      return `
       <a href="#" data-youtube-id="${escapeHtml(v.youtubeId ?? '')}" class="group no-underline cursor-pointer" aria-label="${escapeHtml(v.title)}">
         <div class="aspect-video relative overflow-hidden rounded-2xl border border-egrem-gray/20 bg-egrem-dark group-hover:border-egrem-red transition-all duration-300 mb-3">
           ${thumb}
@@ -143,48 +170,48 @@ try {
         ${artistas}
       </a>
     `;
-  }
-
-  loadMoreBtn.addEventListener('click', async () => {
-    const page = parseInt(loadMoreBtn.dataset.page || '1') + 1;
-    loadMoreBtn.disabled = true;
-    loadMoreBtn.textContent = S.loading;
-
-    try {
-      const qs = new URLSearchParams({
-        page: String(page),
-        lang: loadMoreBtn.dataset.lang || 'es',
-      });
-      if (loadMoreBtn.dataset.artista) qs.set('artista', loadMoreBtn.dataset.artista);
-      if (loadMoreBtn.dataset.tipo) qs.set('tipo', loadMoreBtn.dataset.tipo);
-
-      const res = await fetch(`/api/catalogo/videos?${qs.toString()}`);
-      if (!res.ok) throw new Error('bad status');
-      const data = await res.json();
-
-      const fragment = document.createElement('div');
-      fragment.innerHTML = data.videos.map(videoCardHtml).join('');
-      for (const node of Array.from(fragment.children)) {
-        grid.appendChild(node);
-      }
-
-      loadMoreBtn.dataset.page = String(data.currentPage);
-      if (countEl) {
-        countEl.textContent = S.count
-          .replace('{count}', String(grid.children.length))
-          .replace('{total}', String(data.total));
-      }
-      if (data.hasMore) {
-        loadMoreBtn.disabled = false;
-        loadMoreBtn.textContent = defaultLabel;
-      } else {
-        loadMoreBtn.textContent = S.noMore;
-        loadMoreBtn.style.display = 'none';
-      }
-    } catch {
-      loadMoreBtn.disabled = false;
-      loadMoreBtn.textContent = S.error;
     }
-  });
+
+    loadMoreBtn.addEventListener('click', async () => {
+      const page = parseInt(loadMoreBtn.dataset.page || '1') + 1;
+      loadMoreBtn.disabled = true;
+      loadMoreBtn.textContent = S.loading;
+
+      try {
+        const qs = new URLSearchParams({
+          page: String(page),
+          lang: loadMoreBtn.dataset.lang || 'es',
+        });
+        if (loadMoreBtn.dataset.artista) qs.set('artista', loadMoreBtn.dataset.artista);
+        if (loadMoreBtn.dataset.tipo) qs.set('tipo', loadMoreBtn.dataset.tipo);
+
+        const res = await fetch(`/api/catalogo/videos?${qs.toString()}`);
+        if (!res.ok) throw new Error('bad status');
+        const data = await res.json();
+
+        const fragment = document.createElement('div');
+        fragment.innerHTML = data.videos.map(videoCardHtml).join('');
+        for (const node of Array.from(fragment.children)) {
+          grid.appendChild(node);
+        }
+
+        loadMoreBtn.dataset.page = String(data.currentPage);
+        if (countEl) {
+          countEl.textContent = S.count
+            .replace('{count}', String(grid.children.length))
+            .replace('{total}', String(data.total));
+        }
+        if (data.hasMore) {
+          loadMoreBtn.disabled = false;
+          loadMoreBtn.textContent = defaultLabel;
+        } else {
+          loadMoreBtn.textContent = S.noMore;
+          loadMoreBtn.style.display = 'none';
+        }
+      } catch {
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = S.error;
+      }
+    });
   })();
 </script>

@@ -1,5 +1,9 @@
 import type { APIRoute } from 'astro';
-import { validateContact, type ContactField, type ContactErrorCode } from '@/lib/contacto/validation';
+import {
+  validateContact,
+  type ContactField,
+  type ContactErrorCode,
+} from '@/lib/contacto/validation';
 import { fetchSedes } from '@/lib/nodehive/sedes';
 
 const RATE_LIMIT_WINDOW = 60_000;
@@ -35,13 +39,13 @@ function rateLimit(ip: string): boolean {
 }
 
 function validate(
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
 ): { field: ContactField; code: ContactErrorCode } | null {
   const errors = validateContact({
-    inquiry: body.inquiry as string | undefined ?? '',
-    name: body.name as string | undefined ?? '',
-    email: body.email as string | undefined ?? '',
-    message: body.message as string | undefined ?? '',
+    inquiry: (body.inquiry as string | undefined) ?? '',
+    name: (body.name as string | undefined) ?? '',
+    email: (body.email as string | undefined) ?? '',
+    message: (body.message as string | undefined) ?? '',
   });
   const field = (Object.keys(errors) as ContactField[])[0];
   if (!field || !errors[field]) return null;
@@ -59,7 +63,10 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('cf-connecting-ip') ?? 'unknown';
+    const ip =
+      request.headers.get('x-forwarded-for') ??
+      request.headers.get('cf-connecting-ip') ??
+      'unknown';
     if (rateLimit(ip)) {
       return new Response(JSON.stringify({ error: 'Demasiadas solicitudes. Intente más tarde.' }), {
         status: 429,
@@ -78,7 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
         {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
-        }
+        },
       );
     }
 

@@ -114,7 +114,11 @@ function itemHref(item: NhActualidadItem): string {
 
 function cardImage(item: NhActualidadItem): { url: string; alt: string } | undefined {
   if (item.image?.url) return { url: item.image.url, alt: item.image.alt };
-  if (item.remoteVideo?.youtubeId) return { url: `https://img.youtube.com/vi/${item.remoteVideo.youtubeId}/mqdefault.jpg`, alt: item.remoteVideo.title };
+  if (item.remoteVideo?.youtubeId)
+    return {
+      url: `https://img.youtube.com/vi/${item.remoteVideo.youtubeId}/mqdefault.jpg`,
+      alt: item.remoteVideo.title,
+    };
   return undefined;
 }
 
@@ -130,9 +134,15 @@ function sectionTotalPages(items: unknown[], section: string): number {
 }
 
 const noticiasPageItems = sliceItems(noticias, 'noticias');
-const articulosPageItems = sliceItems(articulos, 'articulos').map((item) => ({ item, img: cardImage(item) }));
+const articulosPageItems = sliceItems(articulos, 'articulos').map((item) => ({
+  item,
+  img: cardImage(item),
+}));
 const blogsPageItems = sliceItems(blogs, 'blogs');
-const patrimonioPageItems = sliceItems(filteredPatrimonioItems, 'patrimonio').map((item) => ({ item, img: cardImage(item) }));
+const patrimonioPageItems = sliceItems(filteredPatrimonioItems, 'patrimonio').map((item) => ({
+  item,
+  img: cardImage(item),
+}));
 
 function formatDate(d: string): string {
   if (!d) return '';
@@ -325,7 +335,7 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
               class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 scroll-smooth"
               style="scrollbar-width:thin;"
             >
-                  {articulosPageItems.map(({ item, img }) => (
+              {articulosPageItems.map(({ item, img }) => (
                 <article class="min-w-[300px] md:min-w-[calc(33.333%-16px)] snap-start card card--hover-red card--no-zoom group flex flex-col shrink-0">
                   <a
                     href={itemHref(item)}
@@ -353,12 +363,12 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
                         {item.title}
                       </a>
                     </h3>
-                        <p
-                          class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1 min-h-[4.375rem]"
-                          style="color: var(--color-text-secondary);"
-                        >
-                          {item.summary}
-                        </p>
+                    <p
+                      class="font-display text-[0.9rem] leading-relaxed m-0 line-clamp-3 flex-1 min-h-[4.375rem]"
+                      style="color: var(--color-text-secondary);"
+                    >
+                      {item.summary}
+                    </p>
                     <div class="flex items-center justify-between mt-4">
                       <span class="text-egrem-gray text-small">{formatDate(item.date)}</span>
                       <ActionLink href={itemHref(item)}>{tr('actualidad.read_more')}</ActionLink>
@@ -466,245 +476,246 @@ function entityMeta(entity: NhEntityMeta | undefined | null): NhEntityMeta | und
 
     <!-- ─── PATRIMONIO CULTURAL ──────────────────────────────────── -->
     <div id="patrimonio">
-    <NodeHiveEntity
-      entityType="paragraph"
-      bundle={patrimonioSection?.bundle ?? 'component_patrimonio_section'}
-      id={patrimonioSection?.id}
-      internalId={patrimonioSection?.internalId}
-      parentId={patrimonioSection?.parentId}
-      lang={lang}
-      tag="section"
-      class="section-py border-t border-black/[0.08] bg-[#faf5eb]"
-      editLabel="Editar Patrimonio"
-      editField="field_video_yt"
-    >
-      <div class="container-site">
-        <div class="mb-8">
-          <h2
-            class="section-title border-b-4 border-egrem-gold pb-2 m-0 mb-2 inline-block text-egrem-black"
-          >
-            {tr('nav.news.heritage')}
-          </h2>
-          <p class="text-body" style="color:var(--color-text-secondary); max-width:42rem;">
-            Preservando el legado y la memoria viva de nuestra herencia musical.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <!-- Left Column: featured video -->
-          <div class="lg:col-span-8 flex flex-col gap-6">
-            <PatrimonioVideoCard
-              videoUrl={patrimonioSection?.videoUrl ?? null}
-              videoAvailable={patrimonioSection?.videoAvailable ?? false}
-              videoTitle={patrimonioSection?.videoTitle ?? null}
-              videoThumbnail={patrimonioSection?.videoThumbnail ?? null}
-              videoAuthor={patrimonioSection?.videoAuthor ?? null}
-              youtubeId={patrimonioSection?.videoUrl
-                ? extractYouTubeId(patrimonioSection.videoUrl)
-                : null}
-            />
-
-            {
-              (!patrimonioSection ||
-                (!patrimonioSection.videoAvailable &&
-                  patrimonioItems.filter((i) => i.bundle !== 'boletin_archivo').length === 0)) && (
-                <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
-              )
-            }
+      <NodeHiveEntity
+        entityType="paragraph"
+        bundle={patrimonioSection?.bundle ?? 'component_patrimonio_section'}
+        id={patrimonioSection?.id}
+        internalId={patrimonioSection?.internalId}
+        parentId={patrimonioSection?.parentId}
+        lang={lang}
+        tag="section"
+        class="section-py border-t border-black/[0.08] bg-[#faf5eb]"
+        editLabel="Editar Patrimonio"
+        editField="field_video_yt"
+      >
+        <div class="container-site">
+          <div class="mb-8">
+            <h2
+              class="section-title border-b-4 border-egrem-gold pb-2 m-0 mb-2 inline-block text-egrem-black"
+            >
+              {tr('nav.news.heritage')}
+            </h2>
+            <p class="text-body" style="color:var(--color-text-secondary); max-width:42rem;">
+              Preservando el legado y la memoria viva de nuestra herencia musical.
+            </p>
           </div>
 
-          <!-- Right Column: boletines destacados + artículo destacado -->
-          <div class="lg:col-span-4 flex flex-col gap-6">
-            {
-              (patrimonioSection?.boletines.length ?? 0) > 0 && (
-                <div class="card card--no-zoom p-6">
-                  <h3 class="font-display font-bold text-xl text-egrem-black mb-4 flex items-center gap-2 border-b border-egrem-gray/20 pb-3">
-                    <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-red);">
-                      description
-                    </span>
-                    Boletines Destacados
-                  </h3>
-                  <ul class="flex flex-col">
-                    {patrimonioSection!.boletines.slice(0, 5).map((item) => (
-                      <PatrimonioBoletinItem
-                        title={item.title}
-                        date={item.date}
-                        fileUrl={item.attachment?.url ?? null}
-                      />
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    data-boletines-modal-trigger
-                    class="mt-4 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest bg-transparent border-0 p-0 cursor-pointer no-underline hover:text-egrem-red transition-colors group/link"
-                  >
-                    Ver todos
-                    <span
-                      class="text-[18px] group-hover/link:translate-x-1 transition-transform"
-                      style="font-family:'Material Symbols Outlined';"
-                    >
-                      arrow_forward
-                    </span>
-                  </button>
-                </div>
-              )
-            }
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Column: featured video -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+              <PatrimonioVideoCard
+                videoUrl={patrimonioSection?.videoUrl ?? null}
+                videoAvailable={patrimonioSection?.videoAvailable ?? false}
+                videoTitle={patrimonioSection?.videoTitle ?? null}
+                videoThumbnail={patrimonioSection?.videoThumbnail ?? null}
+                videoAuthor={patrimonioSection?.videoAuthor ?? null}
+                youtubeId={patrimonioSection?.videoUrl
+                  ? extractYouTubeId(patrimonioSection.videoUrl)
+                  : null}
+              />
 
-            {
-              patrimonioSection?.articuloDestacado && (
-                <article class="card card--no-zoom p-6 group">
-                  <span class="badge mb-3 self-start inline-block">ARTÍCULO HISTÓRICO</span>
-                  <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2">
-                    <a
-                      href={itemHref(patrimonioSection.articuloDestacado)}
-                      class="text-inherit no-underline"
+              {
+                (!patrimonioSection ||
+                  (!patrimonioSection.videoAvailable &&
+                    patrimonioItems.filter((i) => i.bundle !== 'boletin_archivo').length ===
+                      0)) && <p class="text-egrem-gray">{tr('actualidad.no_results')}</p>
+              }
+            </div>
+
+            <!-- Right Column: boletines destacados + artículo destacado -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+              {
+                (patrimonioSection?.boletines.length ?? 0) > 0 && (
+                  <div class="card card--no-zoom p-6">
+                    <h3 class="font-display font-bold text-xl text-egrem-black mb-4 flex items-center gap-2 border-b border-egrem-gray/20 pb-3">
+                      <span style="font-family:'Material Symbols Outlined'; color: var(--color-egrem-red);">
+                        description
+                      </span>
+                      Boletines Destacados
+                    </h3>
+                    <ul class="flex flex-col">
+                      {patrimonioSection!.boletines.slice(0, 5).map((item) => (
+                        <PatrimonioBoletinItem
+                          title={item.title}
+                          date={item.date}
+                          fileUrl={item.attachment?.url ?? null}
+                        />
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      data-boletines-modal-trigger
+                      class="mt-4 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest bg-transparent border-0 p-0 cursor-pointer no-underline hover:text-egrem-red transition-colors group/link"
                     >
-                      {patrimonioSection.articuloDestacado.title}
-                    </a>
-                  </h3>
-                  <p
-                    class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 mb-3"
-                    style="color:var(--color-text-secondary);"
-                  >
-                    {patrimonioSection.articuloDestacado.summary}
-                  </p>
-                  <div class="flex items-center gap-3 text-egrem-gray text-caption">
-                    {patrimonioSection.articuloDestacado.author && (
+                      Ver todos
+                      <span
+                        class="text-[18px] group-hover/link:translate-x-1 transition-transform"
+                        style="font-family:'Material Symbols Outlined';"
+                      >
+                        arrow_forward
+                      </span>
+                    </button>
+                  </div>
+                )
+              }
+
+              {
+                patrimonioSection?.articuloDestacado && (
+                  <article class="card card--no-zoom p-6 group">
+                    <span class="badge mb-3 self-start inline-block">ARTÍCULO HISTÓRICO</span>
+                    <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2">
+                      <a
+                        href={itemHref(patrimonioSection.articuloDestacado)}
+                        class="text-inherit no-underline"
+                      >
+                        {patrimonioSection.articuloDestacado.title}
+                      </a>
+                    </h3>
+                    <p
+                      class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 mb-3"
+                      style="color:var(--color-text-secondary);"
+                    >
+                      {patrimonioSection.articuloDestacado.summary}
+                    </p>
+                    <div class="flex items-center gap-3 text-egrem-gray text-caption">
+                      {patrimonioSection.articuloDestacado.author && (
+                        <span class="flex items-center gap-1">
+                          <span style="font-family:'Material Symbols Outlined'; font-size:14px;">
+                            person
+                          </span>
+                          {patrimonioSection.articuloDestacado.author}
+                        </span>
+                      )}
                       <span class="flex items-center gap-1">
                         <span style="font-family:'Material Symbols Outlined'; font-size:14px;">
-                          person
+                          calendar_today
                         </span>
-                        {patrimonioSection.articuloDestacado.author}
+                        {formatDate(patrimonioSection.articuloDestacado.date)}
                       </span>
-                    )}
-                    <span class="flex items-center gap-1">
-                      <span style="font-family:'Material Symbols Outlined'; font-size:14px;">
-                        calendar_today
-                      </span>
-                      {formatDate(patrimonioSection.articuloDestacado.date)}
-                    </span>
-                  </div>
-                  <a
-                    href={itemHref(patrimonioSection.articuloDestacado)}
-                    class="mt-3 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link"
-                  >
-                    Leer más
-                    <span
-                      class="text-[18px] group-hover/link:translate-x-1 transition-transform"
-                      style="font-family:'Material Symbols Outlined';"
+                    </div>
+                    <a
+                      href={itemHref(patrimonioSection.articuloDestacado)}
+                      class="mt-3 inline-flex items-center gap-1 text-small font-bold text-egrem-gold uppercase tracking-widest no-underline hover:text-egrem-red transition-colors group/link"
                     >
-                      arrow_forward
-                    </span>
-                  </a>
-                </article>
+                      Leer más
+                      <span
+                        class="text-[18px] group-hover/link:translate-x-1 transition-transform"
+                        style="font-family:'Material Symbols Outlined';"
+                      >
+                        arrow_forward
+                      </span>
+                    </a>
+                  </article>
+                )
+              }
+            </div>
+          </div>
+
+          <!-- ARCHIVO COMPLETO — PATRIMONIO CULTURAL -->
+          <div id="archivo-patrimonial" class="mt-10 border-t border-egrem-gold/20 pt-8">
+            <h3
+              class="font-display font-bold text-xl text-egrem-black mb-6 uppercase tracking-wider"
+            >
+              ARCHIVO COMPLETO — PATRIMONIO CULTURAL
+            </h3>
+
+            <!-- Search bar -->
+            <form method="GET" action="/actualidad#archivo-patrimonial" class="mb-6">
+              <div class="relative">
+                <span
+                  class="absolute left-4 top-1/2 -translate-y-1/2 text-egrem-gray"
+                  style="font-family:'Material Symbols Outlined';">search</span
+                >
+                <input
+                  type="text"
+                  name="buscar"
+                  value={searchTerm}
+                  placeholder="Buscar en el archivo patrimonial..."
+                  class="w-full pl-12 pr-4 py-3 rounded-xl border border-egrem-gray/30 font-display text-body bg-white focus:outline-none focus:border-egrem-gold focus:ring-1 focus:ring-egrem-gold transition-colors"
+                />
+              </div>
+            </form>
+
+            <!-- Cards -->
+            {
+              filteredPatrimonioItems.length > 0 ? (
+                <>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {patrimonioPageItems.map(({ item, img }) => (
+                      <article class="card card--hover-red card--no-zoom group flex flex-col">
+                        <a
+                          href={itemHref(item)}
+                          class="block overflow-hidden no-underline shrink-0"
+                          style="height: 11rem;"
+                        >
+                          {img?.url ? (
+                            <img
+                              src={img.url}
+                              alt={img.alt}
+                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <div class="w-full h-full bg-egrem-gray-light" />
+                          )}
+                        </a>
+                        <div class="card-body flex flex-col flex-1">
+                          <span class="badge mb-2 self-start">
+                            {tr(`actualidad.badge.${item.bundle}`)}
+                          </span>
+                          <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2 min-h-[2.5rem]">
+                            <a href={itemHref(item)} class="text-inherit no-underline">
+                              {item.title}
+                            </a>
+                          </h3>
+                          <p
+                            class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1"
+                            style="color:var(--color-text-secondary);"
+                          >
+                            {stripHtml(item.body || item.summary)}
+                          </p>
+                          <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
+                            <span
+                              class="text-[14px]"
+                              style="font-family:'Material Symbols Outlined';"
+                            >
+                              calendar_today
+                            </span>
+                            <span>{formatDate(item.date)}</span>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <Paginator
+                    section="patrimonio"
+                    totalPages={sectionTotalPages(filteredPatrimonioItems, 'patrimonio')}
+                    currentPage={getSectionPage('patrimonio')}
+                    activeTag={activeTag}
+                    searchTerm={searchTerm}
+                    anchor="archivo-patrimonial"
+                  />
+                </>
+              ) : patrimonioItems.length > 0 ? (
+                <p class="text-egrem-gray text-body text-center py-8">
+                  No se encontraron resultados para "{searchTerm}"
+                </p>
+              ) : (
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                  <span
+                    class="text-5xl text-egrem-gray/40 mb-4"
+                    style="font-family:'Material Symbols Outlined';"
+                  >
+                    archive
+                  </span>
+                  <p class="text-egrem-gray text-body">{tr('actualidad.section_empty')}</p>
+                </div>
               )
             }
           </div>
         </div>
-
-        <!-- ARCHIVO COMPLETO — PATRIMONIO CULTURAL -->
-        <div id="archivo-patrimonial" class="mt-10 border-t border-egrem-gold/20 pt-8">
-          <h3 class="font-display font-bold text-xl text-egrem-black mb-6 uppercase tracking-wider">
-            ARCHIVO COMPLETO — PATRIMONIO CULTURAL
-          </h3>
-
-          <!-- Search bar -->
-          <form method="GET" action="/actualidad#archivo-patrimonial" class="mb-6">
-            <div class="relative">
-              <span
-                class="absolute left-4 top-1/2 -translate-y-1/2 text-egrem-gray"
-                style="font-family:'Material Symbols Outlined';">search</span
-              >
-              <input
-                type="text"
-                name="buscar"
-                value={searchTerm}
-                placeholder="Buscar en el archivo patrimonial..."
-                class="w-full pl-12 pr-4 py-3 rounded-xl border border-egrem-gray/30 font-display text-body bg-white focus:outline-none focus:border-egrem-gold focus:ring-1 focus:ring-egrem-gold transition-colors"
-              />
-            </div>
-          </form>
-
-          <!-- Cards -->
-          {
-            filteredPatrimonioItems.length > 0 ? (
-              <>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {patrimonioPageItems.map(({ item, img }) => (
-                    <article class="card card--hover-red card--no-zoom group flex flex-col">
-                      <a
-                        href={itemHref(item)}
-                        class="block overflow-hidden no-underline shrink-0"
-                        style="height: 11rem;"
-                      >
-                        {img?.url ? (
-                          <img
-                            src={img.url}
-                            alt={img.alt}
-                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-egrem-gray-light"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ) : (
-                          <div class="w-full h-full bg-egrem-gray-light" />
-                        )}
-                      </a>
-                      <div class="card-body flex flex-col flex-1">
-                        <span class="badge mb-2 self-start">
-                          {tr(`actualidad.badge.${item.bundle}`)}
-                        </span>
-                        <h3 class="font-display font-bold text-base text-egrem-black leading-tight m-0 mb-2 group-hover:text-egrem-red transition-colors line-clamp-2 min-h-[2.5rem]">
-                          <a href={itemHref(item)} class="text-inherit no-underline">
-                            {item.title}
-                          </a>
-                        </h3>
-                        <p
-                          class="font-display text-[0.85rem] leading-relaxed m-0 line-clamp-2 flex-1"
-                          style="color:var(--color-text-secondary);"
-                        >
-                          {stripHtml(item.body || item.summary)}
-                        </p>
-                        <div class="flex items-center gap-2 mt-3 text-egrem-gray text-caption">
-                          <span
-                            class="text-[14px]"
-                            style="font-family:'Material Symbols Outlined';"
-                          >
-                            calendar_today
-                          </span>
-                          <span>{formatDate(item.date)}</span>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-                <Paginator
-                  section="patrimonio"
-                  totalPages={sectionTotalPages(filteredPatrimonioItems, 'patrimonio')}
-                  currentPage={getSectionPage('patrimonio')}
-                  activeTag={activeTag}
-                  searchTerm={searchTerm}
-                  anchor="archivo-patrimonial"
-                />
-              </>
-            ) : patrimonioItems.length > 0 ? (
-              <p class="text-egrem-gray text-body text-center py-8">
-                No se encontraron resultados para "{searchTerm}"
-              </p>
-            ) : (
-              <div class="flex flex-col items-center justify-center py-16 text-center">
-                <span
-                  class="text-5xl text-egrem-gray/40 mb-4"
-                  style="font-family:'Material Symbols Outlined';"
-                >
-                  archive
-                </span>
-                <p class="text-egrem-gray text-body">{tr('actualidad.section_empty')}</p>
-              </div>
-            )
-          }
-        </div>
-      </div>
-    </NodeHiveEntity>
+      </NodeHiveEntity>
     </div>
     <YouTubePlayer client:load />
     <BoletinesModal client:load boletines={boletinesModalData} />

@@ -133,6 +133,7 @@ export interface NhActualidadItem extends NhBase {
   relatedEvents?: NhEvento[];
   relatedContent?: NhActualidadItem[];
   attachment?: NhMediaFile | null;
+  compartirSociales?: boolean;
 }
 
 export interface NhActualidadHero extends NhEntityMeta {

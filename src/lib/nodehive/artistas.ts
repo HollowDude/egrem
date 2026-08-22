@@ -4,7 +4,13 @@ import { findIncluded, resolveRelIds } from './helpers';
 import { parseMediaImage, resolveFileUrl, normalizeDrupalUri } from './parsers';
 import type { NhMediaImage } from './parsers';
 import { resolveVideoLink } from './youtube';
-import type { NhArtistaListItem, NhArtistaDetail, NhRedSocial, NhAlbumDiscografia, NhArtistaVideo } from './entities';
+import type {
+  NhArtistaListItem,
+  NhArtistaDetail,
+  NhRedSocial,
+  NhAlbumDiscografia,
+  NhArtistaVideo,
+} from './entities';
 import { parseAlbumResource } from './musica';
 
 function parseAgencia(
@@ -18,7 +24,11 @@ function parseAgencia(
   const a = term.attributes as Record<string, unknown>;
   const name = (a.name as string) ?? '';
   if (!name) return undefined;
-  return { name, slug: name.toLowerCase().replace(/\s+/g, '-'), tid: a.drupal_internal__tid as number };
+  return {
+    name,
+    slug: name.toLowerCase().replace(/\s+/g, '-'),
+    tid: a.drupal_internal__tid as number,
+  };
 }
 
 function parseImage(
@@ -40,7 +50,8 @@ function parseRedesSociales(
   included: JsonApiResource[] | undefined,
 ): NhRedSocial[] {
   return resolveRelIds(
-    (resource.relationships as Record<string, JsonApiRelationship> | undefined)?.field_redes_sociales,
+    (resource.relationships as Record<string, JsonApiRelationship> | undefined)
+      ?.field_redes_sociales,
   )
     .map((ref) => {
       const p = findIncluded(included, 'paragraph--redsocial_artista', ref.id);
@@ -67,13 +78,20 @@ export async function fetchArtistas(lang = 'es'): Promise<NhArtistaListItem[]> {
 
     return data.map((resource) => {
       const a = resource.attributes as Record<string, unknown>;
-      const href = (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
+      const href =
+        (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
       return {
         id: resource.id,
         nid: (a.drupal_internal__nid as number) ?? 0,
         name: (a.title as string) ?? '',
-        image: parseImage(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
-        agencia: parseAgencia(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
+        image: parseImage(
+          resource as { relationships?: Record<string, JsonApiRelationship> },
+          included,
+        ),
+        agencia: parseAgencia(
+          resource as { relationships?: Record<string, JsonApiRelationship> },
+          included,
+        ),
         body: (a.body as { value?: string })?.value ?? '',
         summary: (a.body as { summary?: string })?.summary ?? '',
         href: href.startsWith('/') ? href : `/${href}`,
@@ -101,18 +119,28 @@ export async function fetchArtistaByPath(
     const a = resource.attributes as Record<string, unknown>;
     const included = res.included ?? [];
 
-    const href = (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
+    const href =
+      (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
 
     return {
       id: resource.id,
       nid: (a.drupal_internal__nid as number) ?? 0,
       name: (a.title as string) ?? '',
-      image: parseImage(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
-      agencia: parseAgencia(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
+      image: parseImage(
+        resource as { relationships?: Record<string, JsonApiRelationship> },
+        included,
+      ),
+      agencia: parseAgencia(
+        resource as { relationships?: Record<string, JsonApiRelationship> },
+        included,
+      ),
       body: (a.body as { value?: string })?.value ?? '',
       summary: (a.body as { summary?: string })?.summary ?? '',
       href: href.startsWith('/') ? href : `/${href}`,
-      redesSociales: parseRedesSociales(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
+      redesSociales: parseRedesSociales(
+        resource as { relationships?: Record<string, JsonApiRelationship> },
+        included,
+      ),
     };
   } catch (e) {
     console.warn('[NodeHive] fetchArtistaByPath failed:', e);
@@ -120,10 +148,7 @@ export async function fetchArtistaByPath(
   }
 }
 
-export async function fetchArtistaByNid(
-  nid: number,
-  lang = 'es',
-): Promise<NhArtistaDetail | null> {
+export async function fetchArtistaByNid(nid: number, lang = 'es'): Promise<NhArtistaDetail | null> {
   try {
     const res = await jsonApiFetch<Record<string, unknown>>(
       `node/artista?filter[drupal_internal__nid]=${nid}&include=field_imagen,field_imagen.field_media_image,field_agencia,field_redes_sociales`,
@@ -134,18 +159,28 @@ export async function fetchArtistaByNid(
     const resource = data[0] as JsonApiResource<Record<string, unknown>>;
     const a = resource.attributes as Record<string, unknown>;
     const included = res.included ?? [];
-    const href = (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
+    const href =
+      (a.path as { alias?: string | null })?.alias ?? `/artista/${a.drupal_internal__nid}`;
 
     return {
       id: resource.id,
       nid: (a.drupal_internal__nid as number) ?? 0,
       name: (a.title as string) ?? '',
-      image: parseImage(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
-      agencia: parseAgencia(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
+      image: parseImage(
+        resource as { relationships?: Record<string, JsonApiRelationship> },
+        included,
+      ),
+      agencia: parseAgencia(
+        resource as { relationships?: Record<string, JsonApiRelationship> },
+        included,
+      ),
       body: (a.body as { value?: string })?.value ?? '',
       summary: (a.body as { summary?: string })?.summary ?? '',
       href: href.startsWith('/') ? href : `/${href}`,
-      redesSociales: parseRedesSociales(resource as { relationships?: Record<string, JsonApiRelationship> }, included),
+      redesSociales: parseRedesSociales(
+        resource as { relationships?: Record<string, JsonApiRelationship> },
+        included,
+      ),
     };
   } catch (e) {
     console.warn('[NodeHive] fetchArtistaByNid failed:', e);

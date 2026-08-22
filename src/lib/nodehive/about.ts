@@ -128,10 +128,7 @@ export async function fetchAboutFormHeader(lang = 'es'): Promise<NhAboutFormHead
     const PAGE_UUID = NODEHIVE_CONFIG.pages.about;
     if (!PAGE_UUID) return null;
 
-    const res = await jsonApiFetch(
-      `node/astro_page/${PAGE_UUID}?include=field_components`,
-      lang,
-    );
+    const res = await jsonApiFetch(`node/astro_page/${PAGE_UUID}?include=field_components`, lang);
 
     const data = res.data as JsonApiResource;
     const included = res.included;

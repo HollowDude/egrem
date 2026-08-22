@@ -14,7 +14,9 @@ const tr = useTranslations(lang);
   <div class="lg:sticky lg:top-24 space-y-8">
     <!-- Buscar -->
     <div>
-      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">{tr('tienda.filter.search')}</h3>
+      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+        {tr('tienda.filter.search')}
+      </h3>
       <div class="relative">
         <input
           type="text"
@@ -22,13 +24,17 @@ const tr = useTranslations(lang);
           placeholder={tr('tienda.filter.search_placeholder')}
           class="w-full bg-white border border-form-border rounded-xl py-2 pl-3 pr-10 text-egrem-black font-display outline-none focus:border-egrem-red focus:ring-1 focus:ring-egrem-red"
         />
-        <span class="icon absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">search</span>
+        <span class="icon absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]"
+          >search</span
+        >
       </div>
     </div>
 
     <!-- Precio -->
     <div>
-      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">{tr('tienda.filter.precio')}</h3>
+      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+        {tr('tienda.filter.precio')}
+      </h3>
       <div class="px-2">
         <input
           type="range"
@@ -47,18 +53,34 @@ const tr = useTranslations(lang);
 
     <!-- Disponibilidad -->
     <div>
-      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">{tr('tienda.filter.disponibilidad')}</h3>
+      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+        {tr('tienda.filter.disponibilidad')}
+      </h3>
       <ul class="space-y-2 font-display text-text-secondary">
         <li>
           <label class="flex items-center gap-3 cursor-pointer group">
-            <input type="checkbox" value="stock" data-tienda-avail class="w-5 h-5 rounded accent-egrem-red cursor-pointer" />
-            <span class="group-hover:text-egrem-red transition-colors">{tr('tienda.filter.disponibilidad.disponibles')}</span>
+            <input
+              type="checkbox"
+              value="stock"
+              data-tienda-avail
+              class="w-5 h-5 rounded accent-egrem-red cursor-pointer"
+            />
+            <span class="group-hover:text-egrem-red transition-colors"
+              >{tr('tienda.filter.disponibilidad.disponibles')}</span
+            >
           </label>
         </li>
         <li>
           <label class="flex items-center gap-3 cursor-pointer group">
-            <input type="checkbox" value="preventa" data-tienda-avail class="w-5 h-5 rounded accent-egrem-red cursor-pointer" />
-            <span class="group-hover:text-egrem-red transition-colors">{tr('tienda.filter.disponibilidad.preventa')}</span>
+            <input
+              type="checkbox"
+              value="preventa"
+              data-tienda-avail
+              class="w-5 h-5 rounded accent-egrem-red cursor-pointer"
+            />
+            <span class="group-hover:text-egrem-red transition-colors"
+              >{tr('tienda.filter.disponibilidad.preventa')}</span
+            >
           </label>
         </li>
       </ul>

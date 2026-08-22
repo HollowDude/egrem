@@ -23,43 +23,65 @@ const tr = useTranslations(Astro.locals.lang);
 const { availableArtistas, artista, availableTipos, tipo } = Astro.props;
 ---
 
-<section class="sticky top-16 lg:top-[4.5rem] z-40 bg-white/95 backdrop-blur-sm border-y border-egrem-gray/20">
+<section
+  class="sticky top-16 lg:top-[4.5rem] z-40 bg-white/95 backdrop-blur-sm border-y border-egrem-gray/20"
+>
   <div class="container-site py-4">
     <form method="GET" action="/catalogo/videos" class="flex flex-wrap items-end gap-3">
       <div class="flex flex-col gap-1">
-        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('videos.filter.tipo')}</label>
+        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest"
+          >{tr('videos.filter.tipo')}</label
+        >
         <select
           name="tipo"
           class="bg-white border border-egrem-gray/30 text-egrem-black rounded-full focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-4 min-w-[180px]"
           onchange="this.form.submit()"
         >
           <option value="">{tr('videos.filter.all')}</option>
-          {availableTipos.map((t) => (
-            <option value={t.slug} selected={t.slug === tipo}>{t.name}</option>
-          ))}
+          {
+            availableTipos.map((t) => (
+              <option value={t.slug} selected={t.slug === tipo}>
+                {t.name}
+              </option>
+            ))
+          }
         </select>
       </div>
       <div class="flex flex-col gap-1">
-        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest">{tr('videos.filter.artista')}</label>
+        <label class="font-display font-bold text-[10px] text-egrem-gold uppercase tracking-widest"
+          >{tr('videos.filter.artista')}</label
+        >
         <select
           name="artista"
           class="bg-white border border-egrem-gray/30 text-egrem-black rounded-full focus:border-egrem-gold focus:ring-0 font-display text-small py-1.5 px-4 min-w-[180px]"
           onchange="this.form.submit()"
         >
           <option value="">{tr('videos.filter.all')}</option>
-          {availableArtistas.map((a) => (
-            <option value={a.slug} selected={a.slug === artista}>{a.name}</option>
-          ))}
+          {
+            availableArtistas.map((a) => (
+              <option value={a.slug} selected={a.slug === artista}>
+                {a.name}
+              </option>
+            ))
+          }
         </select>
       </div>
-      <button type="submit" class="inline-flex px-5 py-1.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-full hover:bg-egrem-red-dark transition-colors">
+      <button
+        type="submit"
+        class="inline-flex px-5 py-1.5 bg-egrem-red text-white font-display font-bold text-[11px] uppercase tracking-wider rounded-full hover:bg-egrem-red-dark transition-colors"
+      >
         {tr('videos.filter.submit')}
       </button>
-      {(artista || tipo) && (
-        <a href="/catalogo/videos" class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline">
-          {tr('videos.filter.clear')}
-        </a>
-      )}
+      {
+        (artista || tipo) && (
+          <a
+            href="/catalogo/videos"
+            class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline"
+          >
+            {tr('videos.filter.clear')}
+          </a>
+        )
+      }
     </form>
   </div>
 </section>

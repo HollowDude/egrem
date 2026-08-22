@@ -1,0 +1,46 @@
+---
+/**
+ * EventoEventosRelacionados.astro — Sección "Eventos Relacionados" en la ficha
+ * de evento y en la ficha de producto de tienda.
+ * Renderiza solo si hay eventos (criterio: "solo si hay elementos").
+ * Reutiliza EventoListCard para mantener el patrón visual del listado.
+ */
+import EventoListCard from './EventoListCard.astro';
+import type { NhEventoListItem } from '@/lib/nodehive';
+import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
+
+interface Props {
+  eventos: NhEventoListItem[];
+  lang?: Lang;
+  title?: string;
+  /** Columnas del grid. Por defecto 3 en escritorio. */
+  cols?: 2 | 3 | 4;
+}
+
+const { eventos, lang = 'es', title, cols = 3 } = Astro.props;
+const tr = useTranslations(lang);
+const heading = title ?? tr('evento.detail.related_title');
+
+const gridCols =
+  cols === 4
+    ? 'sm:grid-cols-2 lg:grid-cols-4'
+    : cols === 2
+      ? 'sm:grid-cols-2'
+      : 'sm:grid-cols-2 lg:grid-cols-3';
+---
+
+{
+  eventos.length > 0 && (
+    <section class="container-site pb-20">
+      <h2 class="text-h3 text-egrem-red uppercase m-0 mb-6 flex items-center gap-2 border-b-2 border-egrem-red pb-2 inline-block">
+        {heading}
+      </h2>
+      <div class={`grid grid-cols-1 ${gridCols} gap-6`}>
+        {eventos.map((e) => (
+          <EventoListCard evento={e} lang={lang} />
+        ))}
+      </div>
+    </section>
+  )
+}

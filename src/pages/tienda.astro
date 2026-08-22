@@ -6,24 +6,27 @@ import TiendaCategoriaChips from '@/components/tienda/TiendaCategoriaChips.astro
 import TiendaSidebar from '@/components/tienda/TiendaSidebar.astro';
 import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
 import { fetchEventosListado } from '@/lib/nodehive';
-import { MOCK_PRODUCTOS, entradaToProducto } from '@/lib/tienda/mockProducts';
+import { entradaToProducto } from '@/lib/tienda/mockProducts';
 import type { TiendaProducto } from '@/types/tienda';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
-const entradasReales = (await fetchEventosListado(lang)).map(entradaToProducto);
-const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
+const productos: TiendaProducto[] = (await fetchEventosListado(lang)).map(entradaToProducto);
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
   <main id="main-content" class="pb-20 px-4 md:px-16 max-w-container-max mx-auto">
     <!-- Hero simple -->
     <section class="pt-12 pb-8">
-      <p class="font-display text-egrem-gold uppercase tracking-widest text-sm mb-2">{tr('tienda.hero.eyebrow')}</p>
+      <p class="font-display text-egrem-gold uppercase tracking-widest text-sm mb-2">
+        {tr('tienda.hero.eyebrow')}
+      </p>
       <h1 class="text-h1 text-egrem-black m-0">{tr('tienda.hero.title')}</h1>
-      <p class="font-display text-body text-text-secondary mt-3 max-w-2xl">{tr('tienda.hero.subtitle')}</p>
+      <p class="font-display text-body text-text-secondary mt-3 max-w-2xl">
+        {tr('tienda.hero.subtitle')}
+      </p>
     </section>
 
     <!-- Chips de categoría -->
@@ -55,10 +58,15 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
           </div>
         </div>
 
-        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 mb-12">
-          {productos.map((p) => (
-            <TiendaProductCard producto={p} lang={lang} ctaLabel={tr('tienda.list.buy')} />
-          ))}
+        <div
+          id="product-grid"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 mb-12"
+        >
+          {
+            productos.map((p) => (
+              <TiendaProductCard producto={p} lang={lang} ctaLabel={tr('tienda.list.buy')} />
+            ))
+          }
         </div>
 
         <div id="tienda-pagination" class="flex justify-center items-center gap-2 mb-12"></div>
@@ -110,19 +118,26 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
           if (!hay.includes(state.query)) return false;
         }
         return true;
-      }
+      };
 
       const sortCards = (list: HTMLElement[]) => {
         const arr = list.slice();
         if (state.sort === 'precio-asc') {
-          arr.sort((a, b) => (parseFloat(a.dataset.price || 'Infinity')) - (parseFloat(b.dataset.price || 'Infinity')));
+          arr.sort(
+            (a, b) =>
+              parseFloat(a.dataset.price || 'Infinity') - parseFloat(b.dataset.price || 'Infinity'),
+          );
         } else if (state.sort === 'precio-desc') {
-          arr.sort((a, b) => (parseFloat(b.dataset.price || '-1')) - (parseFloat(a.dataset.price || '-1')));
+          arr.sort(
+            (a, b) => parseFloat(b.dataset.price || '-1') - parseFloat(a.dataset.price || '-1'),
+          );
         } else if (state.sort === 'novedades') {
-          arr.sort((a, b) => (parseInt(b.dataset.novedad || '0') - parseInt(a.dataset.novedad || '0')));
+          arr.sort(
+            (a, b) => parseInt(b.dataset.novedad || '0') - parseInt(a.dataset.novedad || '0'),
+          );
         }
         return arr;
-      }
+      };
 
       const render = () => {
         const filtered = sortCards(cards.filter(matches));
@@ -139,7 +154,7 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
         grid.classList.toggle('hidden', total === 0);
 
         renderPagination(total);
-      }
+      };
 
       const renderPagination = (total: number) => {
         const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -149,7 +164,11 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
         }
         if (state.page > totalPages) state.page = totalPages;
 
-        const btn = (label: string, page: number, opts?: { active?: boolean; disabled?: boolean }) => {
+        const btn = (
+          label: string,
+          page: number,
+          opts?: { active?: boolean; disabled?: boolean },
+        ) => {
           opts = opts || {};
           const b = document.createElement('button');
           b.type = 'button';
@@ -161,25 +180,41 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
               : 'border-form-border text-egrem-black hover:border-egrem-red hover:text-egrem-red',
           ].join(' ');
           if (opts.disabled) b.setAttribute('disabled', 'true');
-          else b.addEventListener('click', () => { state.page = page; render(); });
+          else
+            b.addEventListener('click', () => {
+              state.page = page;
+              render();
+            });
           return b;
         };
 
         pagEl.innerHTML = '';
         const prev = btn('', Math.max(1, state.page - 1), { disabled: state.page === 1 });
         prev.innerHTML = '<span class="icon text-sm">chevron_left</span>';
-        prev.addEventListener('click', () => { if (state.page > 1) { state.page--; render(); } });
+        prev.addEventListener('click', () => {
+          if (state.page > 1) {
+            state.page--;
+            render();
+          }
+        });
         pagEl.appendChild(prev);
 
         for (let p = 1; p <= totalPages; p++) {
           pagEl.appendChild(btn(String(p), p, { active: p === state.page }));
         }
 
-        const next = btn('', Math.min(totalPages, state.page + 1), { disabled: state.page === totalPages });
+        const next = btn('', Math.min(totalPages, state.page + 1), {
+          disabled: state.page === totalPages,
+        });
         next.innerHTML = '<span class="icon text-sm">chevron_right</span>';
-        next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; render(); } });
+        next.addEventListener('click', () => {
+          if (state.page < totalPages) {
+            state.page++;
+            render();
+          }
+        });
         pagEl.appendChild(next);
-      }
+      };
 
       // ── Chips ──
       (chipsWrap.querySelectorAll('[data-filter]') as unknown as HTMLElement[]).forEach((chip) => {
@@ -209,21 +244,24 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
       if (priceInput) {
         priceInput.addEventListener('input', () => {
           state.maxPrice = parseInt(priceInput.value, 10) || 200;
-          if (priceLabel) priceLabel.textContent = state.maxPrice >= 200 ? '$200+' : `$${state.maxPrice}`;
+          if (priceLabel)
+            priceLabel.textContent = state.maxPrice >= 200 ? '$200+' : `$${state.maxPrice}`;
           state.page = 1;
           render();
         });
       }
 
       // ── Sidebar: disponibilidad ──
-      (sidebar.querySelectorAll('[data-tienda-avail]') as unknown as HTMLInputElement[]).forEach((cb) => {
-        cb.addEventListener('change', () => {
-          if (cb.checked) state.avail.add(cb.value);
-          else state.avail.delete(cb.value);
-          state.page = 1;
-          render();
-        });
-      });
+      (sidebar.querySelectorAll('[data-tienda-avail]') as unknown as HTMLInputElement[]).forEach(
+        (cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) state.avail.add(cb.value);
+            else state.avail.delete(cb.value);
+            state.page = 1;
+            render();
+          });
+        },
+      );
 
       // ── Limpiar ──
       const clearBtn = sidebar.querySelector('[data-tienda-clear]');
@@ -237,7 +275,9 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
           if (search) search.value = '';
           if (priceInput) priceInput.value = '200';
           if (priceLabel) priceLabel.textContent = '$200+';
-          (sidebar.querySelectorAll('input[type=checkbox]') as unknown as HTMLInputElement[]).forEach((cb) => (cb.checked = false));
+          (
+            sidebar.querySelectorAll('input[type=checkbox]') as unknown as HTMLInputElement[]
+          ).forEach((cb) => (cb.checked = false));
           (chipsWrap.querySelectorAll('[data-filter]') as unknown as HTMLElement[]).forEach((c) => {
             const active = (c.dataset.filter || '') === '';
             c.classList.toggle('tienda-chip--active', active);
@@ -274,7 +314,11 @@ const productos: TiendaProducto[] = [...MOCK_PRODUCTOS, ...entradasReales];
         badge.textContent = count;
         badge.classList.remove('hidden');
       }
-      window.dispatchEvent(new CustomEvent('cart:add', { detail: { id: btn.dataset.productId, title: btn.dataset.productTitle } }));
+      window.dispatchEvent(
+        new CustomEvent('cart:add', {
+          detail: { id: btn.dataset.productId, title: btn.dataset.productTitle },
+        }),
+      );
       const icon = btn.querySelector('.icon');
       if (icon) {
         const prev = icon.textContent;

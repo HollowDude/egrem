@@ -51,12 +51,21 @@ const rest = resolved.slice(1);
             )}
             <div class="absolute inset-0 flex items-center justify-center">
               <span class="w-16 h-16 rounded-full bg-egrem-red flex items-center justify-center shadow-2xl group-hover:scale-110 active:scale-95 transition-transform">
-                <span class="text-white text-[32px]" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_arrow</span>
+                <span
+                  class="text-white text-[32px]"
+                  style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;"
+                >
+                  play_arrow
+                </span>
               </span>
             </div>
             <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pointer-events-none">
-              <p class="font-display font-bold text-[10px] text-white/60 uppercase tracking-widest mb-1">{tr('artistas.detail.videos.featured_tag')}</p>
-              <h3 class="font-display font-bold text-[22px] md:text-[26px] text-white uppercase leading-none m-0">{featured.title}</h3>
+              <p class="font-display font-bold text-[10px] text-white/60 uppercase tracking-widest mb-1">
+                {tr('artistas.detail.videos.featured_tag')}
+              </p>
+              <h3 class="font-display font-bold text-[22px] md:text-[26px] text-white uppercase leading-none m-0">
+                {featured.title}
+              </h3>
             </div>
           </a>
         )}
@@ -78,7 +87,12 @@ const rest = resolved.slice(1);
                   />
                 )}
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <span class="text-white text-2xl" style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;">play_arrow</span>
+                  <span
+                    class="text-white text-2xl"
+                    style="font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 1;"
+                  >
+                    play_arrow
+                  </span>
                 </div>
               </a>
             ))}

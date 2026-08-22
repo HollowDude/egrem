@@ -52,7 +52,9 @@ export async function searchAlbums(q: string, lang = 'es'): Promise<NhSearchResu
     return data.map((r) => {
       const a = r.attributes as Record<string, unknown>;
       const nid = a.drupal_internal__nid as number;
-      const artRel = r.relationships?.field_artista?.data as { type: string; id: string } | undefined;
+      const artRel = r.relationships?.field_artista?.data as
+        | { type: string; id: string }
+        | undefined;
       let artistName = '';
       if (artRel) {
         const artist = included.find((i) => i.type === artRel.type && i.id === artRel.id);
@@ -145,7 +147,10 @@ export async function searchVideos(q: string, lang = 'es'): Promise<NhSearchResu
     const needle = q.toLowerCase();
     const allVideos = await getCachedVideos(lang);
     const filtered = allVideos.filter((v) => {
-      const artistNames = v.artistas.map((a) => a.name).join(' ').toLowerCase();
+      const artistNames = v.artistas
+        .map((a) => a.name)
+        .join(' ')
+        .toLowerCase();
       return v.title.toLowerCase().includes(needle) || artistNames.includes(needle);
     });
     return filtered.slice(0, RESULTS_PER_TYPE).map((v) => ({

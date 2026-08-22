@@ -91,7 +91,10 @@ export async function fetchFooterFragment(lang = 'es'): Promise<NhFooterFragment
     const ra = red.attributes as Record<string, unknown>;
     const link = ra.field_link as { uri: string; title: string } | null;
     if (link) {
-      redes.push({ id: red.id, link: { uri: normalizeDrupalUri(link.uri), title: link.title ?? '' } });
+      redes.push({
+        id: red.id,
+        link: { uri: normalizeDrupalUri(link.uri), title: link.title ?? '' },
+      });
     }
   }
 

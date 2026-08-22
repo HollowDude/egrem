@@ -7,7 +7,9 @@ describe('detectPlatform', () => {
   });
 
   it('detects Apple Music', () => {
-    expect(detectPlatform('https://music.apple.com/us/album/imagina/1523000000')).toBe('apple_music');
+    expect(detectPlatform('https://music.apple.com/us/album/imagina/1523000000')).toBe(
+      'apple_music',
+    );
   });
 
   it('returns other for unknown URLs', () => {
@@ -30,9 +32,9 @@ describe('buildEmbedUrl', () => {
   });
 
   it('builds Apple Music embed URL', () => {
-    expect(
-      buildEmbedUrl('https://music.apple.com/us/album/imagina/1523000000'),
-    ).toBe('https://embed.music.apple.com/us/album/imagina/1523000000');
+    expect(buildEmbedUrl('https://music.apple.com/us/album/imagina/1523000000')).toBe(
+      'https://embed.music.apple.com/us/album/imagina/1523000000',
+    );
   });
 
   it('returns null for Spotify URLs without a valid ID', () => {

@@ -124,7 +124,9 @@ export async function fetchVideosCatalogo(
       totalPages,
       currentPage,
       hasMore: currentPage < totalPages,
-      availableArtistas: Array.from(allArtistas.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      availableArtistas: Array.from(allArtistas.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
       availableTipos: Array.from(allTipos.values()).sort((a, b) => a.name.localeCompare(b.name)),
     };
   } catch (e) {

@@ -64,7 +64,9 @@ export interface NhVideoDetail {
 export async function fetchVideoDetail(videoId: string): Promise<NhVideoDetail | null> {
   const apiKey = import.meta.env.YOUTUBE_API_KEY ?? '';
   if (!apiKey) {
-    console.warn('[NodeHive] YOUTUBE_API_KEY no configurada — el video destacado no mostrará descripción');
+    console.warn(
+      '[NodeHive] YOUTUBE_API_KEY no configurada — el video destacado no mostrará descripción',
+    );
     return null;
   }
 
@@ -85,7 +87,12 @@ export async function fetchVideoDetail(videoId: string): Promise<NhVideoDetail |
       channelTitle: s.channelTitle ?? '',
       publishedAt: s.publishedAt ?? null,
       viewCount: stats.viewCount ? parseInt(stats.viewCount, 10) : null,
-      thumbnail: s.thumbnails?.maxres?.url ?? s.thumbnails?.high?.url ?? s.thumbnails?.medium?.url ?? s.thumbnails?.default?.url ?? null,
+      thumbnail:
+        s.thumbnails?.maxres?.url ??
+        s.thumbnails?.high?.url ??
+        s.thumbnails?.medium?.url ??
+        s.thumbnails?.default?.url ??
+        null,
     };
   } catch {
     return null;

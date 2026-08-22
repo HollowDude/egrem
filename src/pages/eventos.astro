@@ -9,7 +9,14 @@ import EventoDiaPopover from '@/components/evento/EventoDiaPopover.astro';
 import EventoListCard from '@/components/evento/EventoListCard.astro';
 import { fetchEventosListado, fetchEventosHero, slugify } from '@/lib/nodehive';
 import type { NhEventoListItem, NhEventosHero, NhEntityMeta } from '@/lib/nodehive';
-import { construirGrillaMes, solapaConMes, posicionEnSemana, mesSiguiente, mesAnterior, fechaISO } from '@/lib/calendario';
+import {
+  construirGrillaMes,
+  solapaConMes,
+  posicionEnSemana,
+  mesSiguiente,
+  mesAnterior,
+  fechaISO,
+} from '@/lib/calendario';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
@@ -19,9 +26,10 @@ const basePath = Astro.url.pathname.split('?')[0];
 /* ─── Parámetros ──────────────────────────────────────────────── */
 const mesParam = Astro.url.searchParams.get('mes');
 const hoy = new Date();
-const [anio, mes] = mesParam && /^\d{4}-\d{2}$/.test(mesParam)
-  ? mesParam.split('-').map(Number)
-  : [hoy.getFullYear(), hoy.getMonth() + 1];
+const [anio, mes] =
+  mesParam && /^\d{4}-\d{2}$/.test(mesParam)
+    ? mesParam.split('-').map(Number)
+    : [hoy.getFullYear(), hoy.getMonth() + 1];
 
 const tipo = Astro.url.searchParams.get('tipo') ?? '';
 const sede = Astro.url.searchParams.get('sede') ?? '';
@@ -64,13 +72,22 @@ const filtrados = eventos.filter((e) => {
   if (sede && slugify(e.lugarTexto) !== sede) {
     return false;
   }
-  if (fechaFiltro === 'semana' && !solapaVentana(e.fechaInicio, e.fechaFin, hoyStr, finSemana)) return false;
-  if (fechaFiltro === 'mes' && !solapaVentana(e.fechaInicio, e.fechaFin, inicioProxMes, `${inicioProxMes.slice(0, 8)}${finProxMes.slice(8)}`)) return false;
+  if (fechaFiltro === 'semana' && !solapaVentana(e.fechaInicio, e.fechaFin, hoyStr, finSemana))
+    return false;
+  if (
+    fechaFiltro === 'mes' &&
+    !solapaVentana(
+      e.fechaInicio,
+      e.fechaFin,
+      inicioProxMes,
+      `${inicioProxMes.slice(0, 8)}${finProxMes.slice(8)}`,
+    )
+  )
+    return false;
   if (q) {
     const ql = q.toLowerCase();
     const hayMatch =
-      e.title.toLowerCase().includes(ql) ||
-      e.artistas.some((a) => a.toLowerCase().includes(ql));
+      e.title.toLowerCase().includes(ql) || e.artistas.some((a) => a.toLowerCase().includes(ql));
     if (!hayMatch) return false;
   }
   return true;
@@ -127,10 +144,7 @@ const semanas = Array.from({ length: 6 }, (_, w) => {
 });
 ---
 
-<BaseLayout
-  title={tr('evento.page_title')}
-  description={tr('evento.page_description')}
->
+<BaseLayout title={tr('evento.page_title')} description={tr('evento.page_description')}>
   <main id="main-content">
     <HeroEventos hero={hero} nhEntity={entityMeta(hero)} />
 
@@ -140,8 +154,11 @@ const semanas = Array.from({ length: 6 }, (_, w) => {
       <div class="container-site">
         <div class="bg-white border border-egrem-gray/20 rounded-2xl p-4 md:p-8 shadow-sm">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-            <h2 class="text-h3 text-egrem-black uppercase m-0 border-b-4 border-egrem-red pb-1 inline-block self-start">
-              {mesLabel} {anio}
+            <h2
+              class="text-h3 text-egrem-black uppercase m-0 border-b-4 border-egrem-red pb-1 inline-block self-start"
+            >
+              {mesLabel}
+              {anio}
             </h2>
             <div class="flex items-center gap-3">
               <a
@@ -162,11 +179,13 @@ const semanas = Array.from({ length: 6 }, (_, w) => {
           </div>
 
           <div class="grid grid-cols-7 gap-1 md:gap-1.5 mb-2">
-            {['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'].map((d) => (
-              <span class="text-center font-display font-bold text-[10px] md:text-[11px] uppercase tracking-widest text-egrem-gray pb-1">
-                {tr(`evento.calendar.${d}`)}
-              </span>
-            ))}
+            {
+              ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'].map((d) => (
+                <span class="text-center font-display font-bold text-[10px] md:text-[11px] uppercase tracking-widest text-egrem-gray pb-1">
+                  {tr(`evento.calendar.${d}`)}
+                </span>
+              ))
+            }
           </div>
 
           {
@@ -182,26 +201,33 @@ const semanas = Array.from({ length: 6 }, (_, w) => {
                   />
                 ))}
 
-                {
-                  barras.map(({ evento, columna, span, stack }) => (
-                    <div
-                      class="absolute z-20 h-[20px] md:h-[22px] flex items-center overflow-hidden rounded-md bg-egrem-red text-white font-display font-bold text-[9px] md:text-[10px] uppercase tracking-wider px-1.5 no-underline pointer-events-none shadow-sm"
-                      style={`left: calc(${((columna - 1) * 100) / 7}% + 0.1rem); width: calc(${(span * 100) / 7}% - 0.2rem); top: ${30 + stack * 24}px;`}
-                    >
-                      <span class="truncate">{evento.title}</span>
-                    </div>
-                  ))
-                }
+                {barras.map(({ evento, columna, span, stack }) => (
+                  <a
+                    href={evento.href}
+                    title={evento.title}
+                    class="absolute z-20 h-[20px] md:h-[22px] flex items-center overflow-hidden rounded-md bg-egrem-red text-white font-display font-bold text-[9px] md:text-[10px] uppercase tracking-wider px-1.5 no-underline shadow-sm cursor-pointer hover:brightness-110 transition-[filter]"
+                    style={`left: calc(${((columna - 1) * 100) / 7}% + 0.1rem); width: calc(${(span * 100) / 7}% - 0.2rem); top: ${30 + stack * 24}px;`}
+                  >
+                    <span class="truncate">{evento.title}</span>
+                  </a>
+                ))}
               </div>
             ))
           }
 
-          {eventosDelMes.length === 0 && (
-            <div class="flex flex-col items-center justify-center py-14 text-center">
-              <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">event_busy</span>
-              <p class="text-egrem-gray text-body m-0">{tr('evento.list.empty')}</p>
-            </div>
-          )}
+          {
+            eventosDelMes.length === 0 && (
+              <div class="flex flex-col items-center justify-center py-14 text-center">
+                <span
+                  class="text-5xl text-egrem-gray/40 mb-4"
+                  style="font-family: 'Material Symbols Outlined';"
+                >
+                  event_busy
+                </span>
+                <p class="text-egrem-gray text-body m-0">{tr('evento.list.empty')}</p>
+              </div>
+            )
+          }
         </div>
       </div>
     </section>
@@ -209,18 +235,25 @@ const semanas = Array.from({ length: 6 }, (_, w) => {
     <section class="section-py bg-egrem-gray-light">
       <div class="container-site">
         <SectionHeader title={tr('evento.list.title')} accent="red" />
-        {filtrados.length === 0 ? (
-          <div class="flex flex-col items-center justify-center py-16 text-center bg-white border border-egrem-gray/20 rounded-2xl">
-            <span class="text-5xl text-egrem-gray/40 mb-4" style="font-family: 'Material Symbols Outlined';">event_off</span>
-            <p class="text-egrem-gray text-body m-0">{tr('evento.list.no_results')}</p>
-          </div>
-        ) : (
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-            {filtrados.map((evento) => (
-              <EventoListCard evento={evento} lang={lang} />
-            ))}
-          </div>
-        )}
+        {
+          filtrados.length === 0 ? (
+            <div class="flex flex-col items-center justify-center py-16 text-center bg-white border border-egrem-gray/20 rounded-2xl">
+              <span
+                class="text-5xl text-egrem-gray/40 mb-4"
+                style="font-family: 'Material Symbols Outlined';"
+              >
+                event_off
+              </span>
+              <p class="text-egrem-gray text-body m-0">{tr('evento.list.no_results')}</p>
+            </div>
+          ) : (
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+              {filtrados.map((evento) => (
+                <EventoListCard evento={evento} lang={lang} />
+              ))}
+            </div>
+          )
+        }
       </div>
     </section>
   </main>

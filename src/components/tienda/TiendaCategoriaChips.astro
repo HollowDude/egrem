@@ -17,15 +17,17 @@ const chips = [
 ---
 
 <div class="flex items-center gap-2 flex-wrap" data-cat-chips>
-  {chips.map((c) => (
-    <button
-      type="button"
-      data-filter={c.filter}
-      class:list={['tienda-chip', c.filter === '' ? 'tienda-chip--active' : '']}
-      aria-pressed={c.filter === ''}
-    >
-      <span class="icon text-[15px]">{c.icon}</span>
-      {c.label}
-    </button>
-  ))}
+  {
+    chips.map((c) => (
+      <button
+        type="button"
+        data-filter={c.filter}
+        class:list={['tienda-chip', c.filter === '' ? 'tienda-chip--active' : '']}
+        aria-pressed={c.filter === ''}
+      >
+        <span class="icon text-[15px]">{c.icon}</span>
+        {c.label}
+      </button>
+    ))
+  }
 </div>

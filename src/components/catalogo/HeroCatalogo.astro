@@ -26,22 +26,30 @@ const bundle = nhEntity?.bundle ?? '_component_catalogo_hero';
   editLabel="Editar Hero"
   editField="field_title"
 >
-  {photo?.url ? (
-    <div class="absolute inset-0">
-      <img
-        src={resolveFileUrl(photo.url)}
-        alt=""
-        class="w-full h-full object-cover"
-        loading="lazy"
-        decoding="async"
-      />
-    </div>
-  ) : null}
-  <div class="absolute inset-0 bg-gradient-to-br from-egrem-black/80 via-egrem-black/60 to-egrem-dark" />
-  <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+  {
+    photo?.url ? (
+      <div class="absolute inset-0">
+        <img
+          src={resolveFileUrl(photo.url)}
+          alt=""
+          class="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    ) : null
+  }
+  <div
+    class="absolute inset-0 bg-gradient-to-br from-egrem-black/80 via-egrem-black/60 to-egrem-dark"
+  >
+  </div>
+  <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
   <div class="absolute bottom-0 left-0 right-0 pb-12 md:pb-16 container-site">
     <h1 class="text-h1 text-white mb-2" data-nodehive-field="field_title">{title}</h1>
-    <p class="font-script text-egrem-gold text-[clamp(1.125rem,2.5vw,1.5rem)]" data-nodehive-field="field_subtitle">
+    <p
+      class="font-script text-egrem-gold text-[clamp(1.125rem,2.5vw,1.5rem)]"
+      data-nodehive-field="field_subtitle"
+    >
       {subtitle}
     </p>
   </div>

@@ -7,7 +7,14 @@ vi.mock('../client', () => ({
   getBaseUrlValue: vi.fn(() => 'http://drupal.local'),
 }));
 
-import { fetchEventosListado, fetchEventoByPath, fetchEventoByNid, parseEventoDetalle, esEventoPasado, fetchEventosHero } from '../eventos';
+import {
+  fetchEventosListado,
+  fetchEventoByPath,
+  fetchEventoByNid,
+  parseEventoDetalle,
+  esEventoPasado,
+  fetchEventosHero,
+} from '../eventos';
 import type { JsonApiResource } from '../client';
 
 function eventoResource(
@@ -55,7 +62,11 @@ const CATEGORIA = {
 const ARTISTA_A = {
   type: 'node--artista',
   id: 'artista-a',
-  attributes: { title: 'Marisney Elvira', drupal_internal__nid: 7, path: { alias: '/artista/marisney-elvira' } },
+  attributes: {
+    title: 'Marisney Elvira',
+    drupal_internal__nid: 7,
+    path: { alias: '/artista/marisney-elvira' },
+  },
   relationships: {
     field_imagen: { data: { type: 'media--image', id: 'media-art' } },
   },
@@ -77,13 +88,30 @@ const ARTISTA_FILE = {
 };
 
 const DIA_1 = {
-  type: 'paragraph--evento_dia_programa',
+  type: 'node--dia_programa',
   id: 'dia-1',
   attributes: {
     field_titulo_dia: 'Día 1: Inauguración',
     field_fecha_dia: '2026-10-14',
     field_horario_texto: '18:00 – 02:00',
     field_descripcion_dia: { value: 'Noche de apertura.' },
+  },
+  relationships: {
+    field_zona: { data: { type: 'node--zona', id: 'zona-1' } },
+  },
+};
+
+const DIA_2 = {
+  type: 'node--dia_programa',
+  id: 'dia-2',
+  attributes: {
+    field_titulo_dia: 'Día 2: Clausura',
+    field_fecha_dia: '2026-10-15',
+    field_horario_texto: '19:00 – 03:00',
+    field_descripcion_dia: { value: 'Noche de clausura.' },
+  },
+  relationships: {
+    field_zona: { data: { type: 'node--zona', id: 'zona-2' } },
   },
 };
 
@@ -107,7 +135,7 @@ const ENTRADA_1 = {
     field_destacado: true,
   },
   relationships: {
-    field_zona_entrada: { data: { type: 'node--zona', id: 'zona-1' } },
+    field_dias_entrada: { data: [{ type: 'node--dia_programa', id: 'dia-1' }] },
   },
 };
 
@@ -122,7 +150,25 @@ const ENTRADA_2 = {
     field_destacado: false,
   },
   relationships: {
-    field_zona_entrada: { data: { type: 'node--zona', id: 'zona-2' } },
+    field_dias_entrada: { data: [{ type: 'node--dia_programa', id: 'dia-2' }] },
+  },
+};
+
+const REL_EVENTO = {
+  type: 'node--evento',
+  id: 'evt-rel-1',
+  attributes: {
+    title: 'Evento Relacionado',
+    drupal_internal__nid: 999,
+    path: { alias: '/eventos/evento-relacionado' },
+    field_fecha: { value: '2026-12-01', end_value: '2026-12-01' },
+    field_es_internacional: false,
+    body: { summary: 'Resumen relacionado' },
+  },
+  relationships: {
+    field_imagen_hero: { data: { type: 'media--image', id: 'media-hero' } },
+    field_categoria: { data: { type: 'taxonomy_term--tipo_de_evento', id: 'cat-1' } },
+    field_venue_bat: { data: { type: 'node--local', id: 'local-1' } },
   },
 };
 
@@ -173,7 +219,7 @@ describe('parseEventoDetalle', () => {
       {
         field_imagen_hero: { data: { type: 'media--image', id: 'media-hero' } },
         field_categoria: { data: { type: 'taxonomy_term--tipo_de_evento', id: 'cat-1' } },
-        field_programa: { data: [{ type: 'paragraph--evento_dia_programa', id: 'dia-1' }] },
+        field_programa: { data: [{ type: 'node--dia_programa', id: 'dia-1' }] },
         field_lineup: { data: [{ type: 'paragraph--evento_artista_lineup', id: 'lineup-1' }] },
         field_venue_bat: { data: { type: 'node--local', id: 'local-1' } },
         field_tipos_entrada: {
@@ -190,6 +236,7 @@ describe('parseEventoDetalle', () => {
       HERO_FILE,
       CATEGORIA,
       DIA_1,
+      DIA_2,
       LINEUP_1,
       ARTISTA_A,
       ARTISTA_MEDIA,
@@ -220,26 +267,37 @@ describe('parseEventoDetalle', () => {
 
     expect(detalle.programa).toHaveLength(1);
     expect(detalle.programa[0]).toEqual({
+      id: 'dia-1',
       titulo: 'Día 1: Inauguración',
       fecha: '2026-10-14',
       horario: '18:00 – 02:00',
       descripcion: 'Noche de apertura.',
+      zonaId: 'zona-1',
     });
 
     expect(detalle.lineup).toHaveLength(1);
     expect(detalle.lineup[0].rol).toBe('Cabeza de cartel');
     expect(detalle.lineup[0].artista.name).toBe('Marisney Elvira');
     expect(detalle.lineup[0].artista.href).toBe('/artista/marisney-elvira');
-    expect(detalle.lineup[0].artista.imagen?.url).toBe('http://drupal.local/sites/default/files/foto.jpg');
+    expect(detalle.lineup[0].artista.imagen?.url).toBe(
+      'http://drupal.local/sites/default/files/foto.jpg',
+    );
 
     expect(detalle.tiposEntrada).toHaveLength(2);
     expect(detalle.tiposEntrada[0].precio).toBe(25);
     expect(detalle.tiposEntrada[0].sku).toBe('FJZ-GEN');
-    expect(detalle.tiposEntrada[0].capacidad).toBe(2000);
+    // capacidad/disponibles siguen null hasta Opción B (field_entradas_disponibles)
+    expect(detalle.tiposEntrada[0].capacidad).toBeNull();
     expect(detalle.tiposEntrada[0].disponibles).toBeNull();
+    expect(detalle.tiposEntrada[0].diasIds).toEqual(['dia-1']);
+    expect(detalle.tiposEntrada[0].zonaIds).toEqual(['zona-1']);
     expect(detalle.tiposEntrada[0].destacado).toBe(true);
-    expect(detalle.tiposEntrada[1].capacidad).toBe(200);
+    expect(detalle.tiposEntrada[1].capacidad).toBeNull();
+    expect(detalle.tiposEntrada[1].diasIds).toEqual(['dia-2']);
+    expect(detalle.tiposEntrada[1].zonaIds).toEqual(['zona-2']);
     expect(detalle.tiposEntrada[1].destacado).toBe(false);
+
+    expect(detalle.eventosRelacionados).toEqual([]);
   });
 
   it('uses path alias when present and defaults end date to start', () => {
@@ -257,7 +315,11 @@ describe('parseEventoDetalle', () => {
   });
 
   it('handles a single-day event without programa or lineup', () => {
-    const resource = eventoResource('evt-3', { field_fecha: { value: '2026-11-05', end_value: null } }, {});
+    const resource = eventoResource(
+      'evt-3',
+      { field_fecha: { value: '2026-11-05', end_value: null } },
+      {},
+    );
     const detalle = parseEventoDetalle(resource, []);
     expect(detalle.fechaFin).toBe('2026-11-05');
     expect(detalle.programa).toEqual([]);
@@ -345,21 +407,25 @@ describe('fetchEventosListado', () => {
     expect(url).toContain('filter[field_fecha.end_value][value]=');
     expect(url).toContain('filter[field_fecha.end_value][operator]=%3E%3D');
     expect(url).toContain('sort=field_fecha.value');
-    expect(url).toContain('field_tipos_entrada.field_zona_entrada');
+    expect(url).toContain('field_tipos_entrada.field_dias_entrada');
     expect(url).toContain('field_venue_bat');
   });
 
   it('does not mark agotado while disponibles is null (Fase 1, pendiente Commerce)', async () => {
     mockJsonApiFetch.mockResolvedValueOnce({
       data: [
-        eventoResource('evt-x', {}, {
-          field_tipos_entrada: {
-            data: [
-              { type: 'paragraph--evento_tipo_entrada', id: 'entrada-1' },
-              { type: 'paragraph--evento_tipo_entrada', id: 'entrada-2' },
-            ],
+        eventoResource(
+          'evt-x',
+          {},
+          {
+            field_tipos_entrada: {
+              data: [
+                { type: 'paragraph--evento_tipo_entrada', id: 'entrada-1' },
+                { type: 'paragraph--evento_tipo_entrada', id: 'entrada-2' },
+              ],
+            },
           },
-        }),
+        ),
       ],
       included: [ENTRADA_1, ENTRADA_2, ZONA_1, ZONA_2],
     });
@@ -371,7 +437,10 @@ describe('fetchEventosListado', () => {
   });
 
   it('handles events without tipos de entrada (no price, not sold out)', async () => {
-    mockJsonApiFetch.mockResolvedValueOnce({ data: [eventoResource('evt-y', {}, {})], included: [] });
+    mockJsonApiFetch.mockResolvedValueOnce({
+      data: [eventoResource('evt-y', {}, {})],
+      included: [],
+    });
     const items = await fetchEventosListado('es');
     expect(items[0].precioDesde).toBeNull();
     expect(items[0].agotado).toBe(false);
@@ -392,7 +461,8 @@ describe('fetchEventoByPath / fetchEventoByNid', () => {
     expect(url).toContain('filter[path.alias][value]=');
     expect(url).toContain('include=field_imagen_hero');
     expect(url).toContain('field_lineup.field_artista.field_imagen.field_media_image');
-    expect(url).toContain('field_tipos_entrada.field_zona_entrada');
+    expect(url).toContain('field_tipos_entrada.field_dias_entrada');
+    expect(url).toContain('field_eventos_relacionados');
     expect(url).toContain('field_venue_bat');
   });
 
@@ -407,6 +477,54 @@ describe('fetchEventoByPath / fetchEventoByNid', () => {
   it('returns null when not found', async () => {
     mockJsonApiFetch.mockResolvedValueOnce({ data: [], included: [] });
     await expect(fetchEventoByPath('/no-existe', 'es')).resolves.toBeNull();
+  });
+});
+
+describe('parseEventoDetalle — eventosRelacionados', () => {
+  it('returns [] when field_eventos_relacionados is absent', () => {
+    const resource = eventoResource('evt-rel-0', {}, {});
+    const detalle = parseEventoDetalle(resource, []);
+    expect(detalle.eventosRelacionados).toEqual([]);
+  });
+
+  it('parses related events from field_eventos_relacionados', () => {
+    const resource = eventoResource(
+      'evt-rel-1',
+      {},
+      {
+        field_eventos_relacionados: {
+          data: [{ type: 'node--evento', id: 'evt-rel-1' }],
+        },
+      },
+    );
+    const detalle = parseEventoDetalle(resource, [
+      REL_EVENTO,
+      HERO_MEDIA,
+      HERO_FILE,
+      CATEGORIA,
+      LOCAL_1,
+    ]);
+    expect(detalle.eventosRelacionados).toHaveLength(1);
+    expect(detalle.eventosRelacionados[0].title).toBe('Evento Relacionado');
+    expect(detalle.eventosRelacionados[0].href).toBe('/eventos/evento-relacionado');
+    expect(detalle.eventosRelacionados[0].categoria).toBe('Festival');
+    expect(detalle.eventosRelacionados[0].thumbnail?.url).toBe(
+      'http://drupal.local/sites/default/files/hero.jpg',
+    );
+  });
+
+  it('drops related events whose node is missing from included', () => {
+    const resource = eventoResource(
+      'evt-rel-2',
+      {},
+      {
+        field_eventos_relacionados: {
+          data: [{ type: 'node--evento', id: 'evt-no-existe' }],
+        },
+      },
+    );
+    const detalle = parseEventoDetalle(resource, []);
+    expect(detalle.eventosRelacionados).toEqual([]);
   });
 });
 

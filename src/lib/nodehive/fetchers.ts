@@ -192,7 +192,8 @@ function parseEventoHome(resource: JsonApiResource): NhEvento {
   const path = a.path as { alias?: string } | undefined;
   const fieldFecha = a.field_fecha as string | { value?: string; end_value?: string } | undefined;
   const startDate = typeof fieldFecha === 'string' ? fieldFecha : fieldFecha?.value;
-  const endDate = typeof fieldFecha === 'object' && fieldFecha !== null ? fieldFecha.end_value : undefined;
+  const endDate =
+    typeof fieldFecha === 'object' && fieldFecha !== null ? fieldFecha.end_value : undefined;
   const fieldHora = a.field_hora as string | undefined;
   const fieldLugar = a.field_lugar as string | undefined;
   return {

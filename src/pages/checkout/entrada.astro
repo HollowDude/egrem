@@ -1,0 +1,148 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { fetchEventoById, esEventoPasado } from '@/lib/nodehive';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+const sku = Astro.url.searchParams.get('sku') ?? '';
+const diaId = Astro.url.searchParams.get('dia') ?? '';
+const eventoId = Astro.url.searchParams.get('evento') ?? '';
+const cantidad = Math.max(1, parseInt(Astro.url.searchParams.get('cantidad') ?? '1', 10) || 1);
+
+let evento = eventoId ? await fetchEventoById(eventoId, lang) : null;
+const esPasado = evento
+  ? esEventoPasado(evento.fechaFin, new Date().toISOString().slice(0, 10))
+  : false;
+
+const tier = evento?.tiposEntrada.find((t) => t.sku === sku) ?? null;
+const dia = evento?.programa.find((d) => d.id === diaId) ?? null;
+
+const total = !esPasado && tier && tier.precio !== null ? tier.precio * cantidad : null;
+
+const pageTitle = evento ? `${evento.title} | EGREM` : 'EGREM';
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={evento?.descripcion.replace(/<[^>]*>/g, '').slice(0, 160) ?? ''}
+>
+  <main id="main-content">
+    <section class="container-site py-12 md:py-16 max-w-2xl">
+      <h1
+        class="text-h2 text-egrem-red uppercase m-0 mb-6 border-b-2 border-egrem-red pb-2 inline-block"
+      >
+        {tr('checkout.resumen')}
+      </h1>
+
+      {
+        !evento || !tier || !dia ? (
+          <div class="space-y-4">
+            <p class="font-display text-body text-egrem-red m-0">{tr('checkout.error')}</p>
+            <a
+              href={`/${lang}/evento/${Astro.url.searchParams.get('evento') ?? ''}`}
+              class="action-link"
+            >
+              <span class="icon text-sm">arrow_back</span>
+              {tr('checkout.back_event')}
+            </a>
+          </div>
+        ) : esPasado ? (
+          <div class="space-y-4">
+            <p class="font-display text-body text-egrem-red m-0">{tr('checkout.evento_pasado')}</p>
+            <a href={`/${lang}/evento/${evento.id}`} class="action-link">
+              <span class="icon text-sm">arrow_back</span>
+              {tr('checkout.back_event')}
+            </a>
+          </div>
+        ) : (
+          <div class="bg-white border border-egrem-gray/20 rounded-xl p-6 shadow-sm space-y-4">
+            {
+              evento.heroImage?.url && (
+                <img
+                  src={evento.heroImage.url}
+                  alt={evento.title}
+                  class="w-full h-40 object-cover rounded-lg"
+                />
+              )
+            }
+            <div class="flex items-center justify-between">
+              <span class="font-display text-small text-text-secondary uppercase tracking-wider">
+                {tr('tienda.product.entrada')}
+              </span>
+              <span class="font-display font-bold text-body text-egrem-black">{tier.nombre}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-display text-small text-text-secondary uppercase tracking-wider">
+                {tr('tienda.product.evento')}
+              </span>
+              <span class="font-display font-bold text-body text-egrem-black">{evento.title}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-display text-small text-text-secondary uppercase tracking-wider">
+                {tr('tienda.product.personas')}
+              </span>
+              <span class="font-display font-bold text-body text-egrem-black">{cantidad}</span>
+            </div>
+            <div class="flex items-center justify-between border-t border-egrem-gray/15 pt-4">
+              <span class="font-display text-small text-text-secondary uppercase tracking-wider">
+                {tr('tienda.product.total')}
+              </span>
+              <span class="font-display font-bold text-[24px] text-egrem-red">
+                {total !== null ? `$${total.toFixed(2)}` : tr('tienda.product.consultar')}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              id="checkout-btn"
+              class="w-full inline-flex items-center justify-center gap-2 bg-egrem-red text-white font-display font-bold text-[14px] uppercase tracking-wider px-6 py-3.5 rounded-xl transition-all duration-200 cursor-pointer border-none shadow-sm hover:bg-egrem-red-dark hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <span style="font-size: 18px;">shopping_cart_checkout</span>
+              {tr('checkout.continuar')}
+            </button>
+            <p class="font-display text-caption text-text-secondary text-center m-0">
+              {tr('checkout.reassurance')}
+            </p>
+            <p
+              id="checkout-error"
+              class="font-display text-caption text-egrem-red text-center m-0 hidden"
+            >
+              {tr('checkout.error')}
+            </p>
+          </div>
+        )
+      }
+    </section>
+  </main>
+</BaseLayout>
+
+<script is:inline define:vars={{ eventoId, sku, diaId, cantidad }}>
+  const btn = document.getElementById('checkout-btn');
+  const errEl = document.getElementById('checkout-error');
+  btn?.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    try {
+      const res = await fetch('/api/checkout/entrada', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventoId,
+          items: [{ sku, diaId, cantidad }],
+        }),
+      });
+      if (!res.ok) throw new Error('checkout_failed');
+      const data = await res.json();
+      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+      else throw new Error('no_url');
+    } catch (e) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      if (errEl) errEl.classList.remove('hidden');
+    }
+  });
+</script>

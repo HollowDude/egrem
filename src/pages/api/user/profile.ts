@@ -60,7 +60,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
       if (!isValidPassword(newPassword)) {
         return new Response(
-          JSON.stringify({ error: 'La nueva contraseña debe tener al menos 8 caracteres, letras y números.' }),
+          JSON.stringify({
+            error: 'La nueva contraseña debe tener al menos 8 caracteres, letras y números.',
+          }),
           {
             status: 400,
             headers: { 'Content-Type': 'application/json' },
@@ -73,8 +75,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       displayName: typeof displayName === 'string' && displayName.trim() ? displayName : undefined,
       currentPassword:
         typeof currentPassword === 'string' && currentPassword.trim() ? currentPassword : undefined,
-      newPassword:
-        typeof newPassword === 'string' && newPassword.trim() ? newPassword : undefined,
+      newPassword: typeof newPassword === 'string' && newPassword.trim() ? newPassword : undefined,
     });
 
     if (!result.ok) {

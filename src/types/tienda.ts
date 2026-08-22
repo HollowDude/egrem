@@ -1,9 +1,4 @@
-export type TiendaCategoria =
-  | 'musica'
-  | 'merchandising'
-  | 'entradas'
-  | 'instrumentos'
-  | 'libros';
+export type TiendaCategoria = 'musica' | 'merchandising' | 'entradas' | 'instrumentos' | 'libros';
 
 /** Categorías con fuente de datos real hoy (el resto es visible pero inerte). */
 export const TIENDA_CATEGORIAS_CON_DATOS: TiendaCategoria[] = [

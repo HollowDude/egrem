@@ -61,8 +61,8 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
       const uidData = Array.isArray(uidRel?.data) ? uidRel?.data[0] : uidRel?.data;
       const ownerUid =
         uidData && typeof uidData === 'object' && 'meta' in uidData
-          ? ((uidData.meta as { drupal_internal__target_id?: number })
-              .drupal_internal__target_id ?? null)
+          ? ((uidData.meta as { drupal_internal__target_id?: number }).drupal_internal__target_id ??
+            null)
           : null;
       let authorName = (a.name as string) ?? '';
       if (uidData && typeof uidData === 'object' && 'id' in uidData) {
@@ -76,9 +76,7 @@ export async function getComments(nodeUuid: string, lang = 'es'): Promise<NhComm
       const pidRel = resource.relationships?.pid;
       const pidData = Array.isArray(pidRel?.data) ? pidRel?.data[0] : pidRel?.data;
       const parentId =
-        pidData && typeof pidData === 'object' && 'id' in pidData
-          ? (pidData.id as string)
-          : null;
+        pidData && typeof pidData === 'object' && 'id' in pidData ? (pidData.id as string) : null;
 
       return {
         id: resource.id,

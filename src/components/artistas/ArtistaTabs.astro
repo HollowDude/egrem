@@ -12,23 +12,27 @@ interface Props {
 const { tabs } = Astro.props;
 ---
 
-<nav class="flex border-b border-egrem-gray/20 mb-8 overflow-x-auto" role="tablist" aria-label="Artist tabs">
-  {tabs.map((tab) => (
-    <button
-      type="button"
-      role="tab"
-      data-artista-tab={tab.id}
-      aria-selected={tab.id === tabs[0].id}
-      aria-controls={`panel-${tab.id}`}
-      class="flex items-center gap-2 px-6 py-4 font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-b-2 border-transparent hover:text-egrem-red hover:border-egrem-red cursor-pointer bg-transparent whitespace-nowrap text-egrem-gray data-[active=true]:text-egrem-red data-[active=true]:border-egrem-red"
-      data-active={tab.id === tabs[0].id}
-    >
-      <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">
-        {tab.icon}
-      </span>
-      {tab.label}
-    </button>
-  ))}
+<nav
+  class="flex border-b border-egrem-gray/20 mb-8 overflow-x-auto"
+  role="tablist"
+  aria-label="Artist tabs"
+>
+  {
+    tabs.map((tab) => (
+      <button
+        type="button"
+        role="tab"
+        data-artista-tab={tab.id}
+        aria-selected={tab.id === tabs[0].id}
+        aria-controls={`panel-${tab.id}`}
+        class="flex items-center gap-2 px-6 py-4 font-display font-bold text-sm uppercase tracking-wider transition-all duration-200 border-b-2 border-transparent hover:text-egrem-red hover:border-egrem-red cursor-pointer bg-transparent whitespace-nowrap text-egrem-gray data-[active=true]:text-egrem-red data-[active=true]:border-egrem-red"
+        data-active={tab.id === tabs[0].id}
+      >
+        <span style="font-family: 'Material Symbols Outlined'; font-size: 18px;">{tab.icon}</span>
+        {tab.label}
+      </button>
+    ))
+  }
 </nav>
 
 <script>

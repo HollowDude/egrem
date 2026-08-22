@@ -1,15 +1,24 @@
 ---
 import { useTranslations } from '@/i18n/translations';
+import SocialIcon from '@/components/ui/SocialIcon.astro';
 import type { Lang } from '@/i18n';
 
 interface Props {
   url: string;
   title: string;
   lang?: Lang;
+  show?: boolean;
 }
 
-const { url, title, lang = 'es' } = Astro.props;
+const { url, title, lang = 'es', show = true } = Astro.props;
 const tr = useTranslations(lang);
+
+if (!show) return Astro.nothing;
+
+const btn =
+  'w-10 h-10 rounded-full border flex items-center justify-center transition-colors border-black/10 hover:border-egrem-red hover:text-egrem-red text-egrem-black';
+const whatsappHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${title} ${url}`)}`;
+const facebookHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
 ---
 
 <div class="flex items-center gap-2">
@@ -21,55 +30,90 @@ const tr = useTranslations(lang);
   </span>
   <div class="flex gap-2">
     <button
-      class:list={[
-        'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
-        'border-black/10 hover:border-egrem-red hover:text-egrem-red text-egrem-black',
-      ]}
+      class:list={[btn, 'md:hidden']}
       aria-label={tr('actualidad.detail.share')}
       id="share-native-btn"
     >
       <span class="text-[20px]" style="font-family:'Material Symbols Outlined';">share</span>
     </button>
+
+    <a
+      href={whatsappHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      class:list={[btn, 'hidden md:flex']}
+      aria-label={tr('actualidad.detail.share_whatsapp')}
+    >
+      <SocialIcon platform="WhatsApp" size={18} />
+    </a>
     <button
-      class:list={[
-        'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
-        'border-black/10 hover:border-egrem-red hover:text-egrem-red text-egrem-black',
-      ]}
+      class:list={[btn, 'hidden md:flex']}
+      aria-label={tr('actualidad.detail.share_instagram')}
+      id="share-instagram-btn"
+    >
+      <SocialIcon platform="Instagram" size={18} />
+    </button>
+    <a
+      href={facebookHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      class:list={[btn, 'hidden md:flex']}
+      aria-label={tr('actualidad.detail.share_facebook')}
+    >
+      <SocialIcon platform="Facebook" size={18} />
+    </a>
+
+    <a
+      href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`}
+      class:list={[btn, 'no-underline']}
+      aria-label="Email"
+    >
+      <span class="text-[20px]" style="font-family:'Material Symbols Outlined';">mail</span>
+    </a>
+    <button
+      class:list={[btn]}
       aria-label={tr('actualidad.detail.copy_link')}
       id="share-copy-btn"
     >
       <span class="text-[20px]" style="font-family:'Material Symbols Outlined';">link</span>
     </button>
-    <a
-      href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`}
-      class:list={[
-        'w-10 h-10 rounded-full border flex items-center justify-center transition-colors no-underline',
-        'border-black/10 hover:border-egrem-red hover:text-egrem-red text-egrem-black',
-      ]}
-      aria-label="Email"
-    >
-      <span class="text-[20px]" style="font-family:'Material Symbols Outlined';">mail</span>
-    </a>
   </div>
 </div>
 
 <script>
-  const copyBtn = document.getElementById('share-copy-btn');
-  const nativeBtn = document.getElementById('share-native-btn');
   const pageUrl = window.location.href;
   const pageTitle = document.title;
+
+  const copyBtn = document.getElementById('share-copy-btn');
+  const nativeBtn = document.getElementById('share-native-btn');
+  const igBtn = document.getElementById('share-instagram-btn');
+
+  const showCopied = (el: HTMLElement | null) => {
+    if (!el) return;
+    const original = el.innerHTML;
+    el.innerHTML =
+      '<span class="text-[20px]" style="font-family:\'Material Symbols Outlined\';">check</span>';
+    el.classList.add('text-green-600', 'border-green-600');
+    setTimeout(() => {
+      el.innerHTML = original;
+      el.classList.remove('text-green-600', 'border-green-600');
+    }, 2000);
+  };
 
   copyBtn?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(pageUrl);
-      const original = copyBtn.innerHTML;
-      copyBtn.innerHTML =
-        '<span class="text-[20px]" style="font-family:\'Material Symbols Outlined\';">check</span>';
-      copyBtn.classList.add('text-green-600', 'border-green-600');
-      setTimeout(() => {
-        copyBtn.innerHTML = original;
-        copyBtn.classList.remove('text-green-600', 'border-green-600');
-      }, 2000);
+      showCopied(copyBtn);
+    } catch {
+      // fallback
+    }
+  });
+
+  igBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      showCopied(igBtn);
+      window.open('https://www.instagram.com/', '_blank', 'noopener');
     } catch {
       // fallback
     }

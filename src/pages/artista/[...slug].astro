@@ -12,7 +12,12 @@ import ArtistaAgenciaCard from '@/components/artistas/ArtistaAgenciaCard.astro';
 import ArtistaRedesSociales from '@/components/artistas/ArtistaRedesSociales.astro';
 import Breadcrumb from '@/components/ui/Breadcrumb.astro';
 import Button from '@/components/ui/Button.astro';
-import { fetchArtistaByPath, fetchArtistaByNid, fetchAlbumsByArtist, fetchVideosByArtista } from '@/lib/nodehive';
+import {
+  fetchArtistaByPath,
+  fetchArtistaByNid,
+  fetchAlbumsByArtist,
+  fetchVideosByArtista,
+} from '@/lib/nodehive';
 import type { NhArtistaDetail, NhAlbumDiscografia, NhArtistaVideo } from '@/lib/nodehive';
 import { useTranslations } from '@/i18n/translations';
 

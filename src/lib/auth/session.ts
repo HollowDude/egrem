@@ -88,7 +88,10 @@ export async function getSession(cookies: AstroCookies): Promise<SessionUser | n
   }
 }
 
-export function destroySession(cookies: AstroCookies, secure: boolean = import.meta.env.PROD): void {
+export function destroySession(
+  cookies: AstroCookies,
+  secure: boolean = import.meta.env.PROD,
+): void {
   cookies.set(COOKIE_NAME, '', {
     httpOnly: true,
     secure,

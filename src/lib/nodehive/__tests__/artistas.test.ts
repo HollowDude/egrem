@@ -10,22 +10,37 @@ vi.mock('../youtube', () => ({
   resolveVideoLink: vi.fn(),
 }));
 
-import { fetchArtistas, fetchArtistaByPath, fetchArtistaByNid, fetchVideosByArtista } from '../artistas';
+import {
+  fetchArtistas,
+  fetchArtistaByPath,
+  fetchArtistaByNid,
+  fetchVideosByArtista,
+} from '../artistas';
 
 const mockResolveVideoLink = vi.mocked((await import('../youtube')).resolveVideoLink);
 
 type MockResource = { type: string; id: string; attributes: Record<string, unknown> };
 
-function mockFindIncluded(included: MockResource[], type: string, id: string): MockResource | undefined {
+function mockFindIncluded(
+  included: MockResource[],
+  type: string,
+  id: string,
+): MockResource | undefined {
   return included?.find((r) => r.type === type && r.id === id);
 }
 
-type MockRelResource = { relationships?: Record<string, { data: { type: string; id: string } | unknown[] | null }> };
+type MockRelResource = {
+  relationships?: Record<string, { data: { type: string; id: string } | unknown[] | null }>;
+};
 
 describe('parseAgencia (internal)', () => {
   it('returns agency data from relationship', () => {
     const included: MockResource[] = [
-      { type: 'taxonomy_term--agencias', id: 'ag1', attributes: { name: 'Música', drupal_internal__tid: 1 } },
+      {
+        type: 'taxonomy_term--agencias',
+        id: 'ag1',
+        attributes: { name: 'Música', drupal_internal__tid: 1 },
+      },
     ];
     const resource: MockRelResource = {
       relationships: {
@@ -33,7 +48,7 @@ describe('parseAgencia (internal)', () => {
       },
     };
 
-    const rel = (resource.relationships?.field_agencia?.data as { type: string; id: string });
+    const rel = resource.relationships?.field_agencia?.data as { type: string; id: string };
     const term = mockFindIncluded(included, 'taxonomy_term--agencias', rel.id);
     const a = term!.attributes;
     const result = {

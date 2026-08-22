@@ -57,8 +57,7 @@ export function filterByQuery(items: NhEventoListItem[], q: string): NhEventoLis
   if (!ql) return items;
   return items.filter(
     (e) =>
-      e.title.toLowerCase().includes(ql) ||
-      e.artistas.some((a) => a.toLowerCase().includes(ql)),
+      e.title.toLowerCase().includes(ql) || e.artistas.some((a) => a.toLowerCase().includes(ql)),
   );
 }
 
@@ -94,8 +93,10 @@ export function applyFilters(
   filters: TiendaFilters,
   sort: TiendaSort = 'proximos',
 ): NhEventoListItem[] {
-  const precioMin = filters.precioMin && filters.precioMin !== '' ? Number(filters.precioMin) : undefined;
-  const precioMax = filters.precioMax && filters.precioMax !== '' ? Number(filters.precioMax) : undefined;
+  const precioMin =
+    filters.precioMin && filters.precioMin !== '' ? Number(filters.precioMin) : undefined;
+  const precioMax =
+    filters.precioMax && filters.precioMax !== '' ? Number(filters.precioMax) : undefined;
   return sortItems(
     filterByQuery(
       filterByDisponibilidad(

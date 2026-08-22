@@ -7,13 +7,20 @@ import type {
 import { jsonApiFetch } from './client';
 import { findIncluded, resolveRelIds, slugify } from './helpers';
 import { parseMediaImage, parseMediaDocument, parseMediaVideo, resolveFileUrl } from './parsers';
-import type { NhMediaImage, NhMediaFile, NhMediaVideo, NhRemoteVideo, NhEntityMeta } from './parsers';
+import type {
+  NhMediaImage,
+  NhMediaFile,
+  NhMediaVideo,
+  NhRemoteVideo,
+  NhEntityMeta,
+} from './parsers';
 import type {
   NhActualidadItem,
   NhActualidadBundle,
   NhActualidadTag,
   NhActualidadHero,
   NhArtist,
+  NhEvento,
 } from './entities';
 import { fetchOEmbed, extractYouTubeId } from './youtube';
 import { NODEHIVE_CONFIG } from './config';
@@ -73,6 +80,7 @@ interface RawNodeAttrs {
   body?: { value: string; summary: string };
   field_autor?: string;
   field_patrimonio?: boolean;
+  field_compartir_sociales?: boolean;
   field_fecha_original?: string;
   path: { alias: string | null };
 }
@@ -109,6 +117,56 @@ function parseRelatedContent(
     if (parsed) items.push(parsed);
   }
   return items.length > 0 ? items : undefined;
+}
+
+function parseEventoFechaRange(value: unknown): { inicio: string; fin: string } {
+  if (typeof value === 'string') return { inicio: value, fin: value };
+  if (value && typeof value === 'object') {
+    const obj = value as { value?: unknown; end_value?: unknown };
+    const inicio = typeof obj.value === 'string' ? obj.value : '';
+    const fin = typeof obj.end_value === 'string' ? obj.end_value : inicio;
+    return { inicio, fin };
+  }
+  return { inicio: '', fin: '' };
+}
+
+function parseRelatedEvents(
+  resource: { relationships?: Record<string, JsonApiRelationship> },
+  included: JsonApiResource[] | undefined,
+): NhEvento[] | undefined {
+  const refs = resolveRelIds(resource.relationships?.field_eventos_relacionados);
+  if (refs.length === 0) return undefined;
+
+  const events: NhEvento[] = [];
+  for (const ref of refs) {
+    const node = findIncluded(included, 'node--evento', ref.id);
+    if (!node) continue;
+    const a = node.attributes as Record<string, unknown>;
+    const { inicio, fin } = parseEventoFechaRange(a.field_fecha);
+    const nid = (a.drupal_internal__nid as number) ?? 0;
+    const path = (a.path as { alias?: string | null } | undefined)?.alias;
+    const href = path && path.startsWith('/') ? path : `/evento/${nid}`;
+
+    let venue = '';
+    const venueRel = node.relationships?.field_venue_bat?.data as
+      | JsonApiResourceIdentifier
+      | undefined;
+    if (venueRel) {
+      const local = findIncluded(included, 'node--local', venueRel.id);
+      venue = ((local?.attributes as Record<string, unknown> | undefined)?.title as string) ?? '';
+    }
+
+    events.push({
+      id: node.id,
+      title: (a.title as string) ?? '',
+      venue,
+      date: inicio,
+      endDate: fin !== inicio ? fin : undefined,
+      time: (a.field_hora as string) ?? '',
+      href,
+    });
+  }
+  return events.length > 0 ? events : undefined;
 }
 
 export function parseActualidadNode(
@@ -162,7 +220,7 @@ export function parseActualidadNode(
     const imageIds = resolveRelIds(imageRel);
     if (imageIds.length > 0) {
       const ref = imageIds[0];
-        if (ref.type === 'media--document') {
+      if (ref.type === 'media--document') {
         const mediaRes = findIncluded(included, 'media--document', ref.id);
         if (mediaRes) {
           attachment = parseMediaDocument(mediaRes, included);
@@ -218,11 +276,12 @@ export function parseActualidadNode(
     path: a.path?.alias ?? '',
     tags: parseTags(resource, included),
     relatedArtists: parseArtists(resource, included),
-    relatedEvents: [],
+    relatedEvents: parseRelatedEvents(resource, included) ?? [],
     relatedContent:
       bundle === 'noticia' || bundle === 'article'
         ? parseRelatedContent(resource, included)
         : undefined,
+    compartirSociales: a.field_compartir_sociales !== false,
   };
 }
 
@@ -304,14 +363,18 @@ export async function fetchPatrimonioSection(lang = 'es'): Promise<NhPatrimonioS
           videoTitle = oembed?.title ?? linkAttr?.title ?? (vAttrs.title as string) ?? null;
           videoThumbnail = oembed?.thumbnailUrl ?? null;
           const artistRefs = resolveRelIds(
-            (videoRes.relationships as Record<string, JsonApiRelationship> | undefined)?.field_artistas,
+            (videoRes.relationships as Record<string, JsonApiRelationship> | undefined)
+              ?.field_artistas,
           );
           const firstArtist = artistRefs.length
             ? findIncluded(included, 'node--artista', artistRefs[0].id)
             : undefined;
-          videoAuthor = (firstArtist?.attributes as Record<string, unknown> | undefined)?.title as
-            | string
-            | null ?? oembed?.authorName ?? null;
+          videoAuthor =
+            ((firstArtist?.attributes as Record<string, unknown> | undefined)?.title as
+              | string
+              | null) ??
+            oembed?.authorName ??
+            null;
         }
       }
     }
@@ -463,9 +526,12 @@ const REL_CONTENT_INCLUDES = [
 ].join(',');
 
 export async function fetchActualidadItems(lang = 'es'): Promise<NhActualidadItem[]> {
+  const REL_EVENTS_INCLUDES =
+    'field_eventos_relacionados,field_eventos_relacionados.field_venue_bat';
+
   const bundleIncludes: Record<string, string> = {
-    noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES},${REL_CONTENT_INCLUDES}`,
-    article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES},${REL_CONTENT_INCLUDES}`,
+    noticia: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES},${REL_CONTENT_INCLUDES},${REL_EVENTS_INCLUDES}`,
+    article: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES},${REL_CONTENT_INCLUDES},${REL_EVENTS_INCLUDES}`,
     blog: `field_imagen_o_multimedia,field_imagen_o_multimedia.field_media_image,field_imagen_o_multimedia.field_media_video_file,field_tags,${ARTIST_INCLUDES}`,
     boletin_archivo: 'field_boletin',
   };

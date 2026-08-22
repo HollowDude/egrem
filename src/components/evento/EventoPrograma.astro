@@ -4,6 +4,7 @@
  * Solo se renderiza cuando el evento tiene días de programa cargados.
  */
 import type { NhEventoProgramaDia } from '@/lib/nodehive';
+import { resolveInlineImages } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
 }
 
 const { dias, lang = 'es' } = Astro.props;
+
+const baseUrl = import.meta.env.NODEHIVE_BASE_URL?.replace(/\/$/, '') ?? '';
 
 function formatDia(fecha: string): string {
   const d = new Date(`${fecha}T12:00:00`);
@@ -31,19 +34,27 @@ function formatDia(fecha: string): string {
         <span
           class="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-egrem-red border-4 border-egrem-gray-light"
           aria-hidden="true"
-        ></span>
+        />
         <p class="font-display font-bold text-[11px] uppercase tracking-widest text-egrem-gold mb-1 m-0">
           {formatDia(dia.fecha)}
         </p>
         <h3 class="text-h3 text-egrem-black m-0 mb-1.5">{dia.titulo}</h3>
         {dia.horario && (
           <p class="font-display font-semibold text-small text-egrem-black flex items-center gap-1.5 m-0 mb-2">
-            <span class="text-egrem-red" style="font-family: 'Material Symbols Outlined'; font-size: 16px;">schedule</span>
+            <span
+              class="text-egrem-red"
+              style="font-family: 'Material Symbols Outlined'; font-size: 16px;"
+            >
+              schedule
+            </span>
             {dia.horario}
           </p>
         )}
         {dia.descripcion && (
-          <p class="font-display text-body text-egrem-gray m-0">{dia.descripcion}</p>
+          <div
+            class="egrem-richtext text-body leading-relaxed text-egrem-gray mt-1"
+            set:html={resolveInlineImages(dia.descripcion, baseUrl)}
+          />
         )}
       </div>
     ))

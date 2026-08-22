@@ -42,7 +42,9 @@ describe('getComments', () => {
           },
           relationships: {
             pid: { data: null },
-            uid: { data: { type: 'user--user', id: 'user-a', meta: { drupal_internal__target_id: 6 } } },
+            uid: {
+              data: { type: 'user--user', id: 'user-a', meta: { drupal_internal__target_id: 6 } },
+            },
           },
         },
         {
@@ -55,7 +57,9 @@ describe('getComments', () => {
           },
           relationships: {
             pid: { data: null },
-            uid: { data: { type: 'user--user', id: 'user-a', meta: { drupal_internal__target_id: 6 } } },
+            uid: {
+              data: { type: 'user--user', id: 'user-a', meta: { drupal_internal__target_id: 6 } },
+            },
           },
         },
       ],
@@ -83,7 +87,9 @@ describe('getComments', () => {
           },
           relationships: {
             pid: { data: null },
-            uid: { data: { type: 'user--user', id: 'user-b', meta: { drupal_internal__target_id: 12 } } },
+            uid: {
+              data: { type: 'user--user', id: 'user-b', meta: { drupal_internal__target_id: 12 } },
+            },
           },
         },
       ],
@@ -166,9 +172,19 @@ describe('postComment', () => {
   it('posts via JSON:API with the parent relationship and marks published when field_aprobado is true', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(jsonResponse({ data: { id: 'c-2', attributes: { field_aprobado: true } } }));
+      .mockResolvedValueOnce(
+        jsonResponse({ data: { id: 'c-2', attributes: { field_aprobado: true } } }),
+      );
 
-    const result = await postComment(5, 'node-uuid-1', 'node--blog', 'token-1', 'csrf-1', 'Respuesta', 'root-1');
+    const result = await postComment(
+      5,
+      'node-uuid-1',
+      'node--blog',
+      'token-1',
+      'csrf-1',
+      'Respuesta',
+      'root-1',
+    );
 
     expect(result.ok).toBe(true);
     expect(result.id).toBe('c-2');
@@ -203,7 +219,15 @@ describe('postComment', () => {
       .mockResolvedValueOnce(jsonResponse({}, 403))
       .mockResolvedValueOnce(jsonResponse({ uuid: 'uuid-abc', id: 42 }, 200));
 
-    const result = await postComment(5, 'node-uuid-1', 'node--blog', 'token-1', 'csrf-1', 'Respuesta', 'root-1');
+    const result = await postComment(
+      5,
+      'node-uuid-1',
+      'node--blog',
+      'token-1',
+      'csrf-1',
+      'Respuesta',
+      'root-1',
+    );
 
     expect(result.ok).toBe(true);
     expect(result.id).toBe('uuid-abc');

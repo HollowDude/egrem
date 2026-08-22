@@ -175,8 +175,10 @@ export default function Tracklist({ tracks, lang = 'es' }: Props) {
                 <div
                   className="absolute bottom-0 left-0 h-[2px] bg-egrem-red"
                   style={{
-                    width: `${Math.min(progress, 1) * 100}%`,
-                    transition: 'width 0.3s linear, opacity 0.25s ease',
+                    width: '100%',
+                    transform: `scaleX(${Math.min(progress, 1)})`,
+                    transformOrigin: 'left',
+                    transition: 'transform 0.3s linear, opacity 0.25s ease',
                     opacity: 1,
                   }}
                 />

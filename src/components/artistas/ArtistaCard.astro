@@ -21,27 +21,31 @@ const initials = artista.name
   class="group relative block bg-white border border-egrem-gray/20 rounded-xl overflow-hidden hover:border-egrem-gold/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col cursor-pointer no-underline"
 >
   <div class="block relative overflow-hidden bg-egrem-gray-light" style="aspect-ratio: 4/3;">
-    {artista.image?.url ? (
-      <img
-        src={artista.image.url}
-        alt={artista.image.alt || artista.name}
-        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 bg-egrem-gray-light"
-        loading="lazy"
-        decoding="async"
-      />
-    ) : (
-      <div class="w-full h-full flex items-center justify-center bg-egrem-gray-light">
-        <span class="text-4xl font-display font-bold text-egrem-gray/40">{initials}</span>
-      </div>
-    )}
-    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-    {artista.agencia && (
-      <div class="absolute top-3 left-3 z-10">
-        <span class="inline-block px-2.5 py-1 bg-egrem-red text-white text-[11px] font-display font-bold uppercase tracking-wider rounded-md shadow-sm">
-          {artista.agencia.name}
-        </span>
-      </div>
-    )}
+    {
+      artista.image?.url ? (
+        <img
+          src={artista.image.url}
+          alt={artista.image.alt || artista.name}
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 bg-egrem-gray-light"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div class="w-full h-full flex items-center justify-center bg-egrem-gray-light">
+          <span class="text-4xl font-display font-bold text-egrem-gray/40">{initials}</span>
+        </div>
+      )
+    }
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+    {
+      artista.agencia && (
+        <div class="absolute top-3 left-3 z-10">
+          <span class="inline-block px-2.5 py-1 bg-egrem-red text-white text-[11px] font-display font-bold uppercase tracking-wider rounded-md shadow-sm">
+            {artista.agencia.name}
+          </span>
+        </div>
+      )
+    }
     <div class="absolute bottom-0 left-0 right-0 p-4 z-10">
       <p class="text-[11px] text-egrem-gold font-display font-bold uppercase tracking-widest mb-1">
         {tr('artistas.card.artist')}
@@ -52,14 +56,21 @@ const initials = artista.name
     </div>
   </div>
   <div class="px-4 py-3 flex items-center justify-between bg-white">
-    {artista.summary ? (
-      <p class="text-[13px] font-display m-0 line-clamp-1 flex-1" style="color: var(--color-text-secondary);">
-        {artista.summary}
-      </p>
-    ) : (
-      <span />
-    )}
-    <span class="flex items-center gap-1.5 text-[13px] font-display font-bold text-egrem-black group-hover:text-egrem-red transition-colors whitespace-nowrap ml-2">
+    {
+      artista.summary ? (
+        <p
+          class="text-[13px] font-display m-0 line-clamp-1 flex-1"
+          style="color: var(--color-text-secondary);"
+        >
+          {artista.summary}
+        </p>
+      ) : (
+        <span />
+      )
+    }
+    <span
+      class="flex items-center gap-1.5 text-[13px] font-display font-bold text-egrem-black group-hover:text-egrem-red transition-colors whitespace-nowrap ml-2"
+    >
       {tr('artistas.view_profile')}
       <span
         class="text-[16px] group-hover:translate-x-0.5 transition-transform"

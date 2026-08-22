@@ -41,9 +41,13 @@ const tipoOptions = Array.from(new Set(categorias.filter(Boolean))).sort((a, b) 
           onchange="this.form.submit()"
         >
           <option value="">{tr('evento.filter.tipo.all')}</option>
-          {tipoOptions.map((t) => (
-            <option value={slugify(t)} selected={tipo === slugify(t)}>{t}</option>
-          ))}
+          {
+            tipoOptions.map((t) => (
+              <option value={slugify(t)} selected={tipo === slugify(t)}>
+                {t}
+              </option>
+            ))
+          }
         </select>
       </div>
 
@@ -57,9 +61,13 @@ const tipoOptions = Array.from(new Set(categorias.filter(Boolean))).sort((a, b) 
           onchange="this.form.submit()"
         >
           <option value="">{tr('evento.filter.fecha.todas')}</option>
-          {lugarOptions.map((l) => (
-            <option value={slugify(l)} selected={sede === slugify(l)}>{l}</option>
-          ))}
+          {
+            lugarOptions.map((l) => (
+              <option value={slugify(l)} selected={sede === slugify(l)}>
+                {l}
+              </option>
+            ))
+          }
         </select>
       </div>
 
@@ -101,14 +109,16 @@ const tipoOptions = Array.from(new Set(categorias.filter(Boolean))).sort((a, b) 
       >
         {tr('evento.filter.submit')}
       </button>
-      {(tipo || sede || fecha || q) && (
-        <a
-          href={basePath}
-          class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline"
-        >
-          {tr('evento.filter.clear')}
-        </a>
-      )}
+      {
+        (tipo || sede || fecha || q) && (
+          <a
+            href={basePath}
+            class="text-[11px] font-display font-bold text-egrem-gray uppercase tracking-wider hover:text-egrem-red transition-colors no-underline"
+          >
+            {tr('evento.filter.clear')}
+          </a>
+        )
+      }
     </form>
   </div>
 </section>

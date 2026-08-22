@@ -33,58 +33,88 @@ const fechaDisplay =
 const precio = evento.precioDesde !== null ? `$${evento.precioDesde.toFixed(2)}` : null;
 ---
 
-<article class="group bg-white border border-egrem-gray/20 rounded-2xl overflow-hidden shadow-sm hover:border-egrem-gold hover:shadow-md transition-all">
+<article
+  class="group bg-white border border-egrem-gray/20 rounded-2xl overflow-hidden shadow-sm hover:border-egrem-gold hover:shadow-md transition-all"
+>
   <div class="relative aspect-[16/9] overflow-hidden bg-egrem-gray-light">
-    {evento.thumbnail?.url ? (
-      <img
-        src={evento.thumbnail.url}
-        alt={evento.thumbnail.alt || evento.title}
-        class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
-        loading="lazy"
-        decoding="async"
-      />
-    ) : (
-      <div class="w-full h-full flex items-center justify-center">
-        <span class="text-5xl text-egrem-gray/40" style="font-family: 'Material Symbols Outlined';">event</span>
-      </div>
-    )}
-    {evento.agotado && (
-      <span class="absolute top-0 right-0 bg-egrem-red text-white font-display font-bold text-[10px] px-2.5 py-1 uppercase tracking-widest rounded-bl-lg">
-        {tr('evento.list.sold_out')}
-      </span>
-    )}
+    {
+      evento.thumbnail?.url ? (
+        <img
+          src={evento.thumbnail.url}
+          alt={evento.thumbnail.alt || evento.title}
+          class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div class="w-full h-full flex items-center justify-center">
+          <span
+            class="text-5xl text-egrem-gray/40"
+            style="font-family: 'Material Symbols Outlined';"
+          >
+            event
+          </span>
+        </div>
+      )
+    }
+    {
+      evento.agotado && (
+        <span class="absolute top-0 right-0 bg-egrem-red text-white font-display font-bold text-[10px] px-2.5 py-1 uppercase tracking-widest rounded-bl-lg">
+          {tr('evento.list.sold_out')}
+        </span>
+      )
+    }
   </div>
 
   <div class="p-5">
-    <p class="font-display font-bold text-[11px] text-egrem-gold uppercase tracking-widest m-0 mb-2">
+    <p
+      class="font-display font-bold text-[11px] text-egrem-gold uppercase tracking-widest m-0 mb-2"
+    >
       {fechaDisplay}
     </p>
-    <h3 class="font-display font-bold text-h4 text-egrem-black m-0 mb-1.5 group-hover:text-egrem-red transition-colors">
+    <h3
+      class="font-display font-bold text-h4 text-egrem-black m-0 mb-1.5 group-hover:text-egrem-red transition-colors"
+    >
       {evento.title}
     </h3>
-    {evento.lugarTexto && (
-      <p class="font-display text-small m-0 mb-2 flex items-center gap-1" style="color: var(--color-text-secondary);">
-        <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">location_on</span>
-        {evento.lugarTexto}
-      </p>
-    )}
-    {evento.descripcionCorta && (
-      <p class="font-display text-small text-egrem-gray m-0 mb-4 line-clamp-2">{evento.descripcionCorta}</p>
-    )}
+    {
+      evento.lugarTexto && (
+        <p
+          class="font-display text-small m-0 mb-2 flex items-center gap-1"
+          style="color: var(--color-text-secondary);"
+        >
+          <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">
+            location_on
+          </span>
+          {evento.lugarTexto}
+        </p>
+      )
+    }
+    {
+      evento.descripcionCorta && (
+        <p class="font-display text-small text-egrem-gray m-0 mb-4 line-clamp-2">
+          {evento.descripcionCorta}
+        </p>
+      )
+    }
     <div class="flex items-center justify-between pt-3 border-t border-egrem-gray/15">
-      {precio ? (
-        <span class="font-display font-bold text-body text-egrem-red">
-          {tr('evento.list.from')} {precio}
-        </span>
-      ) : (
-        <span></span>
-      )}
+      {
+        precio ? (
+          <span class="font-display font-bold text-body text-egrem-red">
+            {tr('evento.list.from')} {precio}
+          </span>
+        ) : (
+          <span />
+        )
+      }
       <a
         href={evento.href}
         class="inline-flex items-center gap-1.5 font-display font-bold text-[11px] uppercase tracking-wider text-egrem-red no-underline hover:underline transition-colors"
       >
         {tr('evento.list.details')}
-        <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';">arrow_forward</span>
+        <span class="text-[14px]" style="font-family: 'Material Symbols Outlined';"
+          >arrow_forward</span
+        >
       </a>
     </div>
   </div>
