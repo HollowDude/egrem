@@ -1,14 +1,14 @@
 import type { NhEventoDetalle } from '@/lib/nodehive';
-import { calcularResumen, type ResumenSeleccion } from './seleccion';
+import { calcularResumen, type ResumenSeleccion, type SeleccionPorSku } from './seleccion';
 
 export interface CheckoutItem {
   sku: string;
-  diaId: string;
   cantidad: number;
 }
 
 export interface CheckoutPayload {
   eventoId?: string;
+  /** Mapa sku → cantidad, idéntico al estado de selección de la Tienda. */
   items: CheckoutItem[];
 }
 
@@ -30,7 +30,7 @@ export function procesarCheckout(
     return { ok: false, status: 400, message: 'no_items' };
   }
   for (const it of payload.items) {
-    if (!it.sku || !it.diaId || !(it.cantidad > 0)) {
+    if (!it.sku || !(it.cantidad > 0)) {
       return { ok: false, status: 400, message: 'item_invalido' };
     }
   }
@@ -54,11 +54,12 @@ export function procesarCheckout(
     if (t.disponibles === 0) return { ok: false, status: 409, message: 'agotado' };
   }
 
-  const seleccion = payload.items.map((i) => ({
-    diaId: i.diaId,
-    tipoEntradaSku: i.sku,
-    cantidad: i.cantidad,
-  }));
+  // Mismo mapa sku→cantidad que maneja la UI; si un sku viniera repetido se
+  // suma defensivamente, nunca se pisa.
+  const seleccion: SeleccionPorSku = {};
+  for (const it of payload.items) {
+    seleccion[it.sku] = (seleccion[it.sku] ?? 0) + it.cantidad;
+  }
   const resumen = calcularResumen(seleccion, evento.tiposEntrada);
   return { ok: true, total: resumen.total, resumen };
 }

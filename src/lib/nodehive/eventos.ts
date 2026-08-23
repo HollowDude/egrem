@@ -42,6 +42,12 @@ export interface NhEventoLineupArtista {
   rol: string;
 }
 
+export interface NhEventoDiaResuelto {
+  id: string;
+  titulo: string;
+  fecha: string;
+}
+
 export interface NhEventoTipoEntrada {
   nombre: string;
   sku: string;
@@ -51,6 +57,8 @@ export interface NhEventoTipoEntrada {
   disponibles: number | null;
   destacado: boolean;
   diasIds: string[];
+  /** Días referenciados resueltos a { id, titulo, fecha } — evita cruzar contra programa en cada consumidor. */
+  diasResueltos: NhEventoDiaResuelto[];
   zonaIds: string[];
 }
 
@@ -251,10 +259,17 @@ function parseTiposEntrada(
       // en la variación de Commerce). Se deriva de los días referenciados:
       // zonaIds = unión de zonaId de cada field_dias_entrada.
       const diasIds = resolveRelIds(p.relationships?.field_dias_entrada).map((d) => d.id);
+      const diasResueltos: NhEventoDiaResuelto[] = [];
       const zonaIds = diasIds
         .map((diaId) => {
           const dia = findIncluded(included, 'node--dia_programa', diaId);
           if (!dia) return null;
+          const da = dia.attributes as Record<string, unknown>;
+          diasResueltos.push({
+            id: dia.id,
+            titulo: (da.field_titulo_dia as string) ?? '',
+            fecha: (da.field_fecha_dia as string) ?? '',
+          });
           const zIds = resolveRelIds(dia.relationships?.field_zona).map((z) => z.id);
           return zIds[0] ?? null;
         })
@@ -284,6 +299,7 @@ function parseTiposEntrada(
         disponibles,
         destacado: Boolean(pa.field_destacado),
         diasIds,
+        diasResueltos,
         zonaIds,
       };
     })

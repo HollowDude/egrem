@@ -6,6 +6,7 @@
 import type { NhEventoListItem } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
+import { formatPrecio } from '@/lib/moneda';
 
 interface Props {
   evento: NhEventoListItem;
@@ -30,7 +31,7 @@ const fechaDisplay =
     ? `${formatFecha(evento.fechaInicio)} - ${formatFecha(evento.fechaFin)}`
     : formatFecha(evento.fechaInicio);
 
-const precio = evento.precioDesde !== null ? `$${evento.precioDesde.toFixed(2)}` : null;
+const precio = evento.precioDesde !== null ? formatPrecio(evento.precioDesde, lang) : null;
 ---
 
 <article

@@ -8,7 +8,6 @@ import EventoCompraWidget from '@/components/tienda/EventoCompraWidget.tsx';
 import { fetchEventoByPath, fetchEventoByNid } from '@/lib/nodehive';
 import type { NhEventoDetalle } from '@/lib/nodehive';
 import { solicitarCheckout } from '@/lib/tienda/checkout';
-import type { DiaSeleccion } from '@/lib/tienda/seleccion';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
@@ -71,13 +70,11 @@ const lugarHero = evento.local?.nombre || evento.lugarTexto;
 const pageTitle = `${evento.title} | EGREM`;
 const entradaSku = Astro.url.searchParams.get('entrada') ?? undefined;
 
-const handleConfirm = async (seleccion: DiaSeleccion[]) => {
+const handleConfirm = async (items: { sku: string; cantidad: number }[]) => {
   try {
     const { checkoutUrl } = await solicitarCheckout({
       eventoId: evento.id,
-      items: seleccion
-        .filter((s) => s.tipoEntradaSku && s.cantidad > 0)
-        .map((s) => ({ sku: s.tipoEntradaSku!, diaId: s.diaId, cantidad: s.cantidad })),
+      items,
     });
     if (checkoutUrl) window.location.href = checkoutUrl;
   } catch (e) {

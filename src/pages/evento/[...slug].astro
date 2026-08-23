@@ -87,7 +87,19 @@ const cta = resolveCtaCompra(evento, lang, esPasado);
 const ctaLabel =
   cta.tipo === 'checkout_directo'
     ? tr('evento.detail.buy_now')
-    : tr('evento.detail.view_options');
+    : tr('evento.detail.buy_in_store');
+
+/** Numeración de días del Programa (1-based) — la misma que muestran los chips. */
+const diaNumero = new Map(evento.programa.map((d, i) => [d.id, i + 1]));
+const diaChipsPorSku = new Map(
+  evento.tiposEntrada.map((t) => [
+    t.sku,
+    t.diasResueltos.map((d) => {
+      const n = diaNumero.get(d.id);
+      return n ? tr('evento.detail.dia_n', { n }) : d.titulo || d.fecha;
+    }),
+  ]),
+);
 ---
 
 <BaseLayout
@@ -239,7 +251,11 @@ const ctaLabel =
                 </h3>
                 <div class="space-y-4 mt-4">
                   {evento.tiposEntrada.map((entrada) => (
-                    <EventoTicketCard entrada={entrada} lang={lang} />
+                    <EventoTicketCard
+                      entrada={entrada}
+                      lang={lang}
+                      diaChips={diaChipsPorSku.get(entrada.sku) ?? []}
+                    />
                   ))}
                 </div>
                 {

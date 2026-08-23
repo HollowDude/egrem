@@ -290,10 +290,16 @@ describe('parseEventoDetalle', () => {
     expect(detalle.tiposEntrada[0].capacidad).toBeNull();
     expect(detalle.tiposEntrada[0].disponibles).toBeNull();
     expect(detalle.tiposEntrada[0].diasIds).toEqual(['dia-1']);
+    expect(detalle.tiposEntrada[0].diasResueltos).toEqual([
+      { id: 'dia-1', titulo: 'Día 1: Inauguración', fecha: '2026-10-14' },
+    ]);
     expect(detalle.tiposEntrada[0].zonaIds).toEqual(['zona-1']);
     expect(detalle.tiposEntrada[0].destacado).toBe(true);
     expect(detalle.tiposEntrada[1].capacidad).toBeNull();
     expect(detalle.tiposEntrada[1].diasIds).toEqual(['dia-2']);
+    expect(detalle.tiposEntrada[1].diasResueltos).toEqual([
+      { id: 'dia-2', titulo: 'Día 2: Clausura', fecha: '2026-10-15' },
+    ]);
     expect(detalle.tiposEntrada[1].zonaIds).toEqual(['zona-2']);
     expect(detalle.tiposEntrada[1].destacado).toBe(false);
 

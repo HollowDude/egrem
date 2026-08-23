@@ -6,6 +6,7 @@
 import type { NhEventoProgramaDia } from '@/lib/nodehive';
 import { resolveInlineImages } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
+import { useTranslations } from '@/i18n/translations';
 
 interface Props {
   dias: NhEventoProgramaDia[];
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const { dias, lang = 'es' } = Astro.props;
+const tr = useTranslations(lang);
 
 const baseUrl = import.meta.env.NODEHIVE_BASE_URL?.replace(/\/$/, '') ?? '';
 
@@ -29,14 +31,19 @@ function formatDia(fecha: string): string {
 
 <div class="relative border-l-2 border-egrem-gray/25 ml-3 pl-6 space-y-8">
   {
-    dias.map((dia) => (
+    dias.map((dia, index) => (
       <div class="relative">
         <span
           class="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-egrem-red border-4 border-egrem-gray-light"
           aria-hidden="true"
         />
-        <p class="font-display font-bold text-[11px] uppercase tracking-widest text-egrem-gold mb-1 m-0">
-          {formatDia(dia.fecha)}
+        <p class="flex items-center gap-2 m-0 mb-1">
+          <span class="inline-block bg-egrem-gold text-white font-display font-bold text-[10px] uppercase tracking-widest px-2 py-0.5 rounded">
+            {tr('evento.detail.dia_n', { n: index + 1 })}
+          </span>
+          <span class="font-display font-bold text-[11px] uppercase tracking-widest text-egrem-gold">
+            {formatDia(dia.fecha)}
+          </span>
         </p>
         <h3 class="text-h3 text-egrem-black m-0 mb-1.5">{dia.titulo}</h3>
         {dia.horario && (

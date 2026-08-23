@@ -121,6 +121,7 @@ export type {
   NhEventoProgramaDia,
   NhEventoLineupArtista,
   NhEventoTipoEntrada,
+  NhEventoDiaResuelto,
   NhEventoLocal,
   NhEventosHero,
 } from './eventos';

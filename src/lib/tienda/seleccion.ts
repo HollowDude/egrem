@@ -3,19 +3,32 @@ import type { NhEventoProgramaDia, NhEventoTipoEntrada } from '@/lib/nodehive/ev
 /**
  * Lógica pura de selección de entradas por día del evento.
  * No depende de React ni del DOM: se testea directamente (ver seleccion.test.ts).
+ *
+ * Principio: la selección vive por SKU (`Record<sku, cantidad>`). El día es solo
+ * un criterio de agrupación visual. Un tier multi-día aparece UNA sola vez (en
+ * `multiDia`), nunca dentro de las tarjetas de día individuales → es imposible
+ * estructuralmente contar el mismo pase dos veces.
  */
-
-export interface DiaSeleccion {
-  diaId: string;
-  tipoEntradaSku: string | null;
-  cantidad: number;
-}
 
 export interface DiaOpcion {
   dia: NhEventoProgramaDia;
-  /** Tiers (tipos de entrada) que dan acceso a este día. */
+  /** Tiers que dan acceso EXCLUSIVAMENTE a este día (diasIds.length === 1). */
   tiers: NhEventoTipoEntrada[];
 }
+
+export interface TierMultiDia {
+  tier: NhEventoTipoEntrada;
+  /** Días reales que cubre el pase, resueltos contra el programa (no solo ids). */
+  dias: NhEventoProgramaDia[];
+}
+
+export interface AgrupacionTiers {
+  porDia: DiaOpcion[];
+  multiDia: TierMultiDia[];
+}
+
+/** Selección de estado: sku → cantidad. Un sku = una entrada en el mapa. */
+export type SeleccionPorSku = Record<string, number>;
 
 export interface LineaResumen {
   sku: string;
@@ -32,60 +45,67 @@ export interface ResumenSeleccion {
   combinaciones: number;
 }
 
-/** Cruza programa × tiposEntrada: para cada día, qué tiers lo incluyen. */
-export function tiersPorDia(
+/**
+ * Agrupa programa × tiposEntrada:
+ * - `porDia`: un grupo por día con SOLO sus tiers de un solo día.
+ * - `multiDia`: pases combinados (diasIds.length > 1) con los días resueltos.
+ */
+export function agruparTiers(
   programa: NhEventoProgramaDia[],
   tiposEntrada: NhEventoTipoEntrada[],
-): DiaOpcion[] {
-  return programa.map((dia) => ({
+): AgrupacionTiers {
+  const porDiaMap = new Map(programa.map((d) => [d.id, d]));
+
+  const tiersUnDia = tiposEntrada.filter((t) => t.diasIds.length === 1);
+  const tiersMultiDia = tiposEntrada.filter((t) => t.diasIds.length > 1);
+
+  const porDia = programa.map((dia) => ({
     dia,
-    tiers: tiposEntrada.filter((t) => t.diasIds.includes(dia.id)),
+    tiers: tiersUnDia.filter((t) => t.diasIds[0] === dia.id),
   }));
+
+  const multiDia = tiersMultiDia.map((tier) => ({
+    tier,
+    dias: tier.diasIds
+      .map((id) => porDiaMap.get(id))
+      .filter((d): d is NhEventoProgramaDia => !!d),
+  }));
+
+  return { porDia, multiDia };
 }
 
 /**
- * Calcula el resumen (líneas, total, si hay precios nulos) a partir de una
- * selección por día. Agrupa por SKU (el mismo tier elegido en varios días
- * suma cantidades).
+ * Calcula el resumen (líneas, total, si hay precios nulos) a partir de la
+ * selección por SKU. Cada SKU existe como mucho una vez en el Record, así que
+ * no puede haber doble conteo por construcción.
  */
 export function calcularResumen(
-  seleccion: DiaSeleccion[],
+  seleccion: SeleccionPorSku,
   tiposEntrada: NhEventoTipoEntrada[],
 ): ResumenSeleccion {
   const porSku = new Map(tiposEntrada.map((t) => [t.sku, t]));
-  const lineasMap = new Map<string, LineaResumen>();
+  const lineas: LineaResumen[] = [];
 
-  for (const sel of seleccion) {
-    if (!sel.tipoEntradaSku || sel.cantidad <= 0) continue;
-    const t = porSku.get(sel.tipoEntradaSku);
+  for (const [sku, cantidad] of Object.entries(seleccion)) {
+    if (!sku || cantidad <= 0) continue;
+    const t = porSku.get(sku);
     if (!t) continue;
-    const existente = lineasMap.get(t.sku);
-    if (existente) {
-      existente.cantidad += sel.cantidad;
-    } else {
-      lineasMap.set(t.sku, {
-        sku: t.sku,
-        nombre: t.nombre,
-        precioUnitario: t.precio,
-        cantidad: sel.cantidad,
-        subtotal: null,
-      });
-    }
+    lineas.push({
+      sku: t.sku,
+      nombre: t.nombre,
+      precioUnitario: t.precio,
+      cantidad,
+      subtotal: t.precio !== null ? t.precio * cantidad : null,
+    });
   }
-
-  const lineas = [...lineasMap.values()].map((l) => ({
-    ...l,
-    subtotal: l.precioUnitario !== null ? l.precioUnitario * l.cantidad : null,
-  }));
 
   const hasNullPrice = lineas.some((l) => l.precioUnitario === null);
   const total = hasNullPrice ? null : lineas.reduce((acc, l) => acc + (l.subtotal ?? 0), 0);
-  const combinaciones = seleccion.filter((s) => s.tipoEntradaSku && s.cantidad > 0).length;
 
-  return { lineas, total, hasNullPrice, combinaciones };
+  return { lineas, total, hasNullPrice, combinaciones: lineas.length };
 }
 
-/** Número de combinaciones posibles (días × tiers activos) para decidir CTA. */
-export function combinacionesPosibles(opciones: DiaOpcion[]): number {
-  return opciones.reduce((acc, o) => acc + o.tiers.length, 0);
+/** Número total de opciones comprables (tiers de un día + pases combinados). */
+export function totalCombinaciones(grupos: AgrupacionTiers): number {
+  return grupos.porDia.reduce((acc, o) => acc + o.tiers.length, 0) + grupos.multiDia.length;
 }

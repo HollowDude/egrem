@@ -1,0 +1,20 @@
+---
+/**
+ * DiaChip.astro — Chip pequeño de día del programa.
+ * Mismo look que DiaChip dentro de EventoCompraWidget.tsx (Tienda):
+ * la asociación visual "esto es un día / rango de días" es consistente.
+ */
+interface Props {
+  label: string;
+  title?: string;
+}
+
+const { label, title } = Astro.props;
+---
+
+<span
+  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-egrem-gray-light text-egrem-black font-display text-[11px] font-semibold uppercase tracking-wide border border-egrem-gray/20"
+  title={title}
+>
+  {label}
+</span>

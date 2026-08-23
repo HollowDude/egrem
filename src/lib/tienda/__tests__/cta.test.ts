@@ -13,6 +13,7 @@ function tipo(sku: string, diasIds: string[]): NhEventoTipoEntrada {
     disponibles: null,
     destacado: false,
     diasIds,
+    diasResueltos: [],
     zonaIds: [],
   };
 }

@@ -2,22 +2,27 @@
 /**
  * EventoTicketCard.astro — Tarjeta de tier de entrada.
  * Resalta la entrada con destacado=true con un badge dorado "RECOMENDADO".
+ * Muestra chips con el/los día(s) a los que da acceso (numeración del Programa).
  */
 import type { NhEventoTipoEntrada } from '@/lib/nodehive';
 import type { Lang } from '@/i18n';
 import { useTranslations } from '@/i18n/translations';
+import { formatPrecio } from '@/lib/moneda';
+import DiaChip from './DiaChip.astro';
 
 interface Props {
   entrada: NhEventoTipoEntrada;
   lang?: Lang;
   seleccionable?: boolean;
+  /** Labels de días resueltos contra el programa (ej. "Día 1"), en orden. */
+  diaChips?: string[];
 }
 
-const { entrada, lang = 'es', seleccionable = false } = Astro.props;
+const { entrada, lang = 'es', seleccionable = false, diaChips = [] } = Astro.props;
 const tr = useTranslations(lang);
 
 const agotada = entrada.disponibles === 0;
-const precio = entrada.precio !== null ? `$${entrada.precio.toFixed(2)}` : null;
+const precio = entrada.precio !== null ? formatPrecio(entrada.precio, lang) : null;
 
 function formatDisponibles(count: number): string {
   return count.toLocaleString(lang === 'en' ? 'en-US' : 'es-ES');
@@ -55,6 +60,15 @@ function textoDisponibilidad(disponibles: number): string {
       {
         entrada.descripcion && (
           <p class="font-display text-small text-egrem-gray m-0 mt-0.5">{entrada.descripcion}</p>
+        )
+      }
+      {
+        diaChips.length > 0 && (
+          <div class="flex flex-wrap items-center gap-1 mt-1.5">
+            {diaChips.map((label) => (
+              <DiaChip label={label} />
+            ))}
+          </div>
         )
       }
     </div>

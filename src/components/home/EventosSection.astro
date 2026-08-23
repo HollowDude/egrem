@@ -37,7 +37,7 @@ interface Props {
 const { items, nhSectionTitle, nhEntity, lang = 'es' } = Astro.props;
 const tr = useTranslations(lang);
 
-const eventos: NhEvento[] = items?.length
+const eventosBase: NhEvento[] = items?.length
   ? items
   : [
       {
@@ -65,6 +65,8 @@ const eventos: NhEvento[] = items?.length
         href: '/eventos/festival-jazz-egrem',
       },
     ];
+
+const eventos = eventosBase.slice(0, 3);
 ---
 
 <NodeHiveEntity

@@ -1,5 +1,5 @@
 import type { NhEventoDetalle } from '@/lib/nodehive';
-import { tiersPorDia, combinacionesPosibles } from './seleccion';
+import { agruparTiers } from './seleccion';
 
 export type CtaCompra =
   | { tipo: 'checkout_directo'; sku: string; diaId: string; href: string }
@@ -7,10 +7,10 @@ export type CtaCompra =
 
 /**
  * Decide el destino del CTA principal del detalle de evento:
- * - Si hay EXACTAMENTE una combinación posible (1 día × 1 tier) y el evento
- *   no ha pasado → compra directa al checkout.
- * - En cualquier otro caso (varios días/tiers, o evento pasado) → la ficha de
- *   tienda, donde el usuario elige días y cantidad.
+ * - Si hay EXACTAMENTE una combinación posible (1 día × 1 tier, sin pases
+ *   combinados) y el evento no ha pasado → compra directa al checkout.
+ * - En cualquier otro caso (varios días/tiers, pases multi-día, o evento
+ *   pasado) → la ficha de tienda, donde el usuario elige días y cantidad.
  *
  * El href de `checkout_directo` apunta a la ruta que se implementa en la Fase 6.
  */
@@ -25,11 +25,11 @@ export function resolveCtaCompra(
     return { tipo: 'ver_tienda', href: `${tiendaHref}?lang=${lang}` };
   }
 
-  const opciones = tiersPorDia(evento.programa, evento.tiposEntrada);
-  const posibles = combinacionesPosibles(opciones);
+  const grupos = agruparTiers(evento.programa, evento.tiposEntrada);
+  const combosUnDia = grupos.porDia.reduce((acc, o) => acc + o.tiers.length, 0);
 
-  if (posibles === 1 && evento.tiposEntrada.length > 0) {
-    const unica = opciones.find((o) => o.tiers.length > 0);
+  if (combosUnDia === 1 && grupos.multiDia.length === 0 && evento.tiposEntrada.length > 0) {
+    const unica = grupos.porDia.find((o) => o.tiers.length > 0);
     if (unica) {
       const tier = unica.tiers[0];
       const sku = tier.sku;
