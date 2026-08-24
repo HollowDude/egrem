@@ -12,9 +12,10 @@ interface Props {
   producto: TiendaProducto;
   lang?: 'es' | 'en';
   ctaLabel?: string;
+  mostrarCta?: boolean;
 }
 
-const { producto, lang = 'es', ctaLabel } = Astro.props;
+const { producto, lang = 'es', ctaLabel, mostrarCta = true } = Astro.props;
 const tr = useTranslations(lang);
 
 const precio =
@@ -64,17 +65,21 @@ const detailHref = producto.href ?? '';
     }
     <div class="mt-auto flex items-center justify-between">
       <span class="font-display text-[22px] text-egrem-red font-bold">{precio}</span>
-      <button
-        type="button"
-        data-add-to-cart
-        data-product-id={producto.id}
-        data-product-title={producto.titulo}
-        aria-label={ctaLabel ?? tr('tienda.list.buy')}
-        title={ctaLabel ?? tr('tienda.list.buy')}
-        class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
-      >
-        <span class="icon text-[22px]">add_shopping_cart</span>
-      </button>
+      {
+        mostrarCta && (
+          <button
+            type="button"
+            data-add-to-cart
+            data-product-id={producto.id}
+            data-product-title={producto.titulo}
+            aria-label={ctaLabel ?? tr('tienda.list.buy')}
+            title={ctaLabel ?? tr('tienda.list.buy')}
+            class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
+          >
+            <span class="icon text-[22px]">add_shopping_cart</span>
+          </button>
+        )
+      }
     </div>
   </div>
 

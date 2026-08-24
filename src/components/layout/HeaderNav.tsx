@@ -87,6 +87,7 @@ export default function HeaderNav({
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
+  const [count, setCount] = useState(cartCount);
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -124,6 +125,31 @@ export default function HeaderNav({
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  /* Conteo real del carrito (solo autenticado): cargar al montar + escuchar eventos */
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/cart');
+        if (!res.ok) return;
+        const cart = await res.json();
+        if (!cancelled && typeof cart.count === 'number') setCount(cart.count);
+      } catch {
+        /* sin carrito disponible */
+      }
+    })();
+    const onUpdate = (e: Event) => {
+      const data = (e as CustomEvent).detail;
+      if (data && typeof data.count === 'number') setCount(data.count);
+    };
+    window.addEventListener('cart:updated', onUpdate);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('cart:updated', onUpdate);
+    };
+  }, [isAuthenticated]);
 
   const toggleDropdown = (label: string) => {
     setActiveDropdown(prev => prev === label ? null : label);
@@ -263,7 +289,7 @@ export default function HeaderNav({
                   aria-label={`${tr('nav.cart')} (${cartCount})`}
                 >
                   <span className="icon text-[22px]">shopping_cart</span>
-                  {cartCount > 0 && (
+                  {count > 0 && (
                     <span
                       className="absolute flex items-center justify-center leading-none"
                       style={{
@@ -274,7 +300,7 @@ export default function HeaderNav({
                         borderRadius: '9px', padding: '0 3px',
                       }}
                     >
-                      {cartCount > 99 ? '99+' : cartCount}
+                      {count > 99 ? '99+' : count}
                     </span>
                   )}
                 </a>

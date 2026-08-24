@@ -1,0 +1,97 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getSession } from '@/lib/auth/session';
+import { getCart, type Cart } from '@/lib/nodehive/carrito';
+import { formatPrecio } from '@/lib/moneda';
+import { useTranslations } from '@/i18n/translations';
+
+const lang = Astro.locals.lang;
+const tr = useTranslations(lang);
+
+const session = await getSession(Astro.cookies);
+const authed = !!session;
+
+let cart: Cart = { orderId: null, lines: [], subtotal: 0, count: 0 };
+if (authed && session) {
+  try {
+    cart = await getCart({ accessToken: session.accessToken, csrfToken: session.csrfToken, lang });
+  } catch (e) {
+    console.error('[checkout/merch] getCart failed:', e);
+  }
+}
+
+const fmt = (v: number) => (v !== null ? formatPrecio(v, lang) : tr('tienda.product.consultar'));
+---
+
+<BaseLayout title={tr('tienda.cart.proceder_pago')} description={tr('tienda.cart.proceder_pago')}>
+  <main id="main-content" class="container-site py-8 md:py-12">
+    <h1 class="text-h1 uppercase mb-8">{tr('tienda.cart.proceder_pago')}</h1>
+
+    {
+      !authed ? (
+        <div class="empty-state flex flex-col items-center justify-center py-20 text-center">
+          <p class="font-display text-body text-text-secondary mb-6">{tr('tienda.cart.login_required')}</p>
+          <a href={`/login?redirect=/checkout/merch`} class="bg-egrem-red text-white font-display font-bold uppercase px-6 py-3 rounded-2xl hover:bg-egrem-red-dark transition-colors no-underline">
+            {tr('nav.login')}
+          </a>
+        </div>
+      ) : cart.lines.length === 0 ? (
+        <div class="empty-state flex flex-col items-center justify-center py-20 text-center">
+          <p class="font-display text-body text-text-secondary mb-6">{tr('tienda.cart.empty')}</p>
+          <a href="/tienda" class="bg-egrem-red text-white font-display font-bold uppercase px-6 py-3 rounded-2xl hover:bg-egrem-red-dark transition-colors no-underline">
+            {tr('tienda.cart.empty_cta')}
+          </a>
+        </div>
+      ) : (
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div class="lg:col-span-2">
+            <div class="border border-form-border rounded-2xl divide-y divide-egrem-gray-light">
+              {cart.lines.map((line) => (
+                <div class="flex gap-4 p-5">
+                  <div class="w-16 h-16 shrink-0 bg-egrem-gray-light border border-form-border rounded-lg overflow-hidden flex items-center justify-center">
+                    {line.imagen ? (
+                      <img src={line.imagen} alt={line.title} class="w-full h-full object-cover" />
+                    ) : (
+                      <span class="icon text-2xl text-egrem-gray/40">inventory_2</span>
+                    )}
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="font-display font-bold uppercase text-egrem-black m-0">{line.title}</h3>
+                    <p class="font-display text-small text-text-secondary m-0">
+                      {[line.talla && `Talla: ${line.talla}`, line.color && `Color: ${line.color}`].filter(Boolean).join(' · ')}
+                      {' · '}{line.cantidad} {tr('tienda.cart.unidad')}
+                    </p>
+                  </div>
+                  <p class="font-display font-bold text-egrem-black">{fmt((line.precioUnitario ?? 0) * line.cantidad)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside class="lg:col-span-1">
+            <div class="border border-form-border rounded-2xl p-6 sticky top-24">
+              <div class="flex items-center justify-between mb-4">
+                <span class="font-display text-body text-text-secondary">{tr('tienda.cart.subtotal')}</span>
+                <span class="font-display text-h3 font-black text-egrem-red">{fmt(cart.subtotal ?? 0)}</span>
+              </div>
+              <p class="font-display text-small text-egrem-gray mb-6">{tr('tienda.cart.envio_nota')}</p>
+              <button
+                type="button"
+                disabled
+                class="block w-full text-center bg-egrem-gray text-white font-display text-[18px] font-bold uppercase py-3 rounded-2xl cursor-not-allowed opacity-70"
+                title="Próximamente"
+              >
+                {tr('tienda.cart.proceder_pago')} · Próximamente
+              </button>
+              <a href="/carrito" class="block text-center mt-4 font-display text-small uppercase text-egrem-gold hover:underline no-underline">
+                ← {tr('tienda.cart.ver_carrito')}
+              </a>
+            </div>
+          </aside>
+        </div>
+      )
+    }
+  </main>
+</BaseLayout>

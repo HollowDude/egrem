@@ -7,13 +7,16 @@ import TiendaSidebar from '@/components/tienda/TiendaSidebar.astro';
 import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
 import { fetchEventosListado } from '@/lib/nodehive';
 import { entradaToProducto } from '@/lib/tienda/mockProducts';
+import { MOCK_PRODUCTOS_DETALLE, mockProductoToTiendaProducto } from '@/lib/tienda/mockProductoDetalle';
 import type { TiendaProducto } from '@/types/tienda';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
-const productos: TiendaProducto[] = (await fetchEventosListado(lang)).map(entradaToProducto);
+const entradas = (await fetchEventosListado(lang)).map(entradaToProducto);
+const merchandising = MOCK_PRODUCTOS_DETALLE.map(mockProductoToTiendaProducto);
+const productos: TiendaProducto[] = [...entradas, ...merchandising];
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
@@ -300,35 +303,17 @@ const productos: TiendaProducto[] = (await fetchEventosListado(lang)).map(entrad
       render();
     }
 
-    // ── Agregar al carrito (optimista, contador local) ──
+    // ── El botón + de la tarjeta lleva a la ficha de detalle (el alta real
+    //    requiere elegir variación/talla en la ficha). ──
     document.addEventListener('click', (e) => {
       const t = e.target as HTMLElement | null;
       const btn = t ? (t.closest('[data-add-to-cart]') as HTMLElement | null) : null;
       if (!btn) return;
       e.preventDefault();
       e.stopPropagation();
-      const count = (parseInt(localStorage.getItem('egrem-cart') || '0', 10) + 1).toString();
-      localStorage.setItem('egrem-cart', count);
-      const badge = document.getElementById('cart-count');
-      if (badge) {
-        badge.textContent = count;
-        badge.classList.remove('hidden');
-      }
-      window.dispatchEvent(
-        new CustomEvent('cart:add', {
-          detail: { id: btn.dataset.productId, title: btn.dataset.productTitle },
-        }),
-      );
-      const icon = btn.querySelector('.icon');
-      if (icon) {
-        const prev = icon.textContent;
-        icon.textContent = 'check';
-        btn.classList.add('bg-egrem-gold');
-        setTimeout(() => {
-          icon.textContent = prev;
-          btn.classList.remove('bg-egrem-gold');
-        }, 900);
-      }
+      const card = btn.closest('article');
+      const link = card?.querySelector('a[href]') as HTMLAnchorElement | null;
+      if (link && link.href) window.location.href = link.href;
     });
   </script>
 </BaseLayout>

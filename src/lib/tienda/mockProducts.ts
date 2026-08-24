@@ -57,6 +57,7 @@ export const MOCK_PRODUCTOS: TiendaProducto[] = [
     badge: 'Novedad',
     categoria: 'merchandising',
     disponibilidad: 'stock',
+    href: '/tienda/producto/camiseta-egrem-clasica',
   },
   {
     id: 'mock-mer-2',
@@ -66,6 +67,7 @@ export const MOCK_PRODUCTOS: TiendaProducto[] = [
     imagen: 'https://picsum.photos/seed/egrem-merch-2/600/600',
     categoria: 'merchandising',
     disponibilidad: 'stock',
+    href: '/tienda/producto/gorra-logo-egrem',
   },
   {
     id: 'mock-mer-3',
@@ -76,6 +78,7 @@ export const MOCK_PRODUCTOS: TiendaProducto[] = [
     badge: 'Oferta',
     categoria: 'merchandising',
     disponibilidad: 'preventa',
+    href: '/tienda/producto/taza-oficial-egrem',
   },
   {
     id: 'mock-mer-4',
@@ -85,6 +88,7 @@ export const MOCK_PRODUCTOS: TiendaProducto[] = [
     imagen: 'https://picsum.photos/seed/egrem-merch-4/600/600',
     categoria: 'merchandising',
     disponibilidad: 'preventa',
+    href: '/tienda/producto/vinilo-edicion-limitada',
   },
 ];
 
