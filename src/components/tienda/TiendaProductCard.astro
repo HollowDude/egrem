@@ -32,6 +32,8 @@ const detailHref = producto.href ?? '';
   data-title={producto.titulo}
   data-subtitle={producto.subtitulo}
   data-novedad={esNovedad ? '1' : '0'}
+  data-tallas={producto.tallas?.join(',') ?? ''}
+  data-colores={producto.colores?.join(',') ?? ''}
 >
   <div class="relative aspect-square overflow-hidden bg-egrem-gray-light p-4">
     {
@@ -66,7 +68,7 @@ const detailHref = producto.href ?? '';
     <div class="mt-auto flex items-center justify-between">
       <span class="font-display text-[22px] text-egrem-red font-bold">{precio}</span>
       {
-        mostrarCta && (
+        mostrarCta ? (
           <button
             type="button"
             data-add-to-cart
@@ -78,6 +80,13 @@ const detailHref = producto.href ?? '';
           >
             <span class="icon text-[22px]">add_shopping_cart</span>
           </button>
+        ) : (
+          detailHref && (
+            <a href={detailHref} class="action-link no-underline">
+              {tr('tienda.list.view_details')}
+              <span class="icon" style="font-size:16px">arrow_forward</span>
+            </a>
+          )
         )
       }
     </div>

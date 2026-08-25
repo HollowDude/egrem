@@ -7,6 +7,7 @@
  */
 import type { ProductoDetalle, ProductoColorOpcion, ProductoVariacion, TipoArticulo } from '@/types/producto';
 import type { TiendaProducto } from '@/types/tienda';
+import { productoATiendaProducto } from '@/lib/tienda/productoAdapters';
 
 const img = (seed: string) => `https://picsum.photos/seed/${seed}/600/600`;
 
@@ -179,26 +180,9 @@ export function getMockProductoDetalle(slug: string): ProductoDetalle | null {
   );
 }
 
-/** Convierte un `ProductoDetalle` a `TiendaProducto` para reusar `TiendaProductCard`. */
+/** Convierte un `ProductoDetalle` a `TiendaProducto` (adaptador compartido). */
 export function mockProductoToTiendaProducto(p: ProductoDetalle): TiendaProducto {
-  const primera = p.variaciones[0];
-  const imagen =
-    p.imagenPrincipal ??
-    primera?.imagenes[0] ??
-    primera?.imagenVarianteUrl ??
-    null;
-  const precio = primera?.precio ?? null;
-  return {
-    id: p.id,
-    titulo: p.titulo,
-    subtitulo: p.tipo === 'prenda' ? 'Merchandising' : 'Accesorio',
-    precio,
-    imagen,
-    badge: undefined,
-    categoria: 'merchandising',
-    disponibilidad: 'stock',
-    href: `/tienda/producto/${p.slug}`,
-  };
+  return productoATiendaProducto(p);
 }
 
 /** Productos relacionados: todos los demás del catálogo mock. */

@@ -6,8 +6,10 @@ import TiendaCategoriaChips from '@/components/tienda/TiendaCategoriaChips.astro
 import TiendaSidebar from '@/components/tienda/TiendaSidebar.astro';
 import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
 import { fetchEventosListado } from '@/lib/nodehive';
-import { entradaToProducto } from '@/lib/tienda/mockProducts';
-import { MOCK_PRODUCTOS_DETALLE, mockProductoToTiendaProducto } from '@/lib/tienda/mockProductoDetalle';
+import { entradaToProducto, MOCK_PRODUCTOS } from '@/lib/tienda/mockProducts';
+import { fetchProductosMerchDetalle } from '@/lib/nodehive/comercio';
+import { productoATiendaProducto } from '@/lib/tienda/productoAdapters';
+import { MERCH_API_REAL } from '@/types/producto';
 import type { TiendaProducto } from '@/types/tienda';
 import { useTranslations } from '@/i18n/translations';
 
@@ -15,8 +17,14 @@ const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
 const entradas = (await fetchEventosListado(lang)).map(entradaToProducto);
-const merchandising = MOCK_PRODUCTOS_DETALLE.map(mockProductoToTiendaProducto);
-const productos: TiendaProducto[] = [...entradas, ...merchandising];
+const merchandising: TiendaProducto[] = MERCH_API_REAL
+  ? (await fetchProductosMerchDetalle(lang)).map(productoATiendaProducto)
+  : MOCK_PRODUCTOS.filter((p) => p.categoria === 'merchandising');
+const musica = MOCK_PRODUCTOS.filter((p) => p.categoria === 'musica');
+const productos: TiendaProducto[] = [...entradas, ...merchandising, ...musica];
+
+const facetTallas = [...new Set(merchandising.flatMap((p) => p.tallas ?? []))].sort();
+const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))].sort();
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
@@ -39,7 +47,7 @@ const productos: TiendaProducto[] = [...entradas, ...merchandising];
 
     <div class="flex flex-col lg:flex-row gap-12">
       <!-- Sidebar -->
-      <TiendaSidebar />
+      <TiendaSidebar tallas={facetTallas} colores={facetColores} />
 
       <!-- Grid de productos -->
       <div class="flex-grow">
@@ -67,7 +75,12 @@ const productos: TiendaProducto[] = [...entradas, ...merchandising];
         >
           {
             productos.map((p) => (
-              <TiendaProductCard producto={p} lang={lang} ctaLabel={tr('tienda.list.buy')} />
+              <TiendaProductCard
+                producto={p}
+                lang={lang}
+                ctaLabel={tr('tienda.list.buy')}
+                mostrarCta={p.categoria === 'merchandising'}
+              />
             ))
           }
         </div>
@@ -98,6 +111,8 @@ const productos: TiendaProducto[] = [...entradas, ...merchandising];
         chip: '',
         maxPrice: 200,
         avail: new Set(),
+        tallas: new Set(),
+        colores: new Set(),
         query: '',
         sort: 'recomendados',
         page: 1,
@@ -115,6 +130,15 @@ const productos: TiendaProducto[] = [...entradas, ...merchandising];
         if (price !== '' && parseFloat(price) > state.maxPrice) return false;
 
         if (state.avail.size > 0 && !state.avail.has(c.dataset.availability || '')) return false;
+
+        if (state.tallas.size > 0) {
+          const ts = (c.dataset.tallas || '').split(',').filter(Boolean);
+          if (!ts.some((t) => state.tallas.has(t))) return false;
+        }
+        if (state.colores.size > 0) {
+          const cs = (c.dataset.colores || '').split(',').filter(Boolean);
+          if (!cs.some((col) => state.colores.has(col))) return false;
+        }
 
         if (state.query) {
           const hay = `${c.dataset.title || ''} ${c.dataset.subtitle || ''}`.toLowerCase();
@@ -155,6 +179,15 @@ const productos: TiendaProducto[] = [...entradas, ...merchandising];
           : `Mostrando ${total} producto${total === 1 ? '' : 's'}`;
         emptyEl.classList.toggle('hidden', total !== 0);
         grid.classList.toggle('hidden', total === 0);
+
+        // Filtros dinámicos de merchandising solo en esa categoría (o "Todos").
+        const showMerchFilters = state.chip === '' || state.chip === 'merchandising';
+        (
+          sidebar.querySelectorAll('[data-tienda-filter-group]') as unknown as HTMLElement[]
+        ).forEach((g) => {
+          const grupoOk = g.dataset.tiendaFilterGroup === 'merchandising' && showMerchFilters;
+          g.classList.toggle('hidden', !grupoOk);
+        });
 
         renderPagination(total);
       };
@@ -266,12 +299,36 @@ const productos: TiendaProducto[] = [...entradas, ...merchandising];
         },
       );
 
+      // ── Sidebar: talla / color (merchandising) ──
+      (sidebar.querySelectorAll('.tienda-filter-talla') as unknown as HTMLInputElement[]).forEach(
+        (cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) state.tallas.add(cb.value);
+            else state.tallas.delete(cb.value);
+            state.page = 1;
+            render();
+          });
+        },
+      );
+      (sidebar.querySelectorAll('.tienda-filter-color') as unknown as HTMLInputElement[]).forEach(
+        (cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) state.colores.add(cb.value);
+            else state.colores.delete(cb.value);
+            state.page = 1;
+            render();
+          });
+        },
+      );
+
       // ── Limpiar ──
       const clearBtn = sidebar.querySelector('[data-tienda-clear]');
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
           state.chip = '';
           state.avail.clear();
+          state.tallas.clear();
+          state.colores.clear();
           state.query = '';
           state.maxPrice = 200;
           state.page = 1;

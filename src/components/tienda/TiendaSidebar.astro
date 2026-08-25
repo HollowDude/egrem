@@ -6,8 +6,25 @@
  */
 import { useTranslations } from '@/i18n/translations';
 
+interface Props {
+  tallas?: string[];
+  colores?: string[];
+}
+
+const { tallas = [], colores = [] } = Astro.props;
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
+
+const COLOR_DOT: Record<string, string> = {
+  Negro: '#1b1b1b',
+  Rojo: '#bc0100',
+  Azul: '#1f4e9b',
+  Blanco: '#ffffff',
+  Verde: '#2e7d32',
+  Amarillo: '#f4c20d',
+  Gris: '#808080',
+};
+const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
 ---
 
 <aside class="w-full lg:w-64 flex-shrink-0" data-tienda-sidebar>
@@ -86,8 +103,59 @@ const tr = useTranslations(lang);
       </ul>
     </div>
 
+    <!-- Filtros dinámicos de merchandising: talla y color -->
+    <div class="hidden" data-tienda-filter-group="merchandising">
+      {tallas.length > 0 && (
+        <div class="mb-8">
+          <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+            {tr('tienda.filter.talla')}
+          </h3>
+          <ul class="space-y-2 font-display text-text-secondary">
+            {tallas.map((t) => (
+              <li>
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    value={t}
+                    class="tienda-filter tienda-filter-talla w-5 h-5 rounded accent-egrem-red cursor-pointer"
+                  />
+                  <span class="group-hover:text-egrem-red transition-colors">{t}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {colores.length > 0 && (
+        <div class="mb-8">
+          <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+            {tr('tienda.filter.color')}
+          </h3>
+          <ul class="space-y-2 font-display text-text-secondary">
+            {colores.map((c) => (
+              <li>
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    value={c}
+                    class="tienda-filter tienda-filter-color w-5 h-5 rounded accent-egrem-red cursor-pointer"
+                  />
+                  <span
+                    class="inline-block w-4 h-4 rounded-full border border-form-border"
+                    style={`background:${dot(c)}`}
+                  ></span>
+                  <span class="group-hover:text-egrem-red transition-colors">{c}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+
     <button
       type="button"
+      id="tienda-clear"
       data-tienda-clear
       class="w-full border border-form-border text-egrem-black font-display font-bold text-[13px] uppercase tracking-wider py-2.5 rounded-xl hover:border-egrem-red hover:text-egrem-red transition-colors"
     >

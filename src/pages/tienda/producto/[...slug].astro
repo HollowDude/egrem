@@ -5,6 +5,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import ProductoVariantSelector from '@/components/tienda/ProductoVariantSelector.tsx';
 import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
 import { getMockProductoDetalle, getMockProductosRelacionados } from '@/lib/tienda/mockProductoDetalle';
+import { fetchProductoDetalle } from '@/lib/nodehive/comercio';
 import { MERCH_API_REAL } from '@/types/producto';
 import { formatPrecio } from '@/lib/moneda';
 import { useTranslations } from '@/i18n/translations';
@@ -16,10 +17,11 @@ const slug = Astro.url.pathname
   .replace(/^\/?(?:es\/|en\/)?tienda\/producto\//, '')
   .replace(/\/$/, '');
 
-// TODO (Fase 1/5): cuando MERCH_API_REAL, reemplazar por el fetcher real de Drupal.
+// Cuando MERCH_API_REAL, usa el fetcher real de Drupal; fallback a mock si no hay dato.
 async function getProductoDetalle(s: string) {
   if (MERCH_API_REAL) {
-    // const p = await fetchProductoDetalle(s, lang); if (p) return p;
+    const p = await fetchProductoDetalle(s, lang);
+    if (p) return p;
   }
   return getMockProductoDetalle(s);
 }
@@ -94,7 +96,7 @@ const pageTitle = `${producto.titulo} | EGREM`;
         <p class="font-display text-text-secondary uppercase tracking-wider mb-6">{tr('tienda.product.merchandising_oficial')}</p>
 
         <div class="mb-4">
-          <span class="text-h1 text-egrem-red font-black">{precio !== null ? formatPrecio(precio, lang) : tr('tienda.product.consultar')}</span>
+          <span id="producto-precio" class="text-h1 text-egrem-red font-black">{precio !== null ? formatPrecio(precio, lang) : tr('tienda.product.consultar')}</span>
           <span class="ml-3 inline-block px-2 py-0.5 bg-egrem-red text-white font-display text-[11px] uppercase rounded-sm">{tr('tienda.product.impuestos_incluidos')}</span>
         </div>
 
@@ -139,5 +141,20 @@ const pageTitle = `${producto.titulo} | EGREM`;
         });
       });
     }
+
+    // Variación resuelta en el selector → actualizar imagen y precio en vivo.
+    const fmtPrice = (v: number) => {
+      const loc = document.documentElement.lang === 'en' ? 'en-US' : 'es-CU';
+      return '$' + new Intl.NumberFormat(loc, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(v);
+    };
+    window.addEventListener('producto:variacion-imagen', (e: Event) => {
+      const url = (e as CustomEvent).detail?.url;
+      if (main && url) main.src = url;
+    });
+    window.addEventListener('producto:variacion-precio', (e: Event) => {
+      const el = document.getElementById('producto-precio');
+      const p = (e as CustomEvent).detail?.precio;
+      if (el && typeof p === 'number') el.textContent = fmtPrice(p);
+    });
   </script>
 </BaseLayout>

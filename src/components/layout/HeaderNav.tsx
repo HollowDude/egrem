@@ -20,6 +20,7 @@ import LanguageSwitcherReact from '@/components/ui/LanguageSwitcherReact';
 import CurrencySwitcher from '@/components/ui/CurrencySwitcher';
 import SearchModal from '@/components/ui/SearchModal';
 import AccessibilityWidget from '@/components/ui/AccessibilityWidget';
+import MinicartPanel from '@/components/tienda/MinicartPanel';
 import { buttonClasses } from '@/lib/ui/buttonClasses';
 import { isAuthPath } from '@/lib/auth/redirect';
 
@@ -85,6 +86,7 @@ export default function HeaderNav({
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
   const [count, setCount] = useState(cartCount);
@@ -150,6 +152,13 @@ export default function HeaderNav({
       window.removeEventListener('cart:updated', onUpdate);
     };
   }, [isAuthenticated]);
+
+  /* Abrir el minicart automáticamente al añadir un producto */
+  useEffect(() => {
+    const onOpen = () => setCartOpen(true);
+    window.addEventListener('cart:open', onOpen);
+    return () => window.removeEventListener('cart:open', onOpen);
+  }, []);
 
   const toggleDropdown = (label: string) => {
     setActiveDropdown(prev => prev === label ? null : label);
@@ -281,12 +290,13 @@ export default function HeaderNav({
             {isAuthenticated ? (
               /* ── Estado autenticado ── */
               <>
-                {/* Carrito */}
-                <a
-                  href="/carrito"
+                {/* Carrito (abre el minicart lateral) */}
+                <button
+                  type="button"
+                  onClick={() => setCartOpen(true)}
                   className="action-btn relative no-underline w-12 h-12 rounded-full flex items-center justify-center"
                   style={{ color: '#1b1b1b' }}
-                  aria-label={`${tr('nav.cart')} (${cartCount})`}
+                  aria-label={`${tr('nav.cart')} (${count})`}
                 >
                   <span className="icon text-[22px]">shopping_cart</span>
                   {count > 0 && (
@@ -303,7 +313,7 @@ export default function HeaderNav({
                       {count > 99 ? '99+' : count}
                     </span>
                   )}
-                </a>
+                </button>
                 {/* Perfil */}
                 <div className="relative hidden lg:block">
                   <button
@@ -511,6 +521,7 @@ export default function HeaderNav({
       </div>
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} lang={lang} />
+      <MinicartPanel open={cartOpen} onClose={() => setCartOpen(false)} lang={lang} />
     </div>
   );
 }

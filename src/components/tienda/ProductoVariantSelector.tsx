@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import type { ProductoDetalle } from '@/types/producto';
@@ -7,6 +7,7 @@ import {
   resolverVariacion,
   combinacionDisponible,
   stockCombinacion,
+  dimensionesRequeridas,
   type SeleccionAtributos,
 } from '@/lib/tienda/productoSeleccion';
 
@@ -43,6 +44,31 @@ export default function ProductoVariantSelector({ producto, lang = 'es' }: Props
 
   const stockMax = variacion?.stock ?? stockCombinacion(variaciones, seleccion.talla, seleccion.color) ?? 10;
 
+  // Mensaje de error preciso según qué dimensión falta.
+  const faltantes = dimensionesRequeridas(tipo).filter((d) => !seleccion[d]);
+  const mensajeError =
+    faltantes.length === 1
+      ? faltantes[0] === 'talla'
+        ? tr('tienda.product.seleccion_incompleta_talla')
+        : tr('tienda.product.seleccion_incompleta_color')
+      : esPrenda
+        ? tr('tienda.product.seleccion_incompleta')
+        : tr('tienda.product.seleccion_incompleta_color');
+
+  // Al resolver una variación, avisa a la ficha para actualizar imagen y precio.
+  useEffect(() => {
+    if (!variacion) return;
+    const img = variacion.imagenVarianteUrl ?? variacion.imagenes[0];
+    if (img) {
+      window.dispatchEvent(new CustomEvent('producto:variacion-imagen', { detail: { url: img } }));
+    }
+    if (typeof variacion.precio === 'number') {
+      window.dispatchEvent(
+        new CustomEvent('producto:variacion-precio', { detail: { precio: variacion.precio } }),
+      );
+    }
+  }, [variacion]);
+
   const setTalla = (t: string) =>
     setSeleccion((prev) => ({ ...prev, talla: prev.talla === t ? undefined : t }));
   const setColor = (c: string) =>
@@ -76,13 +102,26 @@ export default function ProductoVariantSelector({ producto, lang = 'es' }: Props
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = res.ok ? await res.json().catch(() => null) : null;
+      if (res.status === 401) {
+        // Sin sesión: llevar al login conservando la página actual (igual que /carrito).
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      if (!res.ok) {
+        // Error al añadir (no de red): mostrar el banner de error genérico.
+        setErrorVisible(true);
+        setAdding(false);
+        return;
+      }
+      const data = await res.json().catch(() => null);
       const count = typeof data?.count === 'number' ? data.count : undefined;
       window.dispatchEvent(
         new CustomEvent('cart:updated', {
           detail: { variationId: variacion.variationId, quantity: cantidad, count },
         }),
       );
+      // Abrir el minicart automáticamente para confirmar lo recién añadido.
+      window.dispatchEvent(new CustomEvent('cart:open'));
     } catch {
       // Fallback optimista (invitado sin backend de carrito).
       const prev = parseInt(localStorage.getItem('egrem-cart') || '0', 10) || 0;
@@ -224,14 +263,15 @@ export default function ProductoVariantSelector({ producto, lang = 'es' }: Props
         <button
           type="button"
           onClick={() => void anadirAlCarrito()}
-          aria-disabled={!completa}
+          disabled={!completa || adding}
+          aria-disabled={!completa || adding}
           className={[
-            'flex-1 bg-egrem-red text-white font-display text-[20px] font-bold uppercase h-14 rounded-2xl flex items-center justify-center gap-2 hover:bg-egrem-red-dark transition-colors active:scale-[0.98]',
-            !completa ? 'opacity-50 cursor-not-allowed' : '',
+            'flex-1 bg-egrem-red text-white font-display text-[20px] font-bold uppercase h-14 rounded-2xl flex items-center justify-center gap-2 hover:bg-egrem-red-dark transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed',
+            !completa && !adding ? 'cursor-not-allowed' : '',
           ].join(' ')}
         >
           <span className="icon" aria-hidden="true" style={{ fontSize: 22 }}>
-            shopping_cart
+            {adding ? 'autorenew' : 'shopping_cart'}
           </span>
           {tr('tienda.product.anadir_carrito')}
         </button>
@@ -246,9 +286,7 @@ export default function ProductoVariantSelector({ producto, lang = 'es' }: Props
           <span className="icon" aria-hidden="true" style={{ fontSize: 20 }}>
             error
           </span>
-          {esPrenda
-            ? tr('tienda.product.seleccion_incompleta')
-            : tr('tienda.product.seleccion_incompleta_color')}
+          {mensajeError}
         </p>
       )}
     </div>

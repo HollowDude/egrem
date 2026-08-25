@@ -20,4 +20,7 @@ export interface TiendaProducto {
   disponibilidad: TiendaDisponibilidad;
   /** Enlace a la página de detalle del producto (p. ej. entradas). */
   href?: string;
+  /** Facets dinámicos (solo cuando aplican): tallas y colores del merch. */
+  tallas?: string[];
+  colores?: string[];
 }
