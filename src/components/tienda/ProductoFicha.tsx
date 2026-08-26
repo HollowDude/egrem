@@ -5,15 +5,16 @@ import type { ProductoDetalle } from '@/types/producto';
 import { formatPrecio } from '@/lib/moneda';
 import {
   seleccionCompleta,
+  seleccionPorDefecto,
   resolverVariacion,
   previsualizarVariacion,
   combinacionDisponible,
-  stockCombinacion,
   dimensionesRequeridas,
   edicionesDisponibles,
   formatosDisponibles,
   type SeleccionAtributos,
 } from '@/lib/tienda/productoSeleccion';
+import type { CartLine } from '@/lib/nodehive/carrito';
 import ProductoFichaTecnica from './ProductoFichaTecnica';
 
 interface Props {
@@ -35,13 +36,21 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
   const tr = useTranslations(lang);
   const { tipo, variaciones, materiales, plazoEnvio } = producto;
 
-  const [seleccion, setSeleccion] = useState<SeleccionAtributos>(seleccionInicial ?? {});
+  const [seleccion, setSeleccion] = useState<SeleccionAtributos>(() =>
+    seleccionInicial && Object.values(seleccionInicial).some(Boolean)
+      ? seleccionInicial
+      : seleccionPorDefecto(tipo, variaciones),
+  );
   const [cantidad, setCantidad] = useState(1);
   const [errorVisible, setErrorVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [agregado, setAgregado] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
+  const [zooming, setZooming] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  // Líneas del carrito (para restar lo ya agregado de la variación concreta).
+  const [cartLines, setCartLines] = useState<CartLine[] | null>(null);
 
   const esPrenda = tipo === 'prenda';
   const completa = seleccionCompleta(tipo, seleccion);
@@ -85,6 +94,28 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
     window.history.replaceState(null, '', url.toString());
   }, [seleccion.color, seleccion.talla, seleccion.edicion, seleccion.formato]);
 
+  // Mantener sincronizado el carrito para descontar lo ya agregado de esta variación.
+  useEffect(() => {
+    let cancelled = false;
+    const cargar = () => {
+      fetch('/api/cart')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((c: { lines?: CartLine[] } | null) => {
+          if (!cancelled && c?.lines) setCartLines(c.lines);
+        })
+        .catch(() => {});
+    };
+    cargar();
+    const alActualizar = () => cargar();
+    window.addEventListener('cart:updated', alActualizar);
+    window.addEventListener('cart:added', alActualizar);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('cart:updated', alActualizar);
+      window.removeEventListener('cart:added', alActualizar);
+    };
+  }, []);
+
   const mainImage =
     imagenes[activeImg] ?? preview?.imagenVarianteUrl ?? producto.imagenPrincipal ?? null;
 
@@ -98,8 +129,22 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
     return [...map.values()];
   }, [variaciones]);
 
-  const stockMax = variacion?.stock ?? stockCombinacion(variaciones, seleccion.talla, seleccion.color) ?? 10;
-  const hayStock = completa && variacion ? (variacion.stock ?? 0) > 0 : false;
+  // Stock que realmente queda por agregar: stock de la variación menos lo ya en el carrito.
+  // Si el stock es nulo pero la variación está marcada como disponible, es stock ilimitado
+  // (always_in_stock); si no es disponible y no tiene stock declarado, se trata como agotado.
+  const stockBase =
+    variacion?.stock != null
+      ? variacion.stock
+      : variacion?.disponible
+        ? null
+        : 0;
+  const yaEnCarrito = useMemo(() => {
+    if (!variacion?.uuid || !cartLines) return 0;
+    const line = cartLines.find((l) => l.variationUuid === variacion.uuid);
+    return line?.cantidad ?? 0;
+  }, [variacion?.uuid, cartLines]);
+  const stockRestante = stockBase == null ? Infinity : Math.max(0, stockBase - yaEnCarrito);
+  const hayStock = completa && !!variacion && stockRestante > 0;
 
   // Mensaje de error preciso según qué dimensión falta.
   const faltantes = dimensionesRequeridas(tipo).filter((d) => !seleccion[d]);
@@ -116,17 +161,54 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
         ? tr('tienda.product.seleccion_incompleta')
         : tr('tienda.product.seleccion_incompleta_color');
 
-  const setTalla = (t: string) =>
-    setSeleccion((prev) => ({ ...prev, talla: prev.talla === t ? undefined : t }));
-  const setColor = (c: string) =>
-    setSeleccion((prev) => ({ ...prev, color: prev.color === c ? undefined : c }));
-  const setEdicion = (e: string) =>
-    setSeleccion((prev) => ({ ...prev, edicion: prev.edicion === e ? undefined : e }));
-  const setFormato = (f: string) =>
-    setSeleccion((prev) => ({ ...prev, formato: prev.formato === f ? undefined : f }));
+  // Al cambiar una dimensión, invalida las OTRAS dimensiones seleccionadas que
+  // ya no tienen combinación disponible (p. ej. talla S + color Azul → si Azul
+  // no existe en S, se deselecciona el color automáticamente).
+  const validarCascada = (
+    prev: SeleccionAtributos,
+    next: SeleccionAtributos,
+  ): SeleccionAtributos => {
+    const dims: (keyof SeleccionAtributos)[] = ['talla', 'color', 'edicion', 'formato'];
+    const cambiadas = dims.filter((d) => prev[d] !== next[d]);
+    const resultado: SeleccionAtributos = { ...next };
+    for (const d of dims) {
+      if (cambiadas.includes(d) || !resultado[d]) continue;
+      if (
+        !combinacionDisponible(
+          variaciones,
+          resultado.talla,
+          resultado.color,
+          resultado.edicion,
+          resultado.formato,
+        )
+      ) {
+        delete resultado[d];
+      }
+    }
+    return resultado;
+  };
+
+  const toggleDim = (dim: keyof SeleccionAtributos, val: string) =>
+    setSeleccion((prev) => {
+      const siguiente: SeleccionAtributos = {
+        ...prev,
+        [dim]: prev[dim] === val ? undefined : val,
+      };
+      return validarCascada(prev, siguiente);
+    });
+
+  const setTalla = (t: string) => toggleDim('talla', t);
+  const setColor = (c: string) => toggleDim('color', c);
+  const setEdicion = (e: string) => toggleDim('edicion', e);
+  const setFormato = (f: string) => toggleDim('formato', f);
 
   const cambiarCantidad = (delta: number) =>
-    setCantidad((c) => Math.max(1, Math.min(stockMax || 10, c + delta)));
+    setCantidad((c) => Math.max(1, Math.min(stockRestante > 0 ? stockRestante : 1, c + delta)));
+
+  // Reajustar la cantidad si cambia la variación o el stock disponible.
+  useEffect(() => {
+    setCantidad((c) => Math.max(1, Math.min(stockRestante > 0 ? stockRestante : 1, c)));
+  }, [stockRestante]);
 
   async function anadirAlCarrito() {
     setServerError(null);
@@ -161,7 +243,14 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
         return;
       }
       if (!res.ok) {
-        setServerError(tr('tienda.product.error_servidor'));
+        const data = (await res.json().catch(() => null)) as { message?: string; disponible?: number } | null;
+        if (data?.message === 'stock_insufficient') {
+          setServerError(
+            tr('tienda.product.error_stock', { disponible: data.disponible ?? 0 }),
+          );
+        } else {
+          setServerError(tr('tienda.product.error_servidor'));
+        }
         setAdding(false);
         return;
       }
@@ -275,17 +364,57 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
     <>
       {/* ── Columna izquierda: galería ── */}
       <div className="md:col-span-7 flex flex-col gap-4">
-        <div className="w-full aspect-square bg-egrem-gray-light border border-form-border rounded-2xl overflow-hidden relative">
+        <div
+          className="group/zoom relative w-full aspect-square overflow-hidden rounded-2xl border border-form-border bg-egrem-gray-light"
+          onMouseEnter={() => setZooming(true)}
+          onMouseLeave={() => setZooming(false)}
+          onMouseMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            const x = ((e.clientX - r.left) / r.width) * 100;
+            const y = ((e.clientY - r.top) / r.height) * 100;
+            setZoomPos({
+              x: Math.min(100, Math.max(0, x)),
+              y: Math.min(100, Math.max(0, y)),
+            });
+          }}
+        >
           {mainImage ? (
             <img
               src={mainImage}
               alt={producto.titulo}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover transition-transform duration-150 ease-out will-change-transform"
+              style={
+                zooming
+                  ? { transform: 'scale(2.5)', transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` }
+                  : undefined
+              }
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="icon text-6xl text-egrem-gray/40">inventory_2</span>
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="icon text-egrem-gray/40 text-6xl">inventory_2</span>
             </div>
+          )}
+
+          {/* Lente que marca el área ampliada (tipo Amazon). */}
+          {mainImage && zooming && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute border border-egrem-red/70 shadow-[0_0_0_1px_rgba(255,255,255,0.65)]"
+              style={{
+                width: '40%',
+                height: '40%',
+                left: `calc(${zoomPos.x}% - 20%)`,
+                top: `calc(${zoomPos.y}% - 20%)`,
+              }}
+            />
+          )}
+
+          {/* Pista de interacción (se oculta al acercar). */}
+          {mainImage && !zooming && (
+            <span className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 font-display text-[11px] uppercase tracking-wide text-egrem-black shadow-sm">
+              <span className="icon text-[14px]">zoom_in</span>
+              {tr('tienda.product.zoom_hint')}
+            </span>
           )}
         </div>
         {imagenes.length > 1 && (
@@ -330,7 +459,25 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
             }`}
           >
             <span className="icon text-[16px]">{hayStock ? 'check_circle' : 'error'}</span>
-            {hayStock ? tr('tienda.product.en_stock') : tr('tienda.product.sin_stock')}
+            {hayStock ? (
+              stockBase == null ? (
+                yaEnCarrito > 0 ? (
+                  tr('tienda.product.en_carrito', { enCarrito: yaEnCarrito })
+                ) : (
+                  tr('tienda.product.en_stock')
+                )
+              ) : yaEnCarrito > 0 ? (
+                <span>
+                  {tr('tienda.product.stock_restante', { restante: stockRestante, enCarrito: yaEnCarrito })}
+                </span>
+              ) : (
+                tr('tienda.product.en_stock')
+              )
+            ) : yaEnCarrito > 0 ? (
+              tr('tienda.product.max_en_carrito', { enCarrito: yaEnCarrito })
+            ) : (
+              tr('tienda.product.sin_stock')
+            )}
           </p>
         )}
 
@@ -383,6 +530,7 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
             <div className="flex flex-wrap gap-3 items-center">
               {colores.map((c) => {
                 const activo = seleccion.color === c.nombre;
+                const dispC = combinacionDisponible(variaciones, seleccion.talla, c.nombre);
                 return (
                   <button
                     key={c.nombre}
@@ -390,6 +538,7 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
                     title={c.nombre}
                     aria-label={c.nombre}
                     aria-pressed={activo}
+                    disabled={!dispC}
                     onClick={() => setColor(c.nombre)}
                     style={{
                       backgroundColor: c.hex,
@@ -399,11 +548,15 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
                     }}
                     className={[
                       'w-8 h-8 rounded-full border-2 transition-all duration-150',
-                      activo ? 'border-egrem-red scale-110' : 'border-egrem-gray/30 hover:border-egrem-red',
+                      !dispC
+                        ? 'opacity-40 cursor-not-allowed border-egrem-gray/30'
+                        : activo
+                          ? 'border-egrem-red scale-110'
+                          : 'border-egrem-gray/30 hover:border-egrem-red',
                     ].join(' ')}
                   />
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       )}
@@ -474,7 +627,7 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
               <button
                 type="button"
                 onClick={() => cambiarCantidad(1)}
-                disabled={cantidad >= (stockMax || 10)}
+                disabled={cantidad >= stockRestante || stockRestante <= 0}
                 aria-label={tr('tienda.product.cantidad') + ' +'}
                 className="w-10 h-full flex items-center justify-center text-egrem-black hover:text-egrem-red transition-colors focus:outline-none disabled:opacity-40"
               >
@@ -487,8 +640,8 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
             <button
               type="button"
               onClick={() => void anadirAlCarrito()}
-              disabled={!completa || adding}
-              aria-disabled={!completa || adding}
+              disabled={!completa || adding || stockRestante <= 0}
+              aria-disabled={!completa || adding || stockRestante <= 0}
               className={[
                 'flex-1 bg-egrem-red text-white font-display text-[20px] font-bold uppercase h-14 rounded-2xl flex items-center justify-center gap-2 hover:bg-egrem-red-dark transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed',
                 !completa && !adding ? 'cursor-not-allowed' : '',

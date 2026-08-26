@@ -53,6 +53,51 @@ export function seleccionCompleta(tipo: TipoArticulo, seleccion: SeleccionAtribu
   return dimensionesRequeridas(tipo).every((d) => !!seleccion[d]);
 }
 
+function opcionesDeDimension(d: Dimension, variaciones: ProductoVariacion[]): string[] {
+  switch (d) {
+    case 'talla':
+      return tallasDisponibles(variaciones);
+    case 'color':
+      return coloresDisponibles(variaciones).map((c) => c.nombre);
+    case 'edicion':
+      return edicionesDisponibles(variaciones);
+    case 'formato':
+      return formatosDisponibles(variaciones);
+  }
+}
+
+/**
+ * Selección por defecto: preselecciona las dimensiones que tienen UNA SOLA
+ * opción disponible (p. ej. un accesorio con un único color). Así el botón de
+ * añadir al carrito queda habilitado de inmediato, sin que el usuario tenga que
+ * atravesar el paso de elegir variante. No preselecciona opciones no disponibles.
+ */
+export function seleccionPorDefecto(
+  tipo: TipoArticulo,
+  variaciones: ProductoVariacion[],
+): SeleccionAtributos {
+  const sel: SeleccionAtributos = {};
+  for (const d of dimensionesRequeridas(tipo)) {
+    const opciones = opcionesDeDimension(d, variaciones);
+    if (opciones.length === 1) {
+      const unica = opciones[0];
+      const parcial: SeleccionAtributos = { ...sel, [d]: unica };
+      if (
+        combinacionDisponible(
+          variaciones,
+          parcial.talla,
+          parcial.color,
+          parcial.edicion,
+          parcial.formato,
+        )
+      ) {
+        sel[d] = unica;
+      }
+    }
+  }
+  return sel;
+}
+
 /**
  * Resuelve la variación exacta a partir de la selección.
  * Devuelve `null` si la selección es ambigua (falta una dimensión o hay
@@ -64,10 +109,18 @@ export function resolverVariacion(
   seleccion: SeleccionAtributos,
 ): ProductoVariacion | null {
   const candidatos = variaciones.filter((v) => coincide(v, seleccion));
-  if (candidatos.length !== 1) return null;
-  const match = candidatos[0];
-  if (!match.disponible) return null;
-  return match;
+  if (candidatos.length === 0) return null;
+  // Selección exacta y única.
+  if (candidatos.length === 1) {
+    const match = candidatos[0];
+    return match.disponible ? match : null;
+  }
+  // Ambigua (varias variaciones comparten el mismo valor de atributo, p. ej. dos
+  // "CD"). Nos quedamos con la única disponible; si hay varias disponibles o
+  // ninguna, no podemos resolver y devolvemos null para que el UI lo gestione.
+  const disponibles = candidatos.filter((v) => v.disponible);
+  if (disponibles.length === 1) return disponibles[0];
+  return null;
 }
 
 /**

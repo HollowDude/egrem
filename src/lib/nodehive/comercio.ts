@@ -184,7 +184,13 @@ function parseProductoResource(p: JsonApiResource, included?: JsonApiResource[])
     .map((v) => parseVariacion(v, included));
 
   const primera = variaciones[0];
-  const imagenPrincipal = primera?.imagenVarianteUrl ?? primera?.imagenes[0] ?? null;
+  const conImagen = variaciones.find((v) => v.imagenVarianteUrl || v.imagenes.length > 0);
+  const imagenPrincipal =
+    conImagen?.imagenVarianteUrl ??
+    conImagen?.imagenes[0] ??
+    primera?.imagenVarianteUrl ??
+    primera?.imagenes[0] ??
+    null;
 
   return {
     id: p.id,

@@ -1,3 +1,5 @@
+import type { ProductoVariacion, TipoArticulo } from './producto';
+
 export type TiendaCategoria = 'discos' | 'merchandising' | 'entradas' | 'instrumentos' | 'libros';
 
 /** Categorías con fuente de datos real. */
@@ -38,4 +40,11 @@ export interface TiendaProducto {
   colores?: string[];
   /** Variaciones colapsadas por color (solo merchandising) para swatches + preview. */
   variaciones?: TiendaProductoVariacionResumen[];
+  /** Tipo de artículo (bundle de Drupal) — necesario para el alta rápida. */
+  tipo?: TipoArticulo;
+  /**
+   * Catálogo completo de variaciones para resolver el alta rápida desde el
+   * listado (incluye uuid, atributos y disponibilidad). Ausente en entradas.
+   */
+  catalogo?: ProductoVariacion[];
 }

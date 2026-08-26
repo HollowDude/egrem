@@ -17,6 +17,8 @@
  * store en memoria (QA sin backend).
  */
  import { getBaseUrlValue } from '@/lib/nodehive/client';
+import { resolveRelIds } from '@/lib/nodehive/helpers';
+import { parseMediaImage } from '@/lib/nodehive/parsers';
 
 export interface CartLine {
   id: string; // order item id (uuid real) o variationId en modo mock
@@ -142,12 +144,6 @@ function includedMap(res: { included?: JsonApiResource[] }): Map<string, JsonApi
   return m;
 }
 
-function resolveImageUrl(base: string, uri?: string): string | null {
-  if (!uri) return null;
-  if (uri.startsWith('http')) return uri;
-  return `${base.replace(/\/$/, '')}${uri}`;
-}
-
 // `/jsonapi/commerce_order/default` devuelve JSON:API estándar:
 //   { data: [ order ], included: [ order_items, variations, ... ] }
 // El order trae `relationships.order_items.data` (refs) y los order items
@@ -178,8 +174,19 @@ export function parseCartResponse(res: unknown, base: string): Cart {
       const tallaRes = tallaRef ? map.get(`${tallaRef.type}:${tallaRef.id}`) : null;
       const colorRef = pe?.relationships?.attribute_color?.data;
       const colorRes = colorRef ? map.get(`${colorRef.type}:${colorRef.id}`) : null;
-      const imgRef = pe?.relationships?.field_imagen?.data;
-      const imgRes = imgRef ? map.get(`${imgRef.type}:${imgRef.id}`) : null;
+      const imgRelIds = resolveRelIds(pe?.relationships?.field_imagen);
+      const imagenUrl = (() => {
+        if (!imgRelIds.length) return null;
+        const imgRes = map.get(`${imgRelIds[0].type}:${imgRelIds[0].id}`);
+        if (!imgRes) return null;
+        if (imgRes.type === 'file--file') {
+          const u = (imgRes.attributes?.uri as { url?: string } | undefined)?.url;
+          if (!u) return null;
+          return u.startsWith('http') ? u : `${base.replace(/\/$/, '')}${u}`;
+        }
+        const parsed = parseMediaImage(imgRes as any, included);
+        return parsed?.url ?? null;
+      })();
 
       const bundle = (pe?.type ?? '').replace('commerce_product_variation--', '') || null;
       const unitRaw = a.unit_price?.number ?? pa.price?.number ?? null;
@@ -197,7 +204,7 @@ export function parseCartResponse(res: unknown, base: string): Cart {
         formato: null,
         cantidad: parseFloat(String(a.quantity ?? '1')),
         precioUnitario: unitRaw !== null ? parseFloat(unitRaw) : null,
-        imagen: resolveImageUrl(base, imgRes?.attributes?.uri?.url),
+        imagen: imagenUrl,
       });
     }
   }
@@ -226,7 +233,7 @@ export async function getCart(auth: CartAuth): Promise<Cart> {
     'filter[cart][condition][path]=cart&filter[cart][condition][value]=1' +
     uidFilter +
     '&include=order_items,order_items.purchased_entity,' +
-    'order_items.purchased_entity.field_imagen';
+    'order_items.purchased_entity.field_imagen.field_media_image';
   try {
     const res = await commerceFetch(`commerce_order/default?${query}`, auth);
     const cart = parseCartResponse(res, base);
@@ -261,7 +268,15 @@ async function enrichCartLines(cart: Cart, auth: CartAuth): Promise<Cart> {
   }
   if (porBundle.size === 0) return cart;
 
-  const attrsPorUuid = new Map<string, { talla: string | null; color: string | null; edicion: string | null; formato: string | null }>();
+  const attrsPorUuid = new Map<
+    string,
+    {
+      talla: string | null;
+      color: string | null;
+      edicion: string | null;
+      formato: string | null;
+    }
+  >();
   await Promise.all(
     [...porBundle.entries()].map(async ([bundle, uuids]) => {
       const inc = ATTR_INCLUDE_POR_BUNDLE[bundle];
@@ -303,6 +318,36 @@ async function enrichCartLines(cart: Cart, auth: CartAuth): Promise<Cart> {
   return { ...cart, lines };
 }
 
+/**
+ * Stock disponible de una variación (modo real). Devuelve `null` cuando el stock
+ * es ilimitado/desconocido o no se puede leer — en ese caso NO se bloquea la
+ * compra (fail-open) para no romper el checkout si el stock no responde.
+ */
+async function obtenerStockVariacion(
+  auth: CartAuth,
+  uuid: string,
+  bundle: string,
+): Promise<number | null> {
+  try {
+    const res = await commerceFetch<{ data: JsonApiResource | JsonApiResource[] }>(
+      `commerce_product_variation/${bundle}` +
+        `?filter[id][condition][path]=id` +
+        `&filter[id][condition][operator]=%3D` +
+        `&filter[id][condition][value]=${uuid}`,
+      auth,
+    );
+    const lista = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
+    const a = lista[0]?.attributes as Record<string, any> | undefined;
+    if (!a) return null;
+    if (a.commerce_stock_always_in_stock === true) return null;
+    if (a.status === false) return 0;
+    const s = a.field_stock_level?.available_stock;
+    return s == null ? null : Number(s);
+  } catch {
+    return null;
+  }
+}
+
 export async function addToCart(items: AddToCartInput[], auth: CartAuth): Promise<Cart> {
   if (!USAR_REAL) {
     const lines = store.get(auth.accessToken) ?? [];
@@ -320,6 +365,11 @@ export async function addToCart(items: AddToCartInput[], auth: CartAuth): Promis
   const current = await getCart(auth);
   for (const item of items) {
     if (!item.variationUuid) throw new Error('addToCart (real) requiere variationUuid');
+    const ocupado = current.lines.find((l) => l.variationUuid === item.variationUuid)?.cantidad ?? 0;
+    const stock = await obtenerStockVariacion(auth, item.variationUuid, item.bundle);
+    if (stock != null && ocupado + item.quantity > stock) {
+      throw new Error(`STOCK_INSUFFICIENT:${Math.max(0, stock - ocupado)}`);
+    }
     const existing = current.lines.find((l) => l.variationUuid === item.variationUuid);
     if (existing && existing.orderItemId) {
       const target = existing.cantidad + item.quantity;

@@ -25,6 +25,20 @@ const productos: TiendaProducto[] = [...entradas, ...merchandising, ...musica];
 
 const facetTallas = [...new Set(merchandising.flatMap((p) => p.tallas ?? []))].sort();
 const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))].sort();
+const facetEdiciones = ([
+  ...new Set(
+    productos
+      .filter((pp) => pp.categoria === 'libros')
+      .flatMap((pp) => (pp.variaciones ?? []).map((v) => v.edicion).filter(Boolean)),
+  ),
+] as string[]).sort();
+const facetFormatos = ([
+  ...new Set(
+    productos
+      .filter((pp) => pp.categoria === 'discos')
+      .flatMap((pp) => (pp.variaciones ?? []).map((v) => v.formato).filter(Boolean)),
+  ),
+] as string[]).sort();
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
@@ -45,7 +59,12 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
 
     <div class="flex flex-col lg:flex-row gap-12">
       <!-- Sidebar -->
-      <TiendaSidebar tallas={facetTallas} colores={facetColores} />
+      <TiendaSidebar
+        tallas={facetTallas}
+        colores={facetColores}
+        ediciones={facetEdiciones}
+        formatos={facetFormatos}
+      />
 
       <!-- Grid de productos -->
       <div class="flex-grow">
@@ -108,9 +127,11 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
       const state = {
         chip: '',
         maxPrice: 200,
-        avail: new Set(),
-        tallas: new Set(),
-        colores: new Set(),
+        avail: new Set<string>(),
+        tallas: new Set<string>(),
+        colores: new Set<string>(),
+        ediciones: new Set<string>(),
+        formatos: new Set<string>(),
         query: '',
         sort: 'recomendados',
         page: 1,
@@ -136,6 +157,15 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
         if (state.colores.size > 0) {
           const cs = (c.dataset.colores || '').split(',').filter(Boolean);
           if (!cs.some((col) => state.colores.has(col))) return false;
+        }
+
+        if (state.ediciones.size > 0) {
+          const es = (c.dataset.ediciones || '').split(',').filter(Boolean);
+          if (!es.some((e) => state.ediciones.has(e))) return false;
+        }
+        if (state.formatos.size > 0) {
+          const fs = (c.dataset.formatos || '').split(',').filter(Boolean);
+          if (!fs.some((f) => state.formatos.has(f))) return false;
         }
 
         if (state.query) {
@@ -169,8 +199,11 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
         const total = filtered.length;
         const visible = filtered.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE);
 
-        cards.forEach((c) => (c.style.display = 'none'));
-        visible.forEach((c) => (c.style.display = ''));
+        // Reordena el DOM según el orden solicitado (si no, el sort no se ve).
+        filtered.forEach((c) => grid.appendChild(c));
+        cards.forEach((c) => {
+          c.style.display = visible.includes(c) ? '' : 'none';
+        });
 
         countEl.textContent = isEn
           ? `Showing ${total} product${total === 1 ? '' : 's'}`
@@ -178,12 +211,13 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
         emptyEl.classList.toggle('hidden', total !== 0);
         grid.classList.toggle('hidden', total === 0);
 
-        // Filtros dinámicos de merchandising solo en esa categoría (o "Todos").
-        const showMerchFilters = state.chip === '' || state.chip === 'merchandising';
+        // Filtros dinámicos: cada grupo solo se muestra en su categoría (o "Todos").
+        const chipSel = state.chip;
         (
           sidebar.querySelectorAll('[data-tienda-filter-group]') as unknown as HTMLElement[]
         ).forEach((g) => {
-          const grupoOk = g.dataset.tiendaFilterGroup === 'merchandising' && showMerchFilters;
+          const cat = g.dataset.tiendaFilterGroup || '';
+          const grupoOk = chipSel === '' || chipSel === cat;
           g.classList.toggle('hidden', !grupoOk);
         });
 
@@ -297,27 +331,26 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
         },
       );
 
-      // ── Sidebar: talla / color (merchandising) ──
-      (sidebar.querySelectorAll('.tienda-filter-talla') as unknown as HTMLInputElement[]).forEach(
-        (cb) => {
-          cb.addEventListener('change', () => {
-            if (cb.checked) state.tallas.add(cb.value);
-            else state.tallas.delete(cb.value);
-            state.page = 1;
-            render();
-          });
-        },
-      );
-      (sidebar.querySelectorAll('.tienda-filter-color') as unknown as HTMLInputElement[]).forEach(
-        (cb) => {
-          cb.addEventListener('change', () => {
-            if (cb.checked) state.colores.add(cb.value);
-            else state.colores.delete(cb.value);
-            state.page = 1;
-            render();
-          });
-        },
-      );
+      // ── Sidebar: chips de filtro (talla/color/edición/formato) ──
+      const setParaDim = (dim: string): Set<string> => {
+        if (dim === 'talla') return state.tallas;
+        if (dim === 'color') return state.colores;
+        if (dim === 'edicion') return state.ediciones;
+        return state.formatos;
+      };
+      (sidebar.querySelectorAll('[data-filter-dim]') as unknown as HTMLElement[]).forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const dim = btn.dataset.filterDim || '';
+          const val = btn.dataset.filterVal || '';
+          const activo = btn.getAttribute('aria-pressed') === 'true';
+          btn.setAttribute('aria-pressed', String(!activo));
+          const set = setParaDim(dim);
+          if (activo) set.delete(val);
+          else set.add(val);
+          state.page = 1;
+          render();
+        });
+      });
 
       // ── Limpiar ──
       const clearBtn = sidebar.querySelector('[data-tienda-clear]');
@@ -327,6 +360,8 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
           state.avail.clear();
           state.tallas.clear();
           state.colores.clear();
+          state.ediciones.clear();
+          state.formatos.clear();
           state.query = '';
           state.maxPrice = 200;
           state.page = 1;
@@ -336,6 +371,9 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
           (
             sidebar.querySelectorAll('input[type=checkbox]') as unknown as HTMLInputElement[]
           ).forEach((cb) => (cb.checked = false));
+          (
+            sidebar.querySelectorAll('[data-filter-dim]') as unknown as HTMLElement[]
+          ).forEach((b) => b.setAttribute('aria-pressed', 'false'));
           (chipsWrap.querySelectorAll('[data-filter]') as unknown as HTMLElement[]).forEach((c) => {
             const active = (c.dataset.filter || '') === '';
             c.classList.toggle('tienda-chip--active', active);

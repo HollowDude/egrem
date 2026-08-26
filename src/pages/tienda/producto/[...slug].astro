@@ -64,7 +64,7 @@ const pageTitle = `${producto.titulo} | EGREM`;
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 lg:gap-6">
         {relacionados.map((p) => (
-          <TiendaProductCard producto={p} lang={lang} mostrarCta={false} />
+          <TiendaProductCard producto={p} lang={lang} mostrarCta={true} />
         ))}
       </div>
     </section>

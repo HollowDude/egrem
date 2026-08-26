@@ -30,6 +30,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
     return json({ ok: true, count: cart.count }, 200);
   } catch (e) {
+    const msg = String((e as Error)?.message ?? '');
+    if (msg.startsWith('STOCK_INSUFFICIENT:')) {
+      const disponible = Number(msg.split(':')[1] || '0');
+      return json({ message: 'stock_insufficient', disponible }, 409);
+    }
     console.error('[api/cart/add] error:', e);
     return json({ message: 'cart_error' }, 500);
   }

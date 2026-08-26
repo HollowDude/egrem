@@ -2,11 +2,23 @@
 /**
  * TiendaProductCard.astro — Tarjeta de producto genérica (maqueta Tienda/code.html 741-758).
  * Badge esquina superior-izquierda, imagen cuadrada con padding, precio dorado,
- * botón circular de agregar (bg-egrem-red). Card clicable vía stretched-link al detalle.
- * Reutilizable para cualquier categoría.
+ * botón de compra rápida (bg-egrem-red). Card clicable vía stretched-link al detalle.
+ *
+ * Compra rápida: si el producto tiene varias variaciones que requieren elección
+ * (talla/color/edición/formato), el botón + abre un panel inline minimalista
+ * (no modal) para elegir la combinación y añadir al carrito sin salir del listado.
+ * Si no requiere selección (p. ej. instrumento) añade directo.
  */
 import type { TiendaProducto } from '@/types/tienda';
+import type { TipoArticulo } from '@/types/producto';
 import { useTranslations } from '@/i18n/translations';
+import {
+  dimensionesRequeridas,
+  tallasDisponibles,
+  coloresDisponibles,
+  edicionesDisponibles,
+  formatosDisponibles,
+} from '@/lib/tienda/productoSeleccion';
 
 interface Props {
   producto: TiendaProducto;
@@ -31,6 +43,57 @@ const formatos =
   producto.variaciones
     ? [...new Set(producto.variaciones.map((v) => v.formato).filter((x): x is string => !!x))]
     : [];
+
+const esCompra = !!producto.catalogo && producto.catalogo.length > 0;
+const requeridas = esCompra ? dimensionesRequeridas(producto.tipo as TipoArticulo) : [];
+const catalogo = producto.catalogo ?? [];
+const hayDisp = catalogo.some((v) => v.disponible);
+const primeraDisp = catalogo.find((v) => v.disponible) ?? null;
+const directo = esCompra && hayDisp && (catalogo.length === 1 || requeridas.length === 0) && !!primeraDisp;
+const necesitaPopover = esCompra && hayDisp && !directo;
+const agotado = esCompra && !hayDisp;
+
+const dimLabel: Record<string, string> = {
+  talla: tr('tienda.product.talla'),
+  color: tr('tienda.product.color'),
+  edicion: tr('tienda.product.edicion'),
+  formato: tr('tienda.product.formato'),
+};
+
+type Opcion = { val: string; label: string; hex?: string; disp: boolean };
+const opcionesPorDim: Record<string, Opcion[]> = {};
+for (const dim of requeridas) {
+  let ops: Opcion[] = [];
+  if (dim === 'talla')
+    ops = tallasDisponibles(catalogo).map((t) => ({
+      val: t,
+      label: t,
+      disp: catalogo.some((v) => v.disponible && v.talla === t),
+    }));
+  else if (dim === 'color')
+    ops = coloresDisponibles(catalogo).map((c) => ({
+      val: c.nombre,
+      label: c.nombre,
+      hex: c.hex,
+      disp: catalogo.some((v) => v.disponible && v.color?.nombre === c.nombre),
+    }));
+  else if (dim === 'edicion')
+    ops = edicionesDisponibles(catalogo).map((e) => ({
+      val: e,
+      label: e,
+      disp: catalogo.some((v) => v.disponible && v.edicion === e),
+    }));
+  else if (dim === 'formato')
+    ops = formatosDisponibles(catalogo).map((f) => ({
+      val: f,
+      label: f,
+      disp: catalogo.some((v) => v.disponible && v.formato === f),
+    }));
+  opcionesPorDim[dim] = ops;
+}
+
+const catalogoJson = JSON.stringify(catalogo);
+const dimsAttr = requeridas.join(',');
 ---
 
 <article
@@ -43,7 +106,13 @@ const formatos =
   data-novedad={esNovedad ? '1' : '0'}
   data-tallas={producto.tallas?.join(',') ?? ''}
   data-colores={producto.colores?.join(',') ?? ''}
+  data-ediciones={ediciones.join(',')}
+  data-formatos={formatos.join(',')}
   data-variaciones={producto.variaciones ? JSON.stringify(producto.variaciones) : ''}
+  data-catalogo={catalogoJson}
+  data-tipo={producto.tipo}
+  data-dims={dimsAttr}
+  data-titulo={producto.titulo}
 >
   <div class="relative aspect-square overflow-hidden bg-egrem-gray-light">
     {
@@ -62,8 +131,15 @@ const formatos =
       )
     }
     {producto.badge && <span class="tienda-badge">{producto.badge}</span>}
+    {
+      agotado && (
+        <span class="absolute top-3 right-3 z-20 bg-egrem-black/80 text-white text-[10px] font-display font-bold uppercase tracking-wider px-2 py-1 rounded-full">
+          {tr('tienda.product.sin_stock')}
+        </span>
+      )
+    }
 
-    {/* Swatches de color (solo si hay más de un color disponible) */}
+    {/* Swatches de color (solo si hay más de un color) — seleccionables y bloqueados si sin stock */}
     {
       producto.variaciones && producto.variaciones.filter((v) => v.color).length > 1 && (
         <div class="absolute bottom-3 left-3 flex gap-1.5 flex-wrap z-20" data-color-dots>
@@ -73,16 +149,15 @@ const formatos =
                 type="button"
                 data-color-dot
                 data-index={i}
-                title={v.color.nombre}
+                data-color={v.color.nombre}
+                data-img={v.imagen ?? ''}
+                title={v.disponible ? v.color.nombre : `${v.color.nombre} — ${tr('tienda.product.sin_stock')}`}
                 aria-label={v.color.nombre}
-                class={`w-4 h-4 rounded-full border-2 transition-all duration-150 ${
-                  i === 0 ? 'border-egrem-red scale-110' : 'border-white/70 hover:scale-110'
-                }`}
-                style={
-                  i === 0
-                    ? { background: v.color.hex, boxShadow: '0 0 0 2px white, 0 0 0 3.5px var(--color-egrem-red)' }
-                    : { background: v.color.hex }
-                }
+                disabled={!v.disponible}
+                class={`tienda-card__dot w-4 h-4 rounded-full border-2 transition-all duration-150 ${
+                  i === 0 && v.disponible ? 'is-active' : 'border-white/70 hover:scale-110'
+                }${!v.disponible ? ' is-oos' : ''}`}
+                style={{ background: v.color.hex }}
               />
             ) : null,
           )}
@@ -126,7 +201,48 @@ const formatos =
     <div class="mt-auto flex items-center justify-between pt-2">
       <span class="font-display text-[22px] text-egrem-red font-bold" data-product-price>{precio}</span>
       {
-        mostrarCta ? (
+        esCompra ? (
+          agotado ? (
+            <button
+              type="button"
+              disabled
+              aria-label={tr('tienda.product.sin_stock')}
+              title={tr('tienda.product.sin_stock')}
+              class="relative z-20 w-12 h-12 rounded-full bg-egrem-gray text-white flex items-center justify-center cursor-not-allowed opacity-70"
+            >
+              <span class="icon text-[20px]">block</span>
+            </button>
+          ) : necesitaPopover ? (
+            <button
+              type="button"
+              data-quickbuy-toggle
+              data-oos-label={tr('tienda.product.sin_stock')}
+              data-error-label={tr('tienda.product.error_breve')}
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-label={tr('tienda.quickbuy.anadir')}
+              title={tr('tienda.quickbuy.anadir')}
+              class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
+            >
+              <span class="icon text-[22px]">add_shopping_cart</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              data-quickbuy-direct
+              data-oos-label={tr('tienda.product.sin_stock')}
+              data-error-label={tr('tienda.product.error_breve')}
+              data-variacion={primeraDisp?.uuid ?? ''}
+              data-bundle={producto.tipo}
+              data-titulo={producto.titulo}
+              aria-label={tr('tienda.quickbuy.anadir')}
+              title={tr('tienda.quickbuy.anadir')}
+              class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
+            >
+              <span class="icon text-[22px]">add_shopping_cart</span>
+            </button>
+          )
+        ) : mostrarCta ? (
           <button
             type="button"
             data-add-to-cart
@@ -138,17 +254,585 @@ const formatos =
           >
             <span class="icon text-[22px]">add_shopping_cart</span>
           </button>
-        ) : (
-          detailHref && (
-            <a href={detailHref} class="action-link no-underline">
-              {tr('tienda.list.view_details')}
-              <span class="icon" style="font-size:16px">arrow_forward</span>
-            </a>
-          )
-        )
+        ) : detailHref ? (
+          <a href={detailHref} class="action-link no-underline">
+            {tr('tienda.list.view_details')}
+            <span class="icon" style="font-size:16px">arrow_forward</span>
+          </a>
+        ) : null
       }
     </div>
   </div>
 
-  {detailHref && <a href={detailHref} aria-label={producto.titulo} class="absolute inset-0 z-10" />}
+  {
+    necesitaPopover && (
+      <div class="quickbuy" data-quickbuy hidden>
+        <div class="quickbuy__panel" role="group" aria-label={tr('tienda.quickbuy.anadir')}>
+          <div class="quickbuy__head">
+            <span class="quickbuy__titulo">{tr('tienda.quickbuy.elige')}</span>
+            <button type="button" class="quickbuy__close" data-quickbuy-close aria-label={tr('tienda.quickbuy.cerrar')}>
+              <span class="icon text-[18px]">close</span>
+            </button>
+          </div>
+          {requeridas.map((dim) => (
+            <div class="quickbuy__row" data-dim-row={dim}>
+              <span class="quickbuy__label">{dimLabel[dim]}</span>
+              <div class="quickbuy__opts">
+                {opcionesPorDim[dim].map((opt) =>
+                  dim === 'color' ? (
+                    <button
+                      type="button"
+                      class="quickbuy__swatch"
+                      data-dim={dim}
+                      data-val={opt.val}
+                      style={`--sw:${opt.hex}`}
+                      disabled={!opt.disp}
+                      aria-pressed="false"
+                      aria-label={opt.label}
+                      title={opt.label}
+                    >
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      class="quickbuy__chip"
+                      data-dim={dim}
+                      data-val={opt.val}
+                      disabled={!opt.disp}
+                      aria-pressed="false"
+                    >
+                      {opt.label}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+          ))}
+          <div class="quickbuy__foot">
+            <span class="quickbuy__price" data-quickbuy-price>{precio}</span>
+            <button
+              type="button"
+              class="quickbuy__add"
+              data-quickbuy-add
+              data-titulo={producto.titulo}
+              data-bundle={producto.tipo}
+              data-added-label={tr('tienda.product.agregado')}
+              data-oos-label={tr('tienda.product.sin_stock')}
+              data-error-label={tr('tienda.product.error_breve')}
+              disabled
+            >
+              <span class="icon">add_shopping_cart</span>
+              <span>{tr('tienda.quickbuy.anadir')}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  {detailHref && esCompra && <a href={detailHref} aria-label={producto.titulo} class="absolute inset-0 z-10" />}
 </article>
+
+<style>
+  .quickbuy {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 30;
+    background: #fff;
+    border-top: 1px solid var(--color-egrem-gray-light);
+    border-radius: 0 0 1rem 1rem;
+    box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.28);
+    padding: 0.875rem 1rem 1rem;
+    transform: translateY(10px);
+    opacity: 0;
+    transition:
+      transform 0.2s ease-out,
+      opacity 0.2s ease-out;
+  }
+  .quickbuy[hidden] {
+    display: none;
+  }
+  .quickbuy.is-open {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .quickbuy__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.625rem;
+  }
+  .quickbuy__titulo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+    color: var(--color-egrem-black);
+  }
+  .quickbuy__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    color: var(--color-text-secondary);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  .quickbuy__close:hover {
+    background: var(--color-egrem-gray-light);
+    color: var(--color-egrem-black);
+  }
+  .quickbuy__row {
+    margin-bottom: 0.625rem;
+  }
+  .quickbuy__label {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.375rem;
+  }
+  .quickbuy__opts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+  .quickbuy__chip {
+    min-height: 2.25rem;
+    padding: 0 0.75rem;
+    border: 2px solid var(--color-form-border);
+    border-radius: 0.75rem;
+    background: #fff;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+  .quickbuy__chip:hover:not([disabled]) {
+    border-color: var(--color-egrem-red);
+  }
+  .quickbuy__chip[aria-pressed='true'] {
+    border-color: var(--color-egrem-red);
+    color: var(--color-egrem-red);
+    background: #fff;
+  }
+  .quickbuy__chip[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .quickbuy__swatch {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    border: 2px solid #fff;
+    background: var(--sw);
+    box-shadow: 0 0 0 1px var(--color-form-border);
+    cursor: pointer;
+    transition:
+      box-shadow 0.15s ease,
+      transform 0.15s ease;
+  }
+  .quickbuy__swatch[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 2px #fff,
+      0 0 0 3.5px var(--color-egrem-red);
+    transform: scale(1.08);
+  }
+  .quickbuy__swatch[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .quickbuy__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .quickbuy__price {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--color-egrem-red);
+  }
+  .quickbuy__add {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: var(--color-egrem-red);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      transform 0.1s ease;
+  }
+  .quickbuy__add:hover:not([disabled]) {
+    background: var(--color-egrem-red-dark);
+  }
+  .quickbuy__add:active:not([disabled]) {
+    transform: scale(0.98);
+  }
+  .quickbuy__add[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .quickbuy__add.is-added {
+    background: var(--color-egrem-red-dark);
+  }
+  .tienda-card__dot[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+    position: relative;
+  }
+  .tienda-card__dot.is-oos {
+    background-image: linear-gradient(
+      45deg,
+      transparent 45%,
+      rgba(0, 0, 0, 0.55) 45%,
+      rgba(0, 0, 0, 0.55) 55%,
+      transparent 55%
+    );
+  }
+  .tienda-card__dot.is-active {
+    border-color: var(--color-egrem-red) !important;
+    box-shadow:
+      0 0 0 2px #fff,
+      0 0 0 3.5px var(--color-egrem-red) !important;
+    transform: scale(1.1);
+  }
+</style>
+
+<script>
+  type Var = {
+    uuid: string;
+    variationId: number | null;
+    talla: string | null;
+    color: { nombre: string; hex: string } | null;
+    edicion: string | null;
+    formato: string | null;
+    disponible: boolean;
+    precio: number | null;
+    sku?: string | null;
+  };
+  type Sel = { talla?: string; color?: string; edicion?: string; formato?: string };
+
+  function hayDisponible(catalogo: Var[], sel: Sel): boolean {
+    return catalogo.some(
+      (v) =>
+        v.disponible &&
+        (!sel.talla || v.talla === sel.talla) &&
+        (!sel.color || (v.color && v.color.nombre === sel.color)) &&
+        (!sel.edicion || v.edicion === sel.edicion) &&
+        (!sel.formato || v.formato === sel.formato),
+    );
+  }
+
+  function resolver(catalogo: Var[], sel: Sel): Var | null {
+    const cands = catalogo.filter(
+      (v) =>
+        (!sel.talla || v.talla === sel.talla) &&
+        (!sel.color || (v.color && v.color.nombre === sel.color)) &&
+        (!sel.edicion || v.edicion === sel.edicion) &&
+        (!sel.formato || v.formato === sel.formato),
+    );
+    return cands.find((v) => v.disponible) ?? null;
+  }
+
+  function seleccionCompleta(dims: string[], sel: Sel): boolean {
+    return dims.every((d) => !!sel[d as keyof Sel]);
+  }
+
+  function leerCatalogo(card: Element | null): Var[] {
+    try {
+      return JSON.parse(card?.getAttribute('data-catalogo') || '[]') as Var[];
+    } catch {
+      return [];
+    }
+  }
+
+  async function agregar(btn: HTMLElement, v: Var, tipo: string, titulo: string) {
+    if (btn.getAttribute('data-loading') === '1') return;
+    btn.setAttribute('data-loading', '1');
+    const original = btn.innerHTML;
+    const payload = {
+      variationUuid: v.uuid,
+      variationId: v.variationId,
+      bundle: tipo,
+      quantity: 1,
+      talla: v.talla ?? null,
+      color: v.color?.nombre ?? null,
+      edicion: v.edicion ?? null,
+      formato: v.formato ?? null,
+      sku: v.sku ?? null,
+      title: titulo,
+      precioUnitario: v.precio ?? null,
+      imagen: null,
+    };
+    try {
+      const res = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 401) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+      if (!res.ok) {
+        let esStock = false;
+        try {
+          const b = (await res.json().catch(() => null)) as { message?: string } | null;
+          esStock = b?.message === 'stock_insufficient';
+        } catch {}
+        btn.removeAttribute('data-loading');
+        const icon = esStock ? 'block' : 'error';
+        const label = esStock
+          ? btn.getAttribute('data-oos-label') || 'Agotado'
+          : btn.getAttribute('data-error-label') || 'Error';
+        btn.innerHTML = '<span class="icon">' + icon + '</span><span>' + label + '</span>';
+        btn.classList.add('is-error');
+        window.setTimeout(() => {
+          btn.innerHTML = original;
+          btn.classList.remove('is-error');
+        }, 1600);
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as { count?: number } | null;
+      const count = typeof data?.count === 'number' ? data.count : undefined;
+      window.dispatchEvent(
+        new CustomEvent('cart:updated', {
+          detail: { variationId: v.variationId, quantity: 1, count },
+        }),
+      );
+      const variacionLabel = [v.talla, v.color?.nombre, v.edicion, v.formato]
+        .filter(Boolean)
+        .join(' · ');
+      window.dispatchEvent(
+        new CustomEvent('cart:added', {
+          detail: { title: titulo, variation: variacionLabel || null, quantity: 1, count },
+        }),
+      );
+      const addedLabel = btn.getAttribute('data-added-label') || 'Añadido';
+      btn.innerHTML = '<span class="icon">check</span><span>' + addedLabel + '</span>';
+      btn.classList.add('is-added');
+      window.setTimeout(() => {
+        btn.innerHTML = original;
+        btn.classList.remove('is-added');
+        btn.removeAttribute('data-loading');
+      }, 1600);
+    } catch {
+      btn.removeAttribute('data-loading');
+      btn.innerHTML = '<span class="icon">error</span><span>' + (btn.getAttribute('data-error-label') || 'Error') + '</span>';
+      btn.classList.add('is-error');
+      window.setTimeout(() => {
+        btn.innerHTML = original;
+        btn.classList.remove('is-error');
+      }, 1600);
+    }
+  }
+
+  function cerrarPopover(pop: HTMLElement) {
+    pop.setAttribute('hidden', '');
+    pop.classList.remove('is-open');
+    const tg = pop.closest('article')?.querySelector('[data-quickbuy-toggle]') as HTMLElement | null;
+    tg?.setAttribute('aria-expanded', 'false');
+  }
+
+  function actualizar(pop: HTMLElement) {
+    const card = pop.closest('article');
+    const catalogo = leerCatalogo(card);
+    const dims = (card?.getAttribute('data-dims') || '').split(',').filter(Boolean);
+    const sel: Sel = {};
+    pop.querySelectorAll('[data-dim][aria-pressed="true"]').forEach((c) => {
+      const el = c as HTMLElement;
+      (sel as Record<string, string>)[el.getAttribute('data-dim') || ''] = el.getAttribute('data-val') || '';
+    });
+    pop.querySelectorAll('[data-dim-row]').forEach((row) => {
+      const r = row as HTMLElement;
+      const dim = r.getAttribute('data-dim-row') || '';
+      const parcial: Sel = { ...sel };
+      delete (parcial as Record<string, string>)[dim];
+      r.querySelectorAll('[data-dim]').forEach((c) => {
+        const el = c as HTMLElement;
+        const val = el.getAttribute('data-val') || '';
+        const disp = hayDisponible(catalogo, { ...parcial, [dim]: val } as Sel);
+        if (!disp) el.setAttribute('disabled', '');
+        else el.removeAttribute('disabled');
+      });
+    });
+    const completa = seleccionCompleta(dims, sel);
+    const v = completa ? resolver(catalogo, sel) : null;
+    const add = pop.querySelector('[data-quickbuy-add]') as HTMLButtonElement | null;
+    const priceEl = pop.querySelector('[data-quickbuy-price]');
+    if (v && v.precio != null && priceEl) {
+      priceEl.textContent = '$' + (Math.round(v.precio * 100) / 100).toFixed(2);
+    }
+    if (add) {
+      if (completa && v) add.removeAttribute('disabled');
+      else add.setAttribute('disabled', '');
+    }
+  }
+
+  function leerSeleccionCard(card: Element | null): Sel {
+    const sel: Sel = {};
+    const c = card?.getAttribute('data-selected-color');
+    if (c) sel.color = c;
+    return sel;
+  }
+
+  function sincronizarPopover(pop: HTMLElement, card: Element | null) {
+    const sel = leerSeleccionCard(card);
+    pop.querySelectorAll('[data-dim]').forEach((el) => {
+      const e = el as HTMLElement;
+      if (sel[e.getAttribute('data-dim') as keyof Sel] === e.getAttribute('data-val')) {
+        e.setAttribute('aria-pressed', 'true');
+      }
+    });
+    actualizar(pop);
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+
+    // Cerrar al hacer click fuera de cualquier popover abierto.
+    const popAbierto = t.closest('[data-quickbuy]:not([hidden])');
+    if (!popAbierto) {
+      document.querySelectorAll('[data-quickbuy]:not([hidden])').forEach((p) => cerrarPopover(p as HTMLElement));
+    }
+
+    const dentro = t.closest('[data-quickbuy]');
+
+    // Seleccionar color desde los swatches de la card (cambia la foto y memoriza la variante).
+    const dot = t.closest('[data-color-dot]') as HTMLElement | null;
+    if (dot) {
+      e.preventDefault();
+      if (dot.hasAttribute('disabled')) return;
+      const card = dot.closest('article');
+      const color = dot.getAttribute('data-color') ?? dot.getAttribute('aria-label') ?? '';
+      card?.querySelectorAll('[data-color-dot]').forEach((d) => d.classList.remove('is-active'));
+      dot.classList.add('is-active');
+      if (color) card?.setAttribute('data-selected-color', color);
+      const img = card?.querySelector('img');
+      const imgUrl = dot.getAttribute('data-img');
+      if (img && imgUrl) img.setAttribute('src', imgUrl);
+      return;
+    }
+
+    const toggle = t.closest('[data-quickbuy-toggle]') as HTMLElement | null;
+    if (toggle) {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = toggle.closest('article');
+      const pop = card?.querySelector('[data-quickbuy]') as HTMLElement | null;
+      if (!pop) return;
+      // Si ya se eligió el color en la card y eso completa la selección, añadir directo.
+      const dims = (card?.getAttribute('data-dims') || '').split(',').filter(Boolean);
+      const sel = leerSeleccionCard(card);
+      if (seleccionCompleta(dims, sel)) {
+        const catalogo = leerCatalogo(card);
+        const v = resolver(catalogo, sel);
+        if (v) {
+          agregar(
+            toggle,
+            v,
+            card?.getAttribute('data-tipo') || '',
+            card?.getAttribute('data-titulo') || '',
+          );
+          return;
+        }
+      }
+      if (pop.hasAttribute('hidden')) {
+        pop.removeAttribute('hidden');
+        pop.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+        sincronizarPopover(pop, card);
+        (pop.querySelector('button:not([disabled])') as HTMLElement | null)?.focus();
+      } else {
+        cerrarPopover(pop);
+      }
+      return;
+    }
+
+    const close = t.closest('[data-quickbuy-close]') as HTMLElement | null;
+    if (close) {
+      e.preventDefault();
+      e.stopPropagation();
+      const pop = close.closest('[data-quickbuy]') as HTMLElement;
+      cerrarPopover(pop);
+      return;
+    }
+
+    const chip = t.closest('[data-dim]') as HTMLElement | null;
+    if (chip && dentro) {
+      e.preventDefault();
+      e.stopPropagation();
+      const activo = chip.getAttribute('aria-pressed') === 'true';
+      chip.parentElement
+        ?.querySelectorAll('[data-dim]')
+        .forEach((c) => (c as HTMLElement).setAttribute('aria-pressed', 'false'));
+      chip.setAttribute('aria-pressed', activo ? 'false' : 'true');
+      actualizar(chip.closest('[data-quickbuy]') as HTMLElement);
+      return;
+    }
+
+    const add = t.closest('[data-quickbuy-add]') as HTMLElement | null;
+    if (add && dentro) {
+      e.preventDefault();
+      e.stopPropagation();
+      const pop = add.closest('[data-quickbuy]') as HTMLElement;
+      const card = pop.closest('article');
+      const catalogo = leerCatalogo(card);
+      const dims = (card?.getAttribute('data-dims') || '').split(',').filter(Boolean);
+      const sel: Sel = {};
+      pop.querySelectorAll('[data-dim][aria-pressed="true"]').forEach((c) => {
+        const el = c as HTMLElement;
+        (sel as Record<string, string>)[el.getAttribute('data-dim') || ''] = el.getAttribute('data-val') || '';
+      });
+      const v = resolver(catalogo, sel);
+      if (!v || !seleccionCompleta(dims, sel)) return;
+      agregar(add, v, add.getAttribute('data-bundle') || '', add.getAttribute('data-titulo') || '');
+      cerrarPopover(pop);
+      return;
+    }
+
+    const direct = t.closest('[data-quickbuy-direct]') as HTMLElement | null;
+    if (direct) {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = direct.closest('article');
+      const catalogo = leerCatalogo(card);
+      const uuid = direct.getAttribute('data-variacion') || '';
+      const v = catalogo.find((x) => x.uuid === uuid) || null;
+      if (v) agregar(direct, v, direct.getAttribute('data-bundle') || '', direct.getAttribute('data-titulo') || '');
+      return;
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('[data-quickbuy]:not([hidden])').forEach((p) => cerrarPopover(p as HTMLElement));
+    }
+  });
+</script>

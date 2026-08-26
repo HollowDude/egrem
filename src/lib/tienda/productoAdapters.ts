@@ -70,5 +70,7 @@ export function productoATiendaProducto(p: ProductoDetalle): TiendaProducto {
     tallas: p.tipo === 'prenda' ? tallasDisponibles(p.variaciones) : undefined,
     colores: coloresDisponibles(p.variaciones).map((c) => c.nombre),
     variaciones: resumenVariaciones(p.variaciones),
+    tipo: p.tipo,
+    catalogo: p.variaciones,
   };
 }

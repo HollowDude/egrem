@@ -9,9 +9,11 @@ import { useTranslations } from '@/i18n/translations';
 interface Props {
   tallas?: string[];
   colores?: string[];
+  ediciones?: string[];
+  formatos?: string[];
 }
 
-const { tallas = [], colores = [] } = Astro.props;
+const { tallas = [], colores = [], ediciones = [], formatos = [] } = Astro.props;
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
@@ -107,24 +109,25 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
       </ul>
     </div>
 
-    <!-- Filtros dinámicos de merchandising: talla y color -->
+    <!-- Filtros dinámicos por categoría: solo se muestran según el chip activo -->
     <div class="hidden border-t border-egrem-gray-light pt-7" data-tienda-filter-group="merchandising">
       {tallas.length > 0 && (
         <div class="mb-8">
           <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
             {tr('tienda.filter.talla')}
           </h3>
-          <ul class="space-y-2 font-display text-text-secondary">
+          <ul class="grid grid-cols-2 gap-2">
             {tallas.map((t) => (
               <li>
-                <label class="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    value={t}
-                    class="tienda-filter tienda-filter-talla w-5 h-5 rounded accent-egrem-red cursor-pointer"
-                  />
-                  <span class="group-hover:text-egrem-red transition-colors">{t}</span>
-                </label>
+                <button
+                  type="button"
+                  class="tienda-chip w-full h-11 rounded-xl border-2 border-form-border font-display font-bold text-[15px] text-text-secondary hover:border-egrem-red transition-colors"
+                  data-filter-dim="talla"
+                  data-filter-val={t}
+                  aria-pressed="false"
+                >
+                  {t}
+                </button>
               </li>
             ))}
           </ul>
@@ -135,21 +138,72 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
           <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
             {tr('tienda.filter.color')}
           </h3>
-          <ul class="space-y-2 font-display text-text-secondary">
+          <ul class="flex flex-wrap gap-2">
             {colores.map((c) => (
               <li>
-                <label class="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    value={c}
-                    class="tienda-filter tienda-filter-color w-5 h-5 rounded accent-egrem-red cursor-pointer"
-                  />
-                  <span
-                    class="inline-block w-4 h-4 rounded-full border border-form-border"
-                    style={`background:${dot(c)}`}
-                  ></span>
-                  <span class="group-hover:text-egrem-red transition-colors">{c}</span>
-                </label>
+                <button
+                  type="button"
+                  class="tienda-swatch w-8 h-8 rounded-full border-2 border-white"
+                  style={`--sw:${dot(c)}`}
+                  data-filter-dim="color"
+                  data-filter-val={c}
+                  aria-pressed="false"
+                  aria-label={c}
+                  title={c}
+                >
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    <!-- Libro: edición -->
+    <div class="hidden border-t border-egrem-gray-light pt-7" data-tienda-filter-group="libro">
+      {ediciones.length > 0 && (
+        <div class="mb-8">
+          <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
+            {tr('tienda.product.edicion')}
+          </h3>
+          <ul class="flex flex-wrap gap-2">
+            {ediciones.map((e) => (
+              <li>
+                <button
+                  type="button"
+                  class="tienda-chip rounded-xl border-2 border-form-border px-4 h-11 font-display font-bold text-[15px] text-text-secondary hover:border-egrem-red transition-colors"
+                  data-filter-dim="edicion"
+                  data-filter-val={e}
+                  aria-pressed="false"
+                >
+                  {e}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    <!-- Disco: formato -->
+    <div class="hidden border-t border-egrem-gray-light pt-7" data-tienda-filter-group="disco">
+      {formatos.length > 0 && (
+        <div class="mb-8">
+          <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
+            {tr('tienda.product.formato')}
+          </h3>
+          <ul class="grid grid-cols-2 gap-2">
+            {formatos.map((f) => (
+              <li>
+                <button
+                  type="button"
+                  class="tienda-chip w-full h-11 rounded-xl border-2 border-form-border font-display font-bold text-[15px] text-text-secondary hover:border-egrem-red transition-colors"
+                  data-filter-dim="formato"
+                  data-filter-val={f}
+                  aria-pressed="false"
+                >
+                  {f}
+                </button>
               </li>
             ))}
           </ul>
@@ -167,3 +221,25 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
     </button>
   </div>
 </aside>
+
+<style>
+  .tienda-chip[aria-pressed='true'] {
+    border-color: var(--color-egrem-red);
+    color: #fff;
+    background: var(--color-egrem-red);
+  }
+  .tienda-swatch {
+    background: var(--sw);
+    box-shadow: 0 0 0 1px var(--color-form-border);
+    transition:
+      box-shadow 0.15s ease,
+      transform 0.15s ease;
+    cursor: pointer;
+  }
+  .tienda-swatch[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 2px #fff,
+      0 0 0 3.5px var(--color-egrem-red);
+    transform: scale(1.08);
+  }
+</style>
