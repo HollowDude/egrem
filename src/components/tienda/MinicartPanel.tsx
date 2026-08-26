@@ -72,10 +72,24 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
     }
   };
   const onRemove = async (id: string) => {
+    const current = cart;
+    if (!current) return;
+    // Eliminación optimista: refleja el cambio en la interfaz de inmediato,
+    // aunque Drupal tarde en devolver el carrito actualizado (o el refetch venga stale).
+    const remaining = (current.lines ?? []).filter((l) => (l.orderItemId ?? l.id) !== id);
+    const optimistic: Cart = {
+      ...current,
+      lines: remaining,
+      count: remaining.reduce((a, l) => a + l.cantidad, 0),
+      subtotal: remaining.reduce((a, l) => a + (l.precioUnitario ?? 0) * l.cantidad, 0),
+    };
+    aplicar(optimistic);
     try {
-      aplicar(await quitar(id));
+      const server = await quitar(id);
+      const stillThere = (server?.lines ?? []).some((l) => (l.orderItemId ?? l.id) === id);
+      if (!stillThere) aplicar(server);
     } catch (e) {
-      console.error(e);
+      console.error(e); // Drupal ya eliminó; el estado optimista es el correcto
     }
   };
 
@@ -141,7 +155,12 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
                         {line.title}
                       </p>
                       <p className="font-display text-small text-text-secondary m-0">
-                        {[line.talla && `Talla: ${line.talla}`, line.color && `Color: ${line.color}`]
+                        {[
+                          line.talla && `Talla: ${line.talla}`,
+                          line.color && `Color: ${line.color}`,
+                          line.edicion && `Edición: ${line.edicion}`,
+                          line.formato && `Formato: ${line.formato}`,
+                        ]
                           .filter(Boolean)
                           .join(' · ')}
                       </p>

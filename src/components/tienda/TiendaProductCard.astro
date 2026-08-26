@@ -22,10 +22,19 @@ const precio =
   producto.precio !== null ? `$${producto.precio.toFixed(2)}` : tr('tienda.product.consultar');
 const esNovedad = producto.badge === 'Novedad' || producto.badge === 'Oferta';
 const detailHref = producto.href ?? '';
+
+const ediciones =
+  producto.variaciones
+    ? [...new Set(producto.variaciones.map((v) => v.edicion).filter((x): x is string => !!x))]
+    : [];
+const formatos =
+  producto.variaciones
+    ? [...new Set(producto.variaciones.map((v) => v.formato).filter((x): x is string => !!x))]
+    : [];
 ---
 
 <article
-  class="group relative flex flex-col bg-white border border-form-border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-egrem-red"
+  class="group relative flex flex-col bg-white border border-form-border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.22)] hover:border-egrem-red focus-within:border-egrem-red"
   data-category={producto.categoria}
   data-price={producto.precio ?? ''}
   data-availability={producto.disponibilidad}
@@ -34,14 +43,15 @@ const detailHref = producto.href ?? '';
   data-novedad={esNovedad ? '1' : '0'}
   data-tallas={producto.tallas?.join(',') ?? ''}
   data-colores={producto.colores?.join(',') ?? ''}
+  data-variaciones={producto.variaciones ? JSON.stringify(producto.variaciones) : ''}
 >
-  <div class="relative aspect-square overflow-hidden bg-egrem-gray-light p-4">
+  <div class="relative aspect-square overflow-hidden bg-egrem-gray-light">
     {
       producto.imagen ? (
         <img
           src={producto.imagen}
           alt={producto.titulo}
-          class="w-full h-full object-cover shadow-sm transition-transform duration-500 group-hover:scale-105"
+          class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
           loading="lazy"
           decoding="async"
         />
@@ -52,21 +62,69 @@ const detailHref = producto.href ?? '';
       )
     }
     {producto.badge && <span class="tienda-badge">{producto.badge}</span>}
+
+    {/* Swatches de color (solo si hay más de un color disponible) */}
+    {
+      producto.variaciones && producto.variaciones.filter((v) => v.color).length > 1 && (
+        <div class="absolute bottom-3 left-3 flex gap-1.5 flex-wrap z-20" data-color-dots>
+          {producto.variaciones.map((v, i) =>
+            v.color ? (
+              <button
+                type="button"
+                data-color-dot
+                data-index={i}
+                title={v.color.nombre}
+                aria-label={v.color.nombre}
+                class={`w-4 h-4 rounded-full border-2 transition-all duration-150 ${
+                  i === 0 ? 'border-egrem-red scale-110' : 'border-white/70 hover:scale-110'
+                }`}
+                style={
+                  i === 0
+                    ? { background: v.color.hex, boxShadow: '0 0 0 2px white, 0 0 0 3.5px var(--color-egrem-red)' }
+                    : { background: v.color.hex }
+                }
+              />
+            ) : null,
+          )}
+        </div>
+      )
+    }
   </div>
 
-  <div class="p-6 flex flex-col flex-grow">
-    <h3 class="font-display font-bold text-[20px] text-egrem-black mb-1 line-clamp-1 uppercase">
+  <div class="p-5 flex flex-col flex-grow">
+    <h3 class="font-display font-bold text-[19px] leading-tight text-egrem-black mb-1 line-clamp-1 uppercase tracking-tight">
       {producto.titulo}
     </h3>
     {
       producto.subtitulo && (
-        <p class="font-display text-sm text-text-secondary mb-4 line-clamp-2 uppercase">
+        <p class="font-display text-[13px] text-text-secondary mb-4 line-clamp-2 uppercase tracking-wide">
           {producto.subtitulo}
         </p>
       )
     }
-    <div class="mt-auto flex items-center justify-between">
-      <span class="font-display text-[22px] text-egrem-red font-bold">{precio}</span>
+    {
+      producto.tallas && producto.tallas.length > 0 && (
+        <p class="font-display text-[11px] uppercase tracking-wide text-text-secondary mb-3">
+          {tr('tienda.list.tallas_disponibles')}: {producto.tallas.join(' · ')}
+        </p>
+      )
+    }
+    {
+      ediciones.length > 0 && (
+        <p class="font-display text-[11px] uppercase tracking-wide text-text-secondary mb-3">
+          {tr('tienda.product.edicion')}: {ediciones.join(' · ')}
+        </p>
+      )
+    }
+    {
+      formatos.length > 0 && (
+        <p class="font-display text-[11px] uppercase tracking-wide text-text-secondary mb-3">
+          {tr('tienda.product.formato')}: {formatos.join(' · ')}
+        </p>
+      )
+    }
+    <div class="mt-auto flex items-center justify-between pt-2">
+      <span class="font-display text-[22px] text-egrem-red font-bold" data-product-price>{precio}</span>
       {
         mostrarCta ? (
           <button

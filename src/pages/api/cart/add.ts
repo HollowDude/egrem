@@ -26,6 +26,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const cart = await addToCart([payload], {
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
+      uid: session.uid,
     });
     return json({ ok: true, count: cart.count }, 200);
   } catch (e) {

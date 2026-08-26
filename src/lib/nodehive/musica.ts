@@ -45,7 +45,7 @@ export function parseAlbumCover(
   return img;
 }
 
-function parseArtistaRef(
+export function parseArtistaRef(
   resource: { relationships?: Record<string, JsonApiRelationship> },
   field: string,
   included: JsonApiResource[],

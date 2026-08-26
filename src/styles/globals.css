@@ -726,6 +726,22 @@
 
   /* ── Tienda: clases compartidas (maqueta EGREM) ─────────────────── */
 
+  /* Selección de texto con marca EGREM */
+  ::selection {
+    background: var(--color-egrem-red);
+    color: #ffffff;
+  }
+
+  /* Anillo de foco accesible, coherente con la marca */
+  a:focus-visible,
+  button:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--color-egrem-gold);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+
   /* Chip de categoría (fila superior) */
   .tienda-chip {
     display: inline-flex;
@@ -753,6 +769,7 @@
     background: var(--color-egrem-red);
     border-color: var(--color-egrem-red);
     color: #ffffff;
+    box-shadow: 0 8px 18px -6px rgba(204, 0, 0, 0.45);
   }
 
   /* Badge de estado en esquina superior-izquierda (AGOTADO) */

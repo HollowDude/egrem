@@ -6,7 +6,7 @@
  * Asume este contrato mientras Drupal no esté listo (ver Fase 1 del plan).
  */
 
-export type TipoArticulo = 'prenda' | 'accesorio';
+export type TipoArticulo = 'prenda' | 'accesorio' | 'libro' | 'instrumento' | 'disco';
 
 export interface ProductoColorOpcion {
   nombre: string;
@@ -19,11 +19,29 @@ export interface ProductoVariacion {
   sku: string;
   talla: string | null; // solo prenda
   color: ProductoColorOpcion | null; // prenda y accesorio
-  imagenVarianteUrl: string | null; // solo si accesorio usa "imagen" como dimensión
+  imagenVarianteUrl: string | null;
   precio: number | null;
   disponible: boolean;
   stock: number | null;
   imagenes: string[];
+  // Selectores (atributos Commerce, taxonomías)
+  edicion: string | null; // libro (taxonomy_term--edicion)
+  formato: string | null; // disco (taxonomy_term--formato)
+  // Ficha técnica — a nivel de variación (Drupal no tiene campos custom a nivel de producto)
+  editorial?: string | null; // libro
+  paginas?: number | null; // libro
+  autor?: string | null; // libro
+  isbn?: string | null; // libro
+  garantia?: string | null; // instrumento
+  accesoriosIncluidos?: string | null; // instrumento
+  materiales?: string | null; // instrumento (y genérico)
+  artista?: { nombre: string; href: string } | null; // disco → node--artista
+  lanzamientoRelacionado?: {
+    titulo: string;
+    href: string;
+    portada: string | null;
+    sello?: { nombre: string } | null; // taxonomy_term--sello_discografico (en el album)
+  } | null; // disco → node--album
 }
 
 export interface ProductoDetalle {
@@ -32,8 +50,8 @@ export interface ProductoDetalle {
   titulo: string;
   tipo: TipoArticulo;
   descripcion: string;
-  materiales: string; // HTML o texto plano, requerido por la HU
-  plazoEnvio: string; // requerido por la HU
+  materiales: string; // heredado de la 1ª variación si aplica
+  plazoEnvio: string;
   imagenPrincipal: string | null;
   variaciones: ProductoVariacion[];
 }

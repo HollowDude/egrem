@@ -3,6 +3,7 @@ import {
   dimensionesRequeridas,
   seleccionCompleta,
   resolverVariacion,
+  previsualizarVariacion,
   tallasDisponibles,
   coloresDisponibles,
   combinacionDisponible,
@@ -122,5 +123,34 @@ describe('helpers de disponibilidad', () => {
   it('stockCombinacion devuelve el stock de la combinación', () => {
     expect(stockCombinacion(PRENDA.variaciones, 'M', 'Negro')).toBe(10);
     expect(stockCombinacion(PRENDA.variaciones, 'L', 'Rojo')).toBeNull();
+  });
+});
+
+describe('previsualizarVariacion (preview de galería/foto/precio)', () => {
+  it('sin variaciones → null', () => {
+    expect(previsualizarVariacion([], {})).toBeNull();
+  });
+
+  it('selección vacía → primera variación disponible', () => {
+    const v = previsualizarVariacion(PRENDA.variaciones, {});
+    expect(v?.sku).toBe('S-NEGRO'); // la primera disponible
+  });
+
+  it('solo color elegido → primera variación de ese color (sin importar talla)', () => {
+    const v = previsualizarVariacion(PRENDA.variaciones, { color: 'Rojo' });
+    expect(v?.color?.nombre).toBe('Rojo');
+    expect(v?.sku).toBe('M-ROJO'); // disponible, no la agotada L-ROJO
+  });
+
+  it('selección completa → coincide con resolverVariacion', () => {
+    const sel = { talla: 'M', color: 'Rojo' };
+    const prev = previsualizarVariacion(PRENDA.variaciones, sel);
+    const res = resolverVariacion(PRENDA.variaciones, sel);
+    expect(prev?.sku).toBe(res?.sku);
+  });
+
+  it('accesorio (sin talla) con color → variación correcta', () => {
+    const v = previsualizarVariacion(ACCESORIO.variaciones, { color: 'Negro' });
+    expect(v?.sku).toBe('TAZA-NEGRO');
   });
 });

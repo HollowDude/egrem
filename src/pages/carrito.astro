@@ -93,6 +93,16 @@ const fmt = (v: number) =>
                           {tr('tienda.product.color')}: {line.color}
                         </span>
                       )}
+                      {line.edicion && (
+                        <span class="font-display text-[11px] uppercase text-text-secondary border border-form-border rounded px-2 py-0.5">
+                          {tr('tienda.product.edicion')}: {line.edicion}
+                        </span>
+                      )}
+                      {line.formato && (
+                        <span class="font-display text-[11px] uppercase text-text-secondary border border-form-border rounded px-2 py-0.5">
+                          {tr('tienda.product.formato')}: {line.formato}
+                        </span>
+                      )}
                       {line.sku && (
                         <span class="font-display text-[11px] uppercase text-egrem-gray border border-form-border rounded px-2 py-0.5">
                           {line.sku}
@@ -196,6 +206,8 @@ const fmt = (v: number) =>
             const badges: string[] = [];
             if (line.talla) badges.push(`Talla: ${line.talla}`);
             if (line.color) badges.push(`Color: ${line.color}`);
+            if (line.edicion) badges.push(`Edición: ${line.edicion}`);
+            if (line.formato) badges.push(`Formato: ${line.formato}`);
             if (line.sku) badges.push(line.sku);
             return `
               <div class="cart-row flex gap-4 py-6 border-b border-egrem-gray-light" data-id="${id}" data-unit="${unit}">

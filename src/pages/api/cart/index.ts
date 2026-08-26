@@ -18,6 +18,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     const cart = await getCart({
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
+      uid: session.uid,
     });
     return json(cart, 200);
   } catch (e) {

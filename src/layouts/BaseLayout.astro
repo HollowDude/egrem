@@ -24,6 +24,7 @@ import type { NhHeaderFragment, NhFooterFragment, NhTipoConsultaOption } from '@
 import type { NhSede } from '@/lib/nodehive/entities';
 
 import NodeHiveConnector from '@/components/nodehive/NodeHiveConnector.astro';
+import CartToast from '@/components/tienda/CartToast';
 import YouTubePlayer from '@/components/ui/YouTubePlayer';
 import ContactModal from '@/components/ui/ContactModal';
 
@@ -166,5 +167,6 @@ try {
       lang={lang}
     />
     <NodeHiveConnector />
+    <CartToast client:load />
   </body>
 </html>

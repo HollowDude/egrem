@@ -26,6 +26,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
     const cart = await updateCartItem(id, quantity, {
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
+      uid: session.uid,
     });
     return json(cart, 200);
   } catch (e) {
@@ -42,6 +43,7 @@ export const DELETE: APIRoute = async ({ params, cookies }) => {
     const cart = await removeCartItem(id, {
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
+      uid: session.uid,
     });
     return json(cart, 200);
   } catch (e) {

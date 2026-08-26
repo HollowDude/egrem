@@ -71,7 +71,7 @@ export function parseMediaImage(
   const attrs = fileRes.attributes as Record<string, unknown>;
   const uri = attrs.uri as { url?: string } | undefined;
   return {
-    url: uri?.url ?? '',
+    url: resolveFileUrl(uri?.url ?? ''),
     alt: ((mediaRes.attributes as Record<string, unknown>).name as string) ?? '',
     filename: (attrs.filename as string) ?? '',
   };

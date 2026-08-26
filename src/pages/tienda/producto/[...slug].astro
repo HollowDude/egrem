@@ -2,12 +2,10 @@
 export const prerender = false;
 
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ProductoVariantSelector from '@/components/tienda/ProductoVariantSelector.tsx';
+import ProductoFicha from '@/components/tienda/ProductoFicha.tsx';
 import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
-import { getMockProductoDetalle, getMockProductosRelacionados } from '@/lib/tienda/mockProductoDetalle';
-import { fetchProductoDetalle } from '@/lib/nodehive/comercio';
-import { MERCH_API_REAL } from '@/types/producto';
-import { formatPrecio } from '@/lib/moneda';
+import { fetchProductosMerchDetalle } from '@/lib/nodehive/comercio';
+import { productoATiendaProducto } from '@/lib/tienda/productoAdapters';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
@@ -17,34 +15,25 @@ const slug = Astro.url.pathname
   .replace(/^\/?(?:es\/|en\/)?tienda\/producto\//, '')
   .replace(/\/$/, '');
 
-// Cuando MERCH_API_REAL, usa el fetcher real de Drupal; fallback a mock si no hay dato.
-async function getProductoDetalle(s: string) {
-  if (MERCH_API_REAL) {
-    const p = await fetchProductoDetalle(s, lang);
-    if (p) return p;
-  }
-  return getMockProductoDetalle(s);
-}
-
-const producto = await getProductoDetalle(slug);
+// Catálogo real (Drupal). Sin fallback de ejemplo: si el slug no existe, 404.
+const catalogo = await fetchProductosMerchDetalle(lang);
+const producto = catalogo.find((p) => p.slug === slug) ?? null;
 if (!producto) return Astro.rewrite('/404');
 
-const precio = producto.variaciones[0]?.precio ?? null;
-
-// Galería: imágenes únicas de todas las variaciones (máx. 4 miniaturas).
-const galeria: string[] = [];
-const push = (u: string | null | undefined) => {
-  if (u && !galeria.includes(u)) galeria.push(u);
+// Selección inicial desde query params (?color=&talla=) — continuidad listado→detalle.
+const seleccionInicial = {
+  color: Astro.url.searchParams.get('color') ?? undefined,
+  talla: Astro.url.searchParams.get('talla') ?? undefined,
 };
-push(producto.imagenPrincipal);
-for (const v of producto.variaciones) {
-  push(v.imagenVarianteUrl);
-  for (const img of v.imagenes) push(img);
-}
-const miniaturas = galeria.slice(0, 4);
-const imagenPrincipal = galeria[0] ?? null;
 
-const relacionados = getMockProductosRelacionados(producto.slug);
+// Productos relacionados: misma categoría (tipo) reales, tope 4.
+const resto = catalogo.filter((p) => p.slug !== producto.slug);
+const mismaCategoria = resto.filter((p) => p.tipo === producto.tipo).slice(0, 4);
+const relacionados = [
+  ...mismaCategoria,
+  ...resto.filter((p) => p.tipo !== producto.tipo).slice(0, Math.max(0, 4 - mismaCategoria.length)),
+].map(productoATiendaProducto);
+
 const pageTitle = `${producto.titulo} | EGREM`;
 ---
 
@@ -63,49 +52,9 @@ const pageTitle = `${producto.titulo} | EGREM`;
       </ol>
     </nav>
 
-    {/* Grid principal */}
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-24 mb-24">
-      {/* Columna izquierda: galería */}
-      <div class="md:col-span-7 flex flex-col gap-4">
-        <div class="w-full aspect-square bg-egrem-gray-light border border-form-border rounded-lg p-4 flex items-center justify-center overflow-hidden group relative">
-          {imagenPrincipal ? (
-            <img id="main-product-image" src={imagenPrincipal} alt={producto.titulo} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          ) : (
-            <span class="icon text-6xl text-egrem-gray/40">inventory_2</span>
-          )}
-        </div>
-        {miniaturas.length > 1 && (
-          <div id="thumbnail-gallery" class="grid grid-cols-4 gap-4">
-            {miniaturas.map((src, i) => (
-              <button
-                type="button"
-                class={`format-thumb aspect-square bg-egrem-gray-light border overflow-hidden rounded-2xl transition-colors ${i === 0 ? 'border-2 border-egrem-red' : 'border border-form-border hover:border-egrem-red'}`}
-                data-index={i}
-                aria-label={`${producto.titulo} ${i + 1}`}
-              >
-                <img src={src} alt="" class="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Columna derecha: info + selector */}
-      <div class="md:col-span-5 flex flex-col justify-start pt-4">
-        <h1 class="text-h1 uppercase mb-2 leading-none">{producto.titulo}</h1>
-        <p class="font-display text-text-secondary uppercase tracking-wider mb-6">{tr('tienda.product.merchandising_oficial')}</p>
-
-        <div class="mb-4">
-          <span id="producto-precio" class="text-h1 text-egrem-red font-black">{precio !== null ? formatPrecio(precio, lang) : tr('tienda.product.consultar')}</span>
-          <span class="ml-3 inline-block px-2 py-0.5 bg-egrem-red text-white font-display text-[11px] uppercase rounded-sm">{tr('tienda.product.impuestos_incluidos')}</span>
-        </div>
-
-        <div class="h-px w-full bg-egrem-gray-light mb-6"></div>
-
-        <div class="egrem-richtext font-display text-body leading-relaxed text-egrem-gray mb-6" set:html={producto.descripcion} />
-
-        <ProductoVariantSelector producto={producto} lang={lang} client:load />
-      </div>
+    {/* Grid principal: ProductoFicha posee galería + selector (un solo island). */}
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-24 mb-24 md:items-start">
+      <ProductoFicha producto={producto} lang={lang} seleccionInicial={seleccionInicial} client:load />
     </div>
 
     {/* Productos Relacionados */}
@@ -113,48 +62,11 @@ const pageTitle = `${producto.titulo} | EGREM`;
       <div class="border-b-2 border-egrem-gold inline-flex pb-2 mb-8">
         <h2 class="text-h3 uppercase m-0">{tr('tienda.product.relacionados')}</h2>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 lg:gap-6">
         {relacionados.map((p) => (
           <TiendaProductCard producto={p} lang={lang} mostrarCta={false} />
         ))}
       </div>
     </section>
   </main>
-
-  <script>
-    const main = document.getElementById('main-product-image') as HTMLImageElement | null;
-    const gallery = document.getElementById('thumbnail-gallery');
-    if (main && gallery) {
-      const thumbs = Array.from(gallery.querySelectorAll('.format-thumb')) as HTMLElement[];
-      thumbs.forEach((thumb) => {
-        thumb.addEventListener('click', () => {
-          const img = thumb.querySelector('img');
-          if (img) main.src = img.src;
-          thumbs.forEach((t) => {
-            t.className = t.className
-              .replace('border-2 border-egrem-red', '')
-              .replace('border border-form-border hover:border-egrem-red', '')
-              .trim();
-          });
-          thumb.classList.add('border-2', 'border-egrem-red');
-          thumb.classList.remove('border', 'border-form-border', 'hover:border-egrem-red');
-        });
-      });
-    }
-
-    // Variación resuelta en el selector → actualizar imagen y precio en vivo.
-    const fmtPrice = (v: number) => {
-      const loc = document.documentElement.lang === 'en' ? 'en-US' : 'es-CU';
-      return '$' + new Intl.NumberFormat(loc, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(v);
-    };
-    window.addEventListener('producto:variacion-imagen', (e: Event) => {
-      const url = (e as CustomEvent).detail?.url;
-      if (main && url) main.src = url;
-    });
-    window.addEventListener('producto:variacion-precio', (e: Event) => {
-      const el = document.getElementById('producto-precio');
-      const p = (e as CustomEvent).detail?.precio;
-      if (el && typeof p === 'number') el.textContent = fmtPrice(p);
-    });
-  </script>
 </BaseLayout>

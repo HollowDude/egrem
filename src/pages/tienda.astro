@@ -6,7 +6,7 @@ import TiendaCategoriaChips from '@/components/tienda/TiendaCategoriaChips.astro
 import TiendaSidebar from '@/components/tienda/TiendaSidebar.astro';
 import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
 import { fetchEventosListado } from '@/lib/nodehive';
-import { entradaToProducto, MOCK_PRODUCTOS } from '@/lib/tienda/mockProducts';
+import { entradaToProducto } from '@/lib/tienda/entradas';
 import { fetchProductosMerchDetalle } from '@/lib/nodehive/comercio';
 import { productoATiendaProducto } from '@/lib/tienda/productoAdapters';
 import { MERCH_API_REAL } from '@/types/producto';
@@ -19,8 +19,8 @@ const tr = useTranslations(lang);
 const entradas = (await fetchEventosListado(lang)).map(entradaToProducto);
 const merchandising: TiendaProducto[] = MERCH_API_REAL
   ? (await fetchProductosMerchDetalle(lang)).map(productoATiendaProducto)
-  : MOCK_PRODUCTOS.filter((p) => p.categoria === 'merchandising');
-const musica = MOCK_PRODUCTOS.filter((p) => p.categoria === 'musica');
+  : [];
+const musica: TiendaProducto[] = [];
 const productos: TiendaProducto[] = [...entradas, ...merchandising, ...musica];
 
 const facetTallas = [...new Set(merchandising.flatMap((p) => p.tallas ?? []))].sort();
@@ -29,13 +29,11 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
   <main id="main-content" class="pb-20 px-4 md:px-16 max-w-container-max mx-auto">
-    <!-- Hero simple -->
-    <section class="pt-12 pb-8">
-      <p class="font-display text-egrem-gold uppercase tracking-widest text-sm mb-2">
-        {tr('tienda.hero.eyebrow')}
-      </p>
-      <h1 class="text-h1 text-egrem-black m-0">{tr('tienda.hero.title')}</h1>
-      <p class="font-display text-body text-text-secondary mt-3 max-w-2xl">
+    <!-- Hero -->
+    <section class="pt-14 pb-10 border-b border-egrem-gray-light">
+      <span class="eyebrow">{tr('tienda.hero.eyebrow')}</span>
+      <h1 class="text-h1 text-egrem-black m-0 mt-1">{tr('tienda.hero.title')}</h1>
+      <p class="font-display text-body text-text-secondary mt-4 max-w-2xl">
         {tr('tienda.hero.subtitle')}
       </p>
     </section>
@@ -71,7 +69,7 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
 
         <div
           id="product-grid"
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 mb-12"
+          class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6 mb-12"
         >
           {
             productos.map((p) => (
@@ -371,6 +369,53 @@ const facetColores = [...new Set(merchandising.flatMap((p) => p.colores ?? []))]
       const card = btn.closest('article');
       const link = card?.querySelector('a[href]') as HTMLAnchorElement | null;
       if (link && link.href) window.location.href = link.href;
+    });
+
+    // ── Swatches de color en la card → cambian foto + precio sin navegar y
+    //    dejan el color pre-seleccionado en el link al detalle (continuidad). ──
+    document.addEventListener('click', (e) => {
+      const dot = (e.target as HTMLElement)?.closest('[data-color-dot]') as HTMLElement | null;
+      if (!dot) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const card = dot.closest('article');
+      const raw = card?.getAttribute('data-variaciones');
+      if (!card || !raw) return;
+      const variaciones = JSON.parse(raw) as {
+        imagen: string | null;
+        color: { nombre: string } | null;
+        precio: number | null;
+      }[];
+      const idx = parseInt(dot.dataset.index || '0', 10);
+      const v = variaciones[idx];
+      const img = card.querySelector('img');
+      if (img && v?.imagen) img.src = v.imagen as string;
+      // Mover el estado activo (borde + escala + anillo rojo) al dot clicado.
+      card.querySelectorAll<HTMLElement>('[data-color-dot]').forEach((d) => {
+        const active = d === dot;
+        d.classList.toggle('border-egrem-red', active);
+        d.classList.toggle('border-white/70', !active);
+        d.classList.toggle('scale-110', active);
+        d.style.boxShadow = active
+          ? '0 0 0 2px white, 0 0 0 3.5px var(--color-egrem-red)'
+          : '';
+      });
+      // Actualizar el precio de la card según la variación previsualizada.
+      const priceEl = card.querySelector('[data-product-price]');
+      if (priceEl) {
+        priceEl.textContent =
+          v?.precio != null
+            ? '$' + (Math.round((v.precio as number) * 100) / 100).toFixed(2)
+            : 'Consultar';
+      }
+      // Continuidad listado → detalle: el link lleva ?color=.
+      const link = card.querySelector('a[href]') as HTMLAnchorElement | null;
+      const nombreColor = v?.color?.nombre;
+      if (link && nombreColor) {
+        const url = new URL(link.getAttribute('href') || '', window.location.origin);
+        url.searchParams.set('color', nombreColor);
+        link.setAttribute('href', url.pathname + url.search);
+      }
     });
   </script>
 </BaseLayout>

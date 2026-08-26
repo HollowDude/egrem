@@ -28,7 +28,11 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
 ---
 
 <aside class="w-full lg:w-64 flex-shrink-0" data-tienda-sidebar>
-  <div class="lg:sticky lg:top-24 space-y-8">
+  <div class="lg:sticky lg:top-24">
+    <h2 class="font-display font-bold text-egrem-black text-lg uppercase tracking-wide mb-6">
+      {tr('tienda.filter.title')}
+    </h2>
+    <div class="space-y-8">
     <!-- Buscar -->
     <div>
       <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
@@ -48,8 +52,8 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
     </div>
 
     <!-- Precio -->
-    <div>
-      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+    <div class="border-t border-egrem-gray-light pt-7">
+      <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
         {tr('tienda.filter.precio')}
       </h3>
       <div class="px-2">
@@ -69,8 +73,8 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
     </div>
 
     <!-- Disponibilidad -->
-    <div>
-      <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+    <div class="border-t border-egrem-gray-light pt-7">
+      <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
         {tr('tienda.filter.disponibilidad')}
       </h3>
       <ul class="space-y-2 font-display text-text-secondary">
@@ -104,10 +108,10 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
     </div>
 
     <!-- Filtros dinámicos de merchandising: talla y color -->
-    <div class="hidden" data-tienda-filter-group="merchandising">
+    <div class="hidden border-t border-egrem-gray-light pt-7" data-tienda-filter-group="merchandising">
       {tallas.length > 0 && (
         <div class="mb-8">
-          <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+          <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
             {tr('tienda.filter.talla')}
           </h3>
           <ul class="space-y-2 font-display text-text-secondary">
@@ -128,7 +132,7 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
       )}
       {colores.length > 0 && (
         <div class="mb-8">
-          <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
+          <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
             {tr('tienda.filter.color')}
           </h3>
           <ul class="space-y-2 font-display text-text-secondary">
