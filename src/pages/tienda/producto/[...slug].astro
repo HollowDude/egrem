@@ -16,7 +16,8 @@ const slug = Astro.url.pathname
   .replace(/\/$/, '');
 
 // Catálogo real (Drupal). Sin fallback de ejemplo: si el slug no existe, 404.
-const catalogo = await fetchProductosMerchDetalle(lang);
+const merch = await fetchProductosMerchDetalle(lang);
+const catalogo = merch.productos;
 const producto = catalogo.find((p) => p.slug === slug) ?? null;
 if (!producto) return Astro.rewrite('/404');
 

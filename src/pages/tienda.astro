@@ -17,8 +17,9 @@ const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
 const entradas = (await fetchEventosListado(lang)).map(entradaToProducto);
+const merch = await fetchProductosMerchDetalle(lang);
 const merchandising: TiendaProducto[] = MERCH_API_REAL
-  ? (await fetchProductosMerchDetalle(lang)).map(productoATiendaProducto)
+  ? merch.productos.map(productoATiendaProducto)
   : [];
 const musica: TiendaProducto[] = [];
 const productos: TiendaProducto[] = [...entradas, ...merchandising, ...musica];
@@ -39,11 +40,10 @@ const facetFormatos = ([
       .flatMap((pp) => (pp.variaciones ?? []).map((v) => v.formato).filter(Boolean)),
   ),
 ] as string[]).sort();
-const facetTiendas = [
-  ...new Map(
-    merchandising.flatMap((p) => p.tiendasConStock ?? []).map((t) => [t.id, t]),
-  ).values(),
-];
+// Tiendas canónicas auto-descubiertas por el endpoint (incluye tiendas nuevas
+// aunque aún no tengan stock en ningún producto). Se ocultan las no selectables
+// ("Main") en el propio stock.ts.
+const facetTiendas = merch.tiendas;
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>

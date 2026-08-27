@@ -22,12 +22,12 @@ export interface StockResponse {
 }
 
 const STOCK_MULTITIENDA_REAL = (() => {
-  const v = process.env.STOCK_MULTITIENDA_REAL;
+  const v = import.meta.env.STOCK_MULTITIENDA_REAL;
   return v === 'true' || v === '1';
 })();
 
 const STOCK_CACHE_TTL_MS = (() => {
-  const v = Number(process.env.STOCK_CACHE_TTL_MS);
+  const v = Number(import.meta.env.STOCK_CACHE_TTL_MS);
   return Number.isFinite(v) && v > 0 ? v : 30000;
 })();
 

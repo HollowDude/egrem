@@ -24,6 +24,7 @@ import { parseMediaImage } from './parsers';
 import { parseAlbumCover, parseArtistaRef } from './musica';
 import type { JsonApiResource } from './client';
 import type { ProductoDetalle, ProductoVariacion, ProductoColorOpcion, TipoArticulo } from '@/types/producto';
+import type { TiendaInfo } from '../../types/tienda';
 
 // Include POR BUNDLE: incluir `attribute_talla` en accesorio/disco, o
 // `field_album_relacionado` en prenda, hace que Drupal responda 400. Por eso
@@ -235,7 +236,13 @@ function parseProductoResource(
   };
 }
 
-export async function fetchProductosMerchDetalle(lang = 'es'): Promise<ProductoDetalle[]> {
+/** Catálogo de merchandising + la lista canónica de tiendas (auto-descubierta vía endpoint). */
+export interface CatalogoMerch {
+  productos: ProductoDetalle[];
+  tiendas: TiendaInfo[];
+}
+
+export async function fetchProductosMerchDetalle(lang = 'es'): Promise<CatalogoMerch> {
   try {
     const respuestas = await Promise.all(
       BUNDLES.map((b) =>
@@ -265,9 +272,14 @@ export async function fetchProductosMerchDetalle(lang = 'es'): Promise<ProductoD
       getApiKeyValue(),
       getBaseUrlValue(),
     );
-    return dataAll.map((r) => parseProductoResource(r, includedAll, stockData));
+    return {
+      productos: dataAll.map((r) => parseProductoResource(r, includedAll, stockData)),
+      // Tiendas canónicas (sin "Main"): se auto-actualizan cuando Drupal crea
+      // una ubicación nueva, así el filtro de la tienda la muestra sin tocar código.
+      tiendas: stockData.stores,
+    };
   } catch (e) {
     console.warn('[NodeHive] fetchProductosMerchDetalle failed:', e);
-    return [];
+    return { productos: [], tiendas: [] };
   }
 }
