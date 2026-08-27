@@ -8,6 +8,16 @@
 
 export type TipoArticulo = 'prenda' | 'accesorio' | 'libro' | 'instrumento' | 'disco';
 
+import type { TiendaInfo } from './tienda';
+
+/** Stock de una variación desglosado por tienda. */
+export interface ProductoTiendaStock {
+  tienda: TiendaInfo;
+  /** null = ilimitado. */
+  cantidad: number | null;
+  ilimitado: boolean;
+}
+
 export interface ProductoColorOpcion {
   nombre: string;
   hex: string; // '#RRGGBB'
@@ -23,6 +33,8 @@ export interface ProductoVariacion {
   precio: number | null;
   disponible: boolean;
   stock: number | null;
+  /** Stock desglosado por tienda (null = sin datos multitienda). */
+  stockPorTienda?: ProductoTiendaStock[] | null;
   imagenes: string[];
   // Selectores (atributos Commerce, taxonomías)
   edicion: string | null; // libro (taxonomy_term--edicion)

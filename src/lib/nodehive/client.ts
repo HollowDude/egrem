@@ -53,6 +53,10 @@ export function getBaseUrlValue(): string {
   return getBaseUrl();
 }
 
+export function getApiKeyValue(): string | undefined {
+  return getApiKey();
+}
+
 export async function jsonApiPost<A = Record<string, unknown>, B = Record<string, unknown>>(
   path: string,
   body: B,

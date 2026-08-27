@@ -1,6 +1,23 @@
 import type { ProductoDetalle, ProductoVariacion } from '@/types/producto';
-import type { TiendaProducto, TiendaProductoVariacionResumen, TiendaCategoria } from '@/types/tienda';
+import type {
+  TiendaProducto,
+  TiendaProductoVariacionResumen,
+  TiendaCategoria,
+  TiendaInfo,
+} from '@/types/tienda';
 import { tallasDisponibles, coloresDisponibles } from '@/lib/tienda/productoSeleccion';
+
+/** Union de tiendas con stock>0 en al menos una variacion del producto. */
+function calcularTiendasConStock(variaciones: ProductoVariacion[]): TiendaInfo[] {
+  const map = new Map<string, TiendaInfo>();
+  for (const v of variaciones) {
+    for (const s of v.stockPorTienda ?? []) {
+      const conStock = s.ilimitado || (s.cantidad ?? 0) > 0;
+      if (conStock) map.set(s.tienda.id, s.tienda);
+    }
+  }
+  return [...map.values()];
+}
 
 /**
  * Colapsa las variaciones en un resumen por color (una por color), conservando
@@ -72,5 +89,6 @@ export function productoATiendaProducto(p: ProductoDetalle): TiendaProducto {
     variaciones: resumenVariaciones(p.variaciones),
     tipo: p.tipo,
     catalogo: p.variaciones,
+    tiendasConStock: calcularTiendasConStock(p.variaciones),
   };
 }

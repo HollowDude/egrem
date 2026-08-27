@@ -34,6 +34,9 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
     const msg = String((e as any)?.message ?? e);
     const stockMatch = msg.match(/^STOCK_INSUFFICIENT:(-?\d+)/);
     if (stockMatch) {
+      // TODO(stock-multitienda): `disponible` es stock de TIENDA DEFAULT
+      // (field_stock_level, ver obtenerStockVariacion en carrito.ts / plan §8), no el
+      // total agregado multitienda mostrado en la ficha.
       return json(
         {
           error: 'stock_insufficient',

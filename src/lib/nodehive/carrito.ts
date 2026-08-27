@@ -36,7 +36,9 @@ export interface CartLine {
   precioUnitario: number | null;
   imagen: string | null;
   href?: string;
-  stock?: number | null; // stock disponible de la variación (modo real); undefined en mock
+  stock?: number | null; // TODO(stock-multitienda): stock de la TIENDA DEFAULT
+  // (field_stock_level), NO el total agregado multitienda que muestran la ficha/listado
+  // (ver stock.ts / plan §8). Puede no coincidir con lo que vio el usuario. Modo mock: undefined.
 }
 
 export interface Cart {
@@ -301,6 +303,10 @@ async function enrichCartLines(cart: Cart, auth: CartAuth): Promise<Cart> {
             return r?.attributes?.name ?? null;
           };
           const va = (v.attributes ?? {}) as Record<string, any>;
+          // TODO(stock-multitienda): field_stock_level es el stock de la TIENDA DEFAULT.
+          // El MinicartPanel muestra este número, que puede diferir del total agregado
+          // multitienda mostrado en la ficha/listado. Unificar en el carrito cuando el
+          // endpoint /api/stock alimente también esta capa (plan §8).
           const sVal = va.field_stock_level?.available_stock;
           attrsPorUuid.set(v.id, {
             talla: getAttr('attribute_talla'),
@@ -346,6 +352,10 @@ async function obtenerStockVariacion(
     if (!a) return null;
     if (a.commerce_stock_always_in_stock === true) return null;
     if (a.status === false) return 0;
+    // TODO(stock-multitienda): este es el stock de la TIENDA DEFAULT (field_stock_level).
+    // Los backstops de addToCart/updateCartItem lanzan 409 con este valor, que puede NO
+    // coincidir con el total agregado multitienda que la ficha mostró al usuario (plan §8).
+    // MVP: se acepta la divergencia; unificar vía /api/stock cuando exista.
     const s = a.field_stock_level?.available_stock;
     return s == null ? null : Number(s);
   } catch {
@@ -373,6 +383,7 @@ export async function addToCart(items: AddToCartInput[], auth: CartAuth): Promis
     const ocupado = current.lines.find((l) => l.variationUuid === item.variationUuid)?.cantidad ?? 0;
     const stock = await obtenerStockVariacion(auth, item.variationUuid, item.bundle);
     if (stock != null && ocupado + item.quantity > stock) {
+      // TODO(stock-multitienda): `stock` es tienda default (ver obtenerStockVariacion).
       throw new Error(`STOCK_INSUFFICIENT:${Math.max(0, stock - ocupado)}`);
     }
     const existing = current.lines.find((l) => l.variationUuid === item.variationUuid);
@@ -439,6 +450,7 @@ export async function updateCartItem(
   if (line?.variationUuid && line.bundle) {
     const stock = await obtenerStockVariacion(auth, line.variationUuid, line.bundle);
     if (stock != null && quantity > stock) {
+      // TODO(stock-multitienda): `stock` es tienda default (ver obtenerStockVariacion).
       throw new Error(`STOCK_INSUFFICIENT:${Math.max(0, stock)}`);
     }
   }

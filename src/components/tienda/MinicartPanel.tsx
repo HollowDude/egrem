@@ -187,11 +187,14 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
                         <span className="font-display font-bold text-egrem-black w-6 text-center">
                           {line.cantidad}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => onInc(id, line.cantidad, line.stock)}
-                          aria-label="+"
-                          disabled={line.stock != null && line.cantidad >= line.stock}
+                         <button
+                           type="button"
+                           onClick={() => onInc(id, line.cantidad, line.stock)}
+                           aria-label="+"
+                           // TODO(stock-multitienda): `line.stock` es el de la TIENDA DEFAULT
+                           // (ver enrichCartLines en carrito.ts / plan §8), no el total agregado
+                           // multitienda de la ficha. Puede diferir de lo que vio el usuario.
+                           disabled={line.stock != null && line.cantidad >= line.stock}
                           title={line.stock != null && line.cantidad >= line.stock ? tr('tienda.cart.max_stock') : undefined}
                           className="w-7 h-7 flex items-center justify-center rounded-md border border-form-border hover:border-egrem-red hover:text-egrem-red transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-form-border disabled:hover:text-egrem-black"
                         >

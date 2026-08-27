@@ -32,6 +32,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   } catch (e) {
     const msg = String((e as Error)?.message ?? '');
     if (msg.startsWith('STOCK_INSUFFICIENT:')) {
+      // TODO(stock-multitienda): `disponible` es el stock de la TIENDA DEFAULT
+      // (field_stock_level, ver obtenerStockVariacion en carrito.ts / plan §8), no el
+      // total agregado multitienda. Puede no coincidir con lo que vio el usuario en la ficha.
       const disponible = Number(msg.split(':')[1] || '0');
       return json({ message: 'stock_insufficient', disponible }, 409);
     }

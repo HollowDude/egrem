@@ -39,6 +39,11 @@ const facetFormatos = ([
       .flatMap((pp) => (pp.variaciones ?? []).map((v) => v.formato).filter(Boolean)),
   ),
 ] as string[]).sort();
+const facetTiendas = [
+  ...new Map(
+    merchandising.flatMap((p) => p.tiendasConStock ?? []).map((t) => [t.id, t]),
+  ).values(),
+];
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
@@ -64,6 +69,7 @@ const facetFormatos = ([
         colores={facetColores}
         ediciones={facetEdiciones}
         formatos={facetFormatos}
+        tiendas={facetTiendas}
       />
 
       <!-- Grid de productos -->
@@ -132,6 +138,7 @@ const facetFormatos = ([
         colores: new Set<string>(),
         ediciones: new Set<string>(),
         formatos: new Set<string>(),
+        tiendas: new Set<string>(),
         query: '',
         sort: 'recomendados',
         page: 1,
@@ -166,6 +173,11 @@ const facetFormatos = ([
         if (state.formatos.size > 0) {
           const fs = (c.dataset.formatos || '').split(',').filter(Boolean);
           if (!fs.some((f) => state.formatos.has(f))) return false;
+        }
+
+        if (state.tiendas.size > 0) {
+          const ts = (c.dataset.tiendas || '').split(',').filter(Boolean);
+          if (!ts.some((t) => state.tiendas.has(t))) return false;
         }
 
         if (state.query) {
@@ -331,6 +343,18 @@ const facetFormatos = ([
         },
       );
 
+      // ── Sidebar: tienda (stock multitienda) ──
+      (sidebar.querySelectorAll('[data-tienda-store]') as unknown as HTMLInputElement[]).forEach(
+        (cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) state.tiendas.add(cb.value);
+            else state.tiendas.delete(cb.value);
+            state.page = 1;
+            render();
+          });
+        },
+      );
+
       // ── Sidebar: chips de filtro (talla/color/edición/formato) ──
       const setParaDim = (dim: string): Set<string> => {
         if (dim === 'talla') return state.tallas;
@@ -362,6 +386,7 @@ const facetFormatos = ([
           state.colores.clear();
           state.ediciones.clear();
           state.formatos.clear();
+          state.tiendas.clear();
           state.query = '';
           state.maxPrice = 200;
           state.page = 1;

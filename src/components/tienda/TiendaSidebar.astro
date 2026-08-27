@@ -5,15 +5,17 @@
  * Instrumentos y Libros se renderizan pero sin data-sidebar-cat (inertes, 0 productos).
  */
 import { useTranslations } from '@/i18n/translations';
+import type { TiendaInfo } from '@/types/tienda';
 
 interface Props {
   tallas?: string[];
   colores?: string[];
   ediciones?: string[];
   formatos?: string[];
+  tiendas?: TiendaInfo[];
 }
 
-const { tallas = [], colores = [], ediciones = [], formatos = [] } = Astro.props;
+const { tallas = [], colores = [], ediciones = [], formatos = [], tiendas = [] } = Astro.props;
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
@@ -108,6 +110,32 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
         </li>
       </ul>
     </div>
+
+    <!-- Tienda (stock multitienda) -->
+    {
+      tiendas.length > 0 && (
+        <div class="border-t border-egrem-gray-light pt-7">
+          <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
+            {tr('tienda.filter.tienda')}
+          </h3>
+          <ul class="space-y-2 font-display text-text-secondary">
+            {tiendas.map((t) => (
+              <li>
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    value={t.id}
+                    data-tienda-store
+                    class="w-5 h-5 rounded accent-egrem-red cursor-pointer"
+                  />
+                  <span class="group-hover:text-egrem-red transition-colors">{t.label}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
 
     <!-- Filtros dinámicos por categoría: solo se muestran según el chip activo -->
     <div class="hidden border-t border-egrem-gray-light pt-7" data-tienda-filter-group="merchandising">

@@ -481,6 +481,32 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
           </p>
         )}
 
+        {(completa && variacion?.stockPorTienda && variacion.stockPorTienda.length > 0) && (
+          <details className="group mb-4">
+            <summary className="cursor-pointer select-none flex items-center gap-1.5 font-display text-[13px] text-egrem-gold hover:text-egrem-red">
+              <span className="icon text-[16px]">store</span>
+              {tr('tienda.product.stock_por_tienda')}
+              <span className="icon text-[16px] transition-transform group-open:rotate-180">
+                expand_more
+              </span>
+            </summary>
+            <ul className="mt-2 space-y-1 font-display text-[13px] text-text-secondary">
+              {variacion!.stockPorTienda!.map((s) => (
+                <li key={s.tienda.id} className="flex justify-between gap-3">
+                  <span>{s.tienda.label}</span>
+                  <span
+                    className={
+                      s.ilimitado || (s.cantidad ?? 0) > 0 ? 'text-[#16a34a]' : 'text-egrem-red'
+                    }
+                  >
+                    {s.ilimitado ? tr('tienda.product.stock_ilimitado') : `${s.cantidad} ud.`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+
         <div className="h-px w-full bg-egrem-gray-light mb-6" />
 
         <div

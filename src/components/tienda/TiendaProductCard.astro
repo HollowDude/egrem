@@ -108,6 +108,7 @@ const dimsAttr = requeridas.join(',');
   data-colores={producto.colores?.join(',') ?? ''}
   data-ediciones={ediciones.join(',')}
   data-formatos={formatos.join(',')}
+  data-tiendas={producto.tiendasConStock?.map((t) => t.id).join(',') ?? ''}
   data-variaciones={producto.variaciones ? JSON.stringify(producto.variaciones) : ''}
   data-catalogo={catalogoJson}
   data-tipo={producto.tipo}

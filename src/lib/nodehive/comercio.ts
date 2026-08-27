@@ -17,7 +17,8 @@
  * Produce exactamente el shape `ProductoDetalle` de `@/types/producto`, así
  * ningún componente (selector, selección, carrito) cambia.
  */
-import { jsonApiFetch } from './client';
+import { getApiKeyValue, getBaseUrlValue, jsonApiFetch } from './client';
+import { fetchStockPorTienda, resolverStockTienda, type StockResponse } from './stock';
 import { findIncluded, resolveRelIds } from './helpers';
 import { parseMediaImage } from './parsers';
 import { parseAlbumCover, parseArtistaRef } from './musica';
@@ -92,7 +93,11 @@ function attrName(
   return (term?.attributes?.name as string) ?? null;
 }
 
-function parseVariacion(v: JsonApiResource, included?: JsonApiResource[]): ProductoVariacion {
+function parseVariacion(
+  v: JsonApiResource,
+  included?: JsonApiResource[],
+  stockData?: StockResponse,
+): ProductoVariacion {
   const a = v.attributes as Record<string, any>;
   const imgRel = v.relationships?.field_imagen;
   const imgIds = resolveRelIds(imgRel);
@@ -103,9 +108,23 @@ function parseVariacion(v: JsonApiResource, included?: JsonApiResource[]): Produ
     if (url) imagenes.push(url);
   }
   const imagenVarianteUrl = imagenes[0] ?? null;
-  const stock = a.field_stock_level?.available_stock ?? null;
+  const sku = a.sku ?? '';
+  const stockBase = a.field_stock_level?.available_stock ?? null;
   const alwaysInStock = a.commerce_stock_always_in_stock === true;
-  const disponible = a.status !== false && (alwaysInStock || (stock ?? 0) > 0);
+  let disponible = a.status !== false && (alwaysInStock || (stockBase ?? 0) > 0);
+  let stock = stockBase;
+  let stockPorTienda: ProductoVariacion['stockPorTienda'] = null;
+
+  // Merge multitienda: si el endpoint devolvió tiendas y conoce este sku
+  // (o es always_in_stock), el stock agregado y el desglose prevalecen sobre
+  // field_stock_level. Si el sku no está en la respuesta, se conserva
+  // field_stock_level como respaldo (degradación tolerante del merge).
+  if (stockData && stockData.stores.length > 0 && (alwaysInStock || stockData.items[sku])) {
+    const r = resolverStockTienda(sku, stockData, alwaysInStock);
+    stock = r.stock;
+    disponible = r.disponible;
+    stockPorTienda = r.stockPorTienda;
+  }
   const talla = attrName(v, 'attribute_talla', included);
   const colorName = attrName(v, 'attribute_color', included);
   const edicion = attrName(v, 'attribute_edicion', included);
@@ -152,6 +171,7 @@ function parseVariacion(v: JsonApiResource, included?: JsonApiResource[]): Produ
     precio: a.price ? parseFloat(a.price.number) : null,
     disponible,
     stock,
+    stockPorTienda,
     imagenes,
     edicion,
     formato,
@@ -167,7 +187,11 @@ function parseVariacion(v: JsonApiResource, included?: JsonApiResource[]): Produ
   };
 }
 
-function parseProductoResource(p: JsonApiResource, included?: JsonApiResource[]): ProductoDetalle {
+function parseProductoResource(
+  p: JsonApiResource,
+  included?: JsonApiResource[],
+  stockData?: StockResponse,
+): ProductoDetalle {
   const a = p.attributes as Record<string, any>;
   const tipo: TipoArticulo = p.type.includes('libro')
     ? 'libro'
@@ -181,7 +205,7 @@ function parseProductoResource(p: JsonApiResource, included?: JsonApiResource[])
   const variaciones = (resolveRelIds(p.relationships?.variations) || [])
     .map((ref) => findIncluded(included, ref.type, ref.id))
     .filter((v): v is JsonApiResource => !!v)
-    .map((v) => parseVariacion(v, included));
+    .map((v) => parseVariacion(v, included, stockData));
 
   const primera = variaciones[0];
   const conImagen = variaciones.find((v) => v.imagenVarianteUrl || v.imagenes.length > 0);
@@ -225,7 +249,23 @@ export async function fetchProductosMerchDetalle(lang = 'es'): Promise<ProductoD
     const dataAll = respuestas.flatMap((r) =>
       Array.isArray(r.data) ? (r.data as JsonApiResource[]) : [],
     );
-    return dataAll.map((r) => parseProductoResource(r, includedAll));
+    // Recolectar SKUs y resolver el stock multitienda en una sola llamada.
+    const skus: string[] = [];
+    for (const r of dataAll) {
+      const refs = resolveRelIds(r.relationships?.variations) || [];
+      for (const ref of refs) {
+        const v = findIncluded(includedAll, ref.type, ref.id);
+        const sku = (v?.attributes as { sku?: string } | undefined)?.sku;
+        if (sku) skus.push(sku);
+      }
+    }
+    const stockData = await fetchStockPorTienda(
+      skus,
+      lang,
+      getApiKeyValue(),
+      getBaseUrlValue(),
+    );
+    return dataAll.map((r) => parseProductoResource(r, includedAll, stockData));
   } catch (e) {
     console.warn('[NodeHive] fetchProductosMerchDetalle failed:', e);
     return [];

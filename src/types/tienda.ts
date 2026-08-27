@@ -13,6 +13,12 @@ export const TIENDA_CATEGORIAS_CON_DATOS: TiendaCategoria[] = [
 
 export type TiendaDisponibilidad = 'stock' | 'preventa' | 'agotado';
 
+/** Tienda física con stock multitienda (Egrem, Tienda prueba, etc.). */
+export interface TiendaInfo {
+  id: string;
+  label: string;
+}
+
 /** Resumen de una variación para el listado: suficiente para swatches + foto + precio. */
 export interface TiendaProductoVariacionResumen {
   color: { nombre: string; hex: string } | null;
@@ -47,4 +53,6 @@ export interface TiendaProducto {
    * listado (incluye uuid, atributos y disponibilidad). Ausente en entradas.
    */
   catalogo?: ProductoVariacion[];
+  /** Tiendas donde el producto tiene stock>0 en al menos una variación. */
+  tiendasConStock?: TiendaInfo[];
 }
