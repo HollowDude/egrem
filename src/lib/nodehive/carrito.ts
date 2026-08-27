@@ -36,6 +36,7 @@ export interface CartLine {
   precioUnitario: number | null;
   imagen: string | null;
   href?: string;
+  stock?: number | null; // stock disponible de la variación (modo real); undefined en mock
 }
 
 export interface Cart {
@@ -253,7 +254,7 @@ const ATTR_INCLUDE_POR_BUNDLE: Record<string, string> = {
   prenda: 'attribute_talla,attribute_color',
   accesorio: 'attribute_color',
   libro: 'attribute_edicion',
-  disco: 'attribute_edicion,attribute_formato',
+  disco: 'attribute_edicion,attribute_formato,field_stock_level',
   instrumento: '',
 };
 
@@ -275,6 +276,7 @@ async function enrichCartLines(cart: Cart, auth: CartAuth): Promise<Cart> {
       color: string | null;
       edicion: string | null;
       formato: string | null;
+      stock?: number | null;
     }
   >();
   await Promise.all(
@@ -298,11 +300,14 @@ async function enrichCartLines(cart: Cart, auth: CartAuth): Promise<Cart> {
             const r = ref ? map.get(`${ref.type}:${ref.id}`) : null;
             return r?.attributes?.name ?? null;
           };
+          const va = (v.attributes ?? {}) as Record<string, any>;
+          const sVal = va.field_stock_level?.available_stock;
           attrsPorUuid.set(v.id, {
             talla: getAttr('attribute_talla'),
             color: getAttr('attribute_color'),
             edicion: getAttr('attribute_edicion'),
             formato: getAttr('attribute_formato'),
+            stock: sVal == null ? null : Number(sVal),
           });
         }
       } catch {
@@ -429,6 +434,14 @@ export async function updateCartItem(
     return normalizar(lines);
   }
   if (!auth.csrfToken) throw new Error('updateCartItem requiere csrfToken');
+  const current = await getCart(auth);
+  const line = current.lines.find((l) => (l.orderItemId ?? l.id) === itemId);
+  if (line?.variationUuid && line.bundle) {
+    const stock = await obtenerStockVariacion(auth, line.variationUuid, line.bundle);
+    if (stock != null && quantity > stock) {
+      throw new Error(`STOCK_INSUFFICIENT:${Math.max(0, stock)}`);
+    }
+  }
   await commerceFetch(`commerce_order_item/default/${itemId}`, auth, {
     method: 'PATCH',
     body: JSON.stringify({

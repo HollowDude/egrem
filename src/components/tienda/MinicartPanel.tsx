@@ -57,11 +57,22 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
     window.dispatchEvent(new CustomEvent('cart:updated', { detail: { count: next.count } }));
   };
 
-  const onInc = async (id: string, current: number) => {
+  const refrescar = () => {
+    fetch('/api/cart')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c: Cart | null) => {
+        if (c) aplicar(c);
+      })
+      .catch(() => {});
+  };
+
+  const onInc = async (id: string, current: number, stock?: number | null) => {
+    if (stock != null && current >= stock) return;
     try {
       aplicar(await setCantidad(id, current + 1));
     } catch (e) {
       console.error(e);
+      refrescar();
     }
   };
   const onDec = async (id: string, current: number) => {
@@ -178,13 +189,22 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
                         </span>
                         <button
                           type="button"
-                          onClick={() => onInc(id, line.cantidad)}
+                          onClick={() => onInc(id, line.cantidad, line.stock)}
                           aria-label="+"
-                          className="w-7 h-7 flex items-center justify-center rounded-md border border-form-border hover:border-egrem-red hover:text-egrem-red transition-colors"
+                          disabled={line.stock != null && line.cantidad >= line.stock}
+                          title={line.stock != null && line.cantidad >= line.stock ? tr('tienda.cart.max_stock') : undefined}
+                          className="w-7 h-7 flex items-center justify-center rounded-md border border-form-border hover:border-egrem-red hover:text-egrem-red transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-form-border disabled:hover:text-egrem-black"
                         >
                           <span className="icon" style={{ fontSize: 16 }}>add</span>
                         </button>
                       </div>
+                      {line.stock != null && line.cantidad >= line.stock && (
+                        <span className="font-display text-[11px] uppercase tracking-wide text-egrem-gray mt-1">
+                          {line.stock === 0
+                            ? tr('tienda.product.sin_stock')
+                            : tr('tienda.cart.max_stock')}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-col items-end justify-between">
                       <button

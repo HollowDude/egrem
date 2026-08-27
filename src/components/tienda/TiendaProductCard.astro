@@ -237,7 +237,7 @@ const dimsAttr = requeridas.join(',');
               data-titulo={producto.titulo}
               aria-label={tr('tienda.quickbuy.anadir')}
               title={tr('tienda.quickbuy.anadir')}
-              class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
+              class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-egrem-red"
             >
               <span class="icon text-[22px]">add_shopping_cart</span>
             </button>
@@ -525,6 +525,8 @@ const dimsAttr = requeridas.join(',');
 </style>
 
 <script>
+  import { subscribeCartQty, getCartQty } from '@/lib/tienda/cartStore';
+
   type Var = {
     uuid: string;
     variationId: number | null;
@@ -533,6 +535,7 @@ const dimsAttr = requeridas.join(',');
     edicion: string | null;
     formato: string | null;
     disponible: boolean;
+    stock: number | null;
     precio: number | null;
     sku?: string | null;
   };
@@ -690,7 +693,8 @@ const dimsAttr = requeridas.join(',');
       priceEl.textContent = '$' + (Math.round(v.precio * 100) / 100).toFixed(2);
     }
     if (add) {
-      if (completa && v) add.removeAttribute('disabled');
+      const sinStock = v ? getCartQty(v.uuid) >= (v.stock ?? Infinity) : false;
+      if (completa && v && !sinStock) add.removeAttribute('disabled');
       else add.setAttribute('disabled', '');
     }
   }
@@ -712,6 +716,33 @@ const dimsAttr = requeridas.join(',');
     });
     actualizar(pop);
   }
+
+  // Deshabilita el botón "agregar" de cada tarjeta cuando el carrito ya
+  // contiene todo el stock disponible de esa variación (o está agotada).
+  function refrescarEstadoStock() {
+    document.querySelectorAll('[data-quickbuy-direct]').forEach((el) => {
+      const btn = el as HTMLButtonElement;
+      const card = btn.closest('article');
+      const catalogo = leerCatalogo(card);
+      const uuid = btn.getAttribute('data-variacion') || '';
+      const v = catalogo.find((x) => x.uuid === uuid);
+      const stock = v?.stock ?? null;
+      const sinStock = stock != null && getCartQty(uuid) >= stock;
+      if (sinStock) {
+        btn.setAttribute('disabled', '');
+        btn.classList.add('is-oos');
+        const label = btn.getAttribute('data-oos-label');
+        if (label) btn.setAttribute('title', label);
+      } else {
+        btn.removeAttribute('disabled');
+        btn.classList.remove('is-oos');
+      }
+    });
+    document.querySelectorAll('[data-quickbuy]:not([hidden])').forEach((p) => actualizar(p as HTMLElement));
+  }
+
+  subscribeCartQty(refrescarEstadoStock);
+  refrescarEstadoStock();
 
   document.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;

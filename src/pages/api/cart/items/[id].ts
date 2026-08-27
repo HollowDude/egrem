@@ -31,6 +31,21 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
     return json(cart, 200);
   } catch (e) {
     console.error('[api/cart/items] error:', e);
+    const msg = String((e as any)?.message ?? e);
+    const stockMatch = msg.match(/^STOCK_INSUFFICIENT:(-?\d+)/);
+    if (stockMatch) {
+      return json(
+        {
+          error: 'stock_insufficient',
+          message: 'No hay suficiente stock disponible.',
+          disponible: Number(stockMatch[1]),
+        },
+        409,
+      );
+    }
+    if (msg.includes('USER_NOT_AUTHENTICATED') || msg.includes('401')) {
+      return json({ error: 'no_autenticado', message: 'Inicia sesión para modificar el carrito.' }, 401);
+    }
     return json({ message: 'cart_error' }, 500);
   }
 };

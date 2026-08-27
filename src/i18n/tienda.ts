@@ -128,6 +128,7 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.cart.total': 'Total',
     'tienda.cart.unidad': 'ud.',
     'tienda.cart.login_required': 'Inicia sesión para gestionar tu carrito.',
+    'tienda.cart.max_stock': 'Has alcanzado el stock disponible',
     'tienda.cart.count': 'Carrito · {count}',
   },
   en: {
@@ -257,6 +258,7 @@ export const tienda: Record<Lang, Record<string, string>> = {
     'tienda.cart.total': 'Total',
     'tienda.cart.unidad': 'pc.',
     'tienda.cart.login_required': 'Sign in to manage your cart.',
+    'tienda.cart.max_stock': 'You have reached the available stock',
     'tienda.cart.count': 'Cart · {count}',
   },
 };
