@@ -2,9 +2,11 @@ import type { JsonApiResponse } from './client';
 import { jsonApiFetch } from './client';
 import { fetchAllArtistVideos } from './videos';
 import type { NhCatalogoVideo } from './entities';
+import { findIncluded, resolveRelIds } from './helpers';
+import { parseMediaImage } from './parsers';
 
 export interface NhSearchResult {
-  type: 'album' | 'artista' | 'actualidad' | 'video';
+  type: 'album' | 'artista' | 'actualidad' | 'video' | 'producto';
   id: string;
   title: string;
   subtitle: string;
@@ -38,6 +40,99 @@ async function getCachedVideos(lang: string): Promise<NhCatalogoVideo[]> {
 
 function buildFilter(q: string): string {
   return `filter[search][condition][path]=title&filter[search][condition][operator]=CONTAINS&filter[search][condition][value]=${encodeURIComponent(q)}`;
+}
+
+function buildCommerceFilter(q: string): string {
+  return `filter[title-filter][condition][path]=title&filter[title-filter][condition][operator]=CONTAINS&filter[title-filter][condition][value]=${encodeURIComponent(q)}`;
+}
+
+const PRODUCT_BUNDLES = ['prenda', 'accesorio', 'libro', 'instrumento', 'disco'] as const;
+
+function resolveProductThumbnail(
+  product: import('./client').JsonApiResource,
+  included: import('./client').JsonApiResource[] | undefined,
+): string | null {
+  const variationIds = resolveRelIds(product.relationships?.variations);
+  for (const ref of variationIds) {
+    const variation = findIncluded(included, ref.type, ref.id);
+    if (!variation) continue;
+    const mediaIds = resolveRelIds(variation.relationships?.field_imagen);
+    for (const mRef of mediaIds) {
+      const media = findIncluded(included, mRef.type, mRef.id);
+      if (!media) continue;
+      const parsed = parseMediaImage(media, included);
+      if (parsed?.url) return parsed.url;
+    }
+  }
+  return null;
+}
+
+function bundleLabel(bundle: string): string {
+  const map: Record<string, string> = {
+    prenda: 'Prenda',
+    accesorio: 'Accesorio',
+    libro: 'Libro',
+    instrumento: 'Instrumento',
+    disco: 'Disco',
+  };
+  return map[bundle] ?? bundle;
+}
+
+export async function searchProductos(q: string, lang = 'es'): Promise<NhSearchResult[]> {
+  const perBundle = 2;
+  try {
+    const results = await Promise.allSettled(
+      PRODUCT_BUNDLES.map((bundle) =>
+        jsonApiFetch<Record<string, unknown>>(
+          `commerce_product/${bundle}?${buildCommerceFilter(q)}&page[limit]=${perBundle}&include=variations,variations.field_imagen,variations.field_imagen.field_media_image`,
+          lang,
+        ),
+      ),
+    );
+
+    const items: NhSearchResult[] = [];
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.status === 'rejected') continue;
+      const res = r.value as JsonApiResponse<Record<string, unknown>>;
+      const data = Array.isArray(res.data) ? res.data : [];
+      const included = res.included ?? [];
+      const bundle = PRODUCT_BUNDLES[i];
+      for (const node of data) {
+        const a = node.attributes as Record<string, unknown>;
+        const title = (a.title as string) ?? '';
+        if (!title) continue;
+        // Try to get price from first variation
+        let price: string | null = null;
+        const vIds = resolveRelIds(node.relationships?.variations);
+        if (vIds.length) {
+          const v = findIncluded(included, vIds[0].type, vIds[0].id);
+          const priceObj = (v?.attributes as Record<string, unknown> | undefined)?.price as
+            | { number?: string }
+            | undefined;
+          if (priceObj?.number) price = priceObj.number;
+        }
+        const thumb = resolveProductThumbnail(node, included);
+        let priceLabel: string | null = null;
+        if (price) {
+          const n = parseFloat(price);
+          priceLabel = Number.isFinite(n) ? (n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`) : `$${price}`;
+        }
+        const subtitle = priceLabel ? `${bundleLabel(bundle)} · ${priceLabel}` : bundleLabel(bundle);
+        items.push({
+          type: 'producto' as const,
+          id: node.id,
+          title,
+          subtitle,
+          thumbnail: thumb,
+          href: `/tienda/producto/${node.id}`,
+        });
+      }
+    }
+    return items.slice(0, 5);
+  } catch {
+    return [];
+  }
 }
 
 export async function searchAlbums(q: string, lang = 'es'): Promise<NhSearchResult[]> {
@@ -174,7 +269,8 @@ export async function searchContent(q: string, lang = 'es'): Promise<NhSearchRes
     return { query: needle, total: 0, results: [] };
   }
 
-  const [albums, artistas, actualidad, videos] = await Promise.allSettled([
+  const [productos, albums, artistas, actualidad, videos] = await Promise.allSettled([
+    searchProductos(needle, lang),
     searchAlbums(needle, lang),
     searchArtistas(needle, lang),
     searchActualidad(needle, lang),
@@ -182,7 +278,7 @@ export async function searchContent(q: string, lang = 'es'): Promise<NhSearchRes
   ]);
 
   const results: NhSearchResult[] = [];
-  for (const r of [albums, artistas, actualidad, videos]) {
+  for (const r of [productos, albums, artistas, actualidad, videos]) {
     if (r.status === 'fulfilled') results.push(...r.value);
     else console.warn('[NodeHive] search: una fuente falló:', r.reason);
   }

@@ -29,6 +29,7 @@ export async function loginWithDrupal(
 
   const json: Record<string, unknown> = await res.json();
 
+  const setCookie = res.headers.get('set-cookie') ?? '';
   const currentUser = json.current_user as Record<string, unknown> | undefined;
 
   let mail = '';
@@ -58,6 +59,7 @@ export async function loginWithDrupal(
     csrfToken: (json.csrf_token as string) ?? '',
     logoutToken: (json.logout_token as string) ?? '',
     accessToken,
+    sessionCookie: setCookie,
   };
 
   return { user, setCookie: res.headers.get('set-cookie') ?? '' };

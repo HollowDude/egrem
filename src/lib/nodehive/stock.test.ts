@@ -125,3 +125,31 @@ describe('ocultarNoTiendas', () => {
     expect(r.items.Z.total).toBe(5);
   });
 });
+
+describe('resolverStockTienda con catálogo (catalogoTiendas)', () => {
+  const main: TiendaInfo = { id: 'm', label: 'Main' };
+  const egrem: TiendaInfo = { id: 'e', label: 'Stock Egrem', provincia: 'La Habana', municipio: 'Centro', direccion: 'Calle 1' };
+  const tp: TiendaInfo = { id: 't', label: 'Stock Tienda prueba', provincia: 'Artemisa', municipio: 'Guanajay', direccion: 'Calle 2' };
+  const catalogo = [main, egrem, tp];
+
+  it('omite Main del catálogo y enriquece con dirección', () => {
+    const data: StockResponse = {
+      stores: [main, egrem, tp],
+      items: { X: { unlimited: false, total: 5, byStore: { e: 3, t: 2 } } },
+    };
+    const r = resolverStockTienda('X', data, false, catalogo);
+    expect(r.stockPorTienda).toHaveLength(2);
+    expect(r.stockPorTienda?.map((s) => s.tienda.label).sort()).toEqual(['Stock Egrem', 'Stock Tienda prueba']);
+    const conDir = r.stockPorTienda?.find((s) => s.tienda.id === 'e');
+    expect(conDir?.tienda.direccion).toBe('Calle 1');
+  });
+
+  it('sin catálogo usa stockData.stores (comportamiento previo)', () => {
+    const data: StockResponse = {
+      stores: [egrem, tp],
+      items: { X: { unlimited: false, total: 5, byStore: { e: 3, t: 2 } } },
+    };
+    const r = resolverStockTienda('X', data, false);
+    expect(r.stockPorTienda).toHaveLength(2);
+  });
+});

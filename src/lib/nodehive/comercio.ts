@@ -19,6 +19,7 @@
  */
 import { getApiKeyValue, getBaseUrlValue, jsonApiFetch } from './client';
 import { fetchStockPorTienda, resolverStockTienda, type StockResponse } from './stock';
+import { fetchTiendas } from './tiendas';
 import { findIncluded, resolveRelIds } from './helpers';
 import { parseMediaImage } from './parsers';
 import { parseAlbumCover, parseArtistaRef } from './musica';
@@ -98,6 +99,7 @@ function parseVariacion(
   v: JsonApiResource,
   included?: JsonApiResource[],
   stockData?: StockResponse,
+  catalogoTiendas?: TiendaInfo[],
 ): ProductoVariacion {
   const a = v.attributes as Record<string, any>;
   const imgRel = v.relationships?.field_imagen;
@@ -121,7 +123,7 @@ function parseVariacion(
   // field_stock_level. Si el sku no está en la respuesta, se conserva
   // field_stock_level como respaldo (degradación tolerante del merge).
   if (stockData && stockData.stores.length > 0 && (alwaysInStock || stockData.items[sku])) {
-    const r = resolverStockTienda(sku, stockData, alwaysInStock);
+    const r = resolverStockTienda(sku, stockData, alwaysInStock, catalogoTiendas);
     stock = r.stock;
     disponible = r.disponible;
     stockPorTienda = r.stockPorTienda;
@@ -177,7 +179,9 @@ function parseVariacion(
     edicion,
     formato,
     editorial: textField(a.field_editorial),
-    paginas: a.field_paginas != null ? Number(textField(a.field_paginas)) : null,
+    // `field_paginas` es un campo numérico (entero), no de texto: leerlo vía
+    // `textField` devuelve null (no es string ni {value}) y Number(null) da 0.
+    paginas: a.field_paginas != null ? Number(a.field_paginas) : null,
     autor: textField(a.field_autor),
     isbn: textField(a.field_isbn),
     garantia: textField(a.field_garantia),
@@ -192,6 +196,7 @@ function parseProductoResource(
   p: JsonApiResource,
   included?: JsonApiResource[],
   stockData?: StockResponse,
+  catalogoTiendas?: TiendaInfo[],
 ): ProductoDetalle {
   const a = p.attributes as Record<string, any>;
   const tipo: TipoArticulo = p.type.includes('libro')
@@ -206,7 +211,7 @@ function parseProductoResource(
   const variaciones = (resolveRelIds(p.relationships?.variations) || [])
     .map((ref) => findIncluded(included, ref.type, ref.id))
     .filter((v): v is JsonApiResource => !!v)
-    .map((v) => parseVariacion(v, included, stockData));
+    .map((v) => parseVariacion(v, included, stockData, catalogoTiendas));
 
   const primera = variaciones[0];
   const conImagen = variaciones.find((v) => v.imagenVarianteUrl || v.imagenes.length > 0);
@@ -266,17 +271,16 @@ export async function fetchProductosMerchDetalle(lang = 'es'): Promise<CatalogoM
         if (sku) skus.push(sku);
       }
     }
-    const stockData = await fetchStockPorTienda(
-      skus,
-      lang,
-      getApiKeyValue(),
-      getBaseUrlValue(),
-    );
+    const [stockData, catalogoTiendas] = await Promise.all([
+      fetchStockPorTienda(skus, lang, getApiKeyValue(), getBaseUrlValue()),
+      fetchTiendas(lang),
+    ]);
     return {
-      productos: dataAll.map((r) => parseProductoResource(r, includedAll, stockData)),
-      // Tiendas canónicas (sin "Main"): se auto-actualizan cuando Drupal crea
-      // una ubicación nueva, así el filtro de la tienda la muestra sin tocar código.
-      tiendas: stockData.stores,
+      productos: dataAll.map((r) => parseProductoResource(r, includedAll, stockData, catalogoTiendas)),
+      // Catálogo canónico de tiendas (con provincia/municipio/dirección), auto-descubierto
+      // vía /api/stores. Se auto-actualiza cuando Drupal crea una ubicación nueva, así
+      // el popup y el filtro la muestran sin tocar código.
+      tiendas: catalogoTiendas,
     };
   } catch (e) {
     console.warn('[NodeHive] fetchProductosMerchDetalle failed:', e);

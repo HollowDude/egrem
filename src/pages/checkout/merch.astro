@@ -13,10 +13,19 @@ const tr = useTranslations(lang);
 const session = await getSession(Astro.cookies);
 const authed = !!session;
 
-let cart: Cart = { orderId: null, lines: [], subtotal: 0, count: 0 };
+let cart: Cart = { cartGroup: null, orders: [], subtotal: 0, count: 0 };
 if (authed && session) {
   try {
-    cart = await getCart({ accessToken: session.accessToken, csrfToken: session.csrfToken, lang });
+    const cartGroup = Astro.cookies.get('egrem_cart_group')?.value ?? null;
+    cart = await getCart(
+      {
+        accessToken: session.accessToken,
+        csrfToken: session.csrfToken,
+        sessionCookie: session.sessionCookie,
+        lang,
+      },
+      cartGroup,
+    );
   } catch (e) {
     console.error('[checkout/merch] getCart failed:', e);
   }
@@ -37,7 +46,7 @@ const fmt = (v: number) => (v !== null ? formatPrecio(v, lang) : tr('tienda.prod
             {tr('nav.login')}
           </a>
         </div>
-      ) : cart.lines.length === 0 ? (
+      ) : cart.orders.length === 0 ? (
         <div class="empty-state flex flex-col items-center justify-center py-20 text-center">
           <p class="font-display text-body text-text-secondary mb-6">{tr('tienda.cart.empty')}</p>
           <a href="/tienda" class="bg-egrem-red text-white font-display font-bold uppercase px-6 py-3 rounded-2xl hover:bg-egrem-red-dark transition-colors no-underline">
@@ -46,28 +55,33 @@ const fmt = (v: number) => (v !== null ? formatPrecio(v, lang) : tr('tienda.prod
         </div>
       ) : (
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div class="lg:col-span-2">
-            <div class="border border-form-border rounded-2xl divide-y divide-egrem-gray-light">
-              {cart.lines.map((line) => (
-                <div class="flex gap-4 p-5">
-                  <div class="w-16 h-16 shrink-0 bg-egrem-gray-light border border-form-border rounded-lg overflow-hidden flex items-center justify-center">
-                    {line.imagen ? (
-                      <img src={line.imagen} alt={line.title} class="w-full h-full object-cover" />
-                    ) : (
-                      <span class="icon text-2xl text-egrem-gray/40">inventory_2</span>
-                    )}
-                  </div>
-                  <div class="flex-1">
-                    <h3 class="font-display font-bold uppercase text-egrem-black m-0">{line.title}</h3>
-                    <p class="font-display text-small text-text-secondary m-0">
-                      {[line.talla && `Talla: ${line.talla}`, line.color && `Color: ${line.color}`].filter(Boolean).join(' · ')}
-                      {' · '}{line.cantidad} {tr('tienda.cart.unidad')}
-                    </p>
-                  </div>
-                  <p class="font-display font-bold text-egrem-black">{fmt((line.precioUnitario ?? 0) * line.cantidad)}</p>
+          <div class="lg:col-span-2 space-y-8">
+            {cart.orders.map((order) => (
+              <div class="border border-form-border rounded-2xl p-5">
+                <h2 class="font-display font-bold text-h4 uppercase text-egrem-black mb-3">{order.storeLabel}</h2>
+                <div class="border border-form-border rounded-2xl divide-y divide-egrem-gray-light">
+                  {order.items.map((line, i) => (
+                    <div class="flex gap-4 p-5" data-id={line.itemId ?? `${order.orderId}-${i}`}>
+                      <div class="w-16 h-16 shrink-0 bg-egrem-gray-light border border-form-border rounded-lg overflow-hidden flex items-center justify-center">
+                        {line.imagen ? (
+                          <img src={line.imagen} alt={line.title} class="w-full h-full object-cover" />
+                        ) : (
+                          <span class="icon text-2xl text-egrem-gray/40">inventory_2</span>
+                        )}
+                      </div>
+                      <div class="flex-1">
+                        <h3 class="font-display font-bold uppercase text-egrem-black m-0">{line.title}</h3>
+                        <p class="font-display text-small text-text-secondary m-0">
+                          {[line.talla && `Talla: ${line.talla}`, line.color && `Color: ${line.color}`].filter(Boolean).join(' · ')}
+                          {' · '}{line.quantity} {tr('tienda.cart.unidad')}
+                        </p>
+                      </div>
+                      <p class="font-display font-bold text-egrem-black">{fmt((line.unitPrice ?? 0) * line.quantity)}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
 
           <aside class="lg:col-span-1">
@@ -79,19 +93,55 @@ const fmt = (v: number) => (v !== null ? formatPrecio(v, lang) : tr('tienda.prod
               <p class="font-display text-small text-egrem-gray mb-6">{tr('tienda.cart.envio_nota')}</p>
               <button
                 type="button"
-                disabled
-                class="block w-full text-center bg-egrem-gray text-white font-display text-[18px] font-bold uppercase py-3 rounded-2xl cursor-not-allowed opacity-70"
-                title="Próximamente"
+                id="checkout-btn"
+                data-cart-group={cart.cartGroup ?? ''}
+                class="block w-full text-center bg-egrem-red text-white font-display text-[18px] font-bold uppercase py-3 rounded-2xl hover:bg-egrem-red-dark transition-colors no-underline disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {tr('tienda.cart.proceder_pago')} · Próximamente
+                {tr('tienda.cart.proceder_pago')}
               </button>
-              <a href="/carrito" class="block text-center mt-4 font-display text-small uppercase text-egrem-gold hover:underline no-underline">
-                ← {tr('tienda.cart.ver_carrito')}
-              </a>
+              <p id="checkout-msg" class="font-display text-small text-center mt-3 hidden"></p>
             </div>
           </aside>
         </div>
       )
     }
   </main>
+
+  <script>
+    const btn = document.getElementById('checkout-btn') as HTMLButtonElement | null;
+    const msg = document.getElementById('checkout-msg') as HTMLElement | null;
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        const cartGroup = btn.getAttribute('data-cart-group');
+        if (!cartGroup) return;
+        btn.setAttribute('disabled', 'true');
+        if (msg) {
+          msg.className = 'font-display text-small text-center mt-3';
+          msg.textContent = 'Procesando…';
+        }
+        try {
+          const res = await fetch('/api/cart/checkout', { method: 'POST' });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok) {
+            if (msg) {
+              msg.className = 'font-display text-small text-center mt-3 text-[#16a34a]';
+              msg.textContent = '¡Pedido confirmado!';
+            }
+            window.dispatchEvent(new CustomEvent('cart:updated', { detail: { count: 0 } }));
+            setTimeout(() => {
+              window.location.href = '/tienda';
+            }, 1500);
+          } else {
+            throw new Error(data.message ?? 'checkout_error');
+          }
+        } catch (err) {
+          if (msg) {
+            msg.className = 'font-display text-small text-center mt-3 text-egrem-red';
+            msg.textContent = 'No pudimos procesar el pedido. Inténtalo de nuevo.';
+          }
+          btn.removeAttribute('disabled');
+        }
+      });
+    }
+  </script>
 </BaseLayout>

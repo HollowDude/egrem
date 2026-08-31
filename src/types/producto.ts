@@ -68,5 +68,5 @@ export interface ProductoDetalle {
   variaciones: ProductoVariacion[];
 }
 
-/** Alterna entre mock y fetch real sin tocar componentes (ver Fase 1). */
-export const MERCH_API_REAL = import.meta.env.MERCH_API_REAL === 'true';
+/** Tienda siempre en modo real (flag MERCH_API_REAL eliminado). */
+export const MERCH_API_REAL = true;

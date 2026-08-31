@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import type { Cart } from '@/lib/nodehive/carrito';
-import { setCantidad, quitar } from '@/lib/tienda/cartMutations';
+import type { Cart, CartLineItem, CartGroupOrder } from '@/lib/nodehive/carrito';
+import {
+  vaciarPedido,
+  incrementarLinea,
+  setCantidad,
+  quitar,
+} from '@/lib/tienda/cartMutations';
 import { formatPrecio } from '@/lib/moneda';
 
 interface Props {
@@ -18,6 +23,7 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
   const tr = useTranslations(lang);
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   // Cargar al abrir.
   useEffect(() => {
@@ -66,45 +72,78 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
       .catch(() => {});
   };
 
-  const onInc = async (id: string, current: number, stock?: number | null) => {
-    if (stock != null && current >= stock) return;
+  const onRemove = async (id: string) => {
+    const current = cart;
+    if (!current) return;
+    // Eliminación optimista (stopgap §1.4: vaciar pedido de una tienda completa).
+    const remaining = (current.orders ?? []).filter((o) => String(o.orderId) !== id);
+    const optimista: Cart = {
+      ...current,
+      orders: remaining,
+      count: remaining.reduce((a, o) => a + o.items.reduce((b, l) => b + l.quantity, 0), 0),
+      subtotal: remaining.reduce((a, o) => a + o.total, 0),
+    };
+    aplicar(optimista);
     try {
-      aplicar(await setCantidad(id, current + 1));
+      const server = await vaciarPedido(Number(id));
+      aplicar(server);
     } catch (e) {
       console.error(e);
       refrescar();
     }
   };
-  const onDec = async (id: string, current: number) => {
+
+  // Clave estable de línea para el estado de "pendiente" y el key del <li>.
+  const lineKey = (line: CartLineItem, order: CartGroupOrder) =>
+    line.itemId ?? `${order.orderId}:${line.sku}`;
+  // El decremento fino por línea solo es posible cuando la línea tiene un
+  // `item_id` estable (modo mock, o real una vez el backend lo exponga — §1.4).
+  const puedeModificarLinea = (line: CartLineItem) => !!line.itemId;
+  // El incremento requiere un `store_id` válido; las líneas sin tienda (p.ej.
+  // tienda "Main" oculta) no pueden añadirse y el botón + queda deshabilitado.
+  const tieneTienda = (line: CartLineItem, order: CartGroupOrder) =>
+    !!(line.storeId || order.storeId);
+
+  const cambiar = async (line: CartLineItem, order: CartGroupOrder, delta: number) => {
+    if (pendingId) return;
+    const nueva = line.quantity + delta;
+    const key = lineKey(line, order);
+    setPendingId(key);
     try {
-      aplicar(await setCantidad(id, Math.max(1, current - 1)));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-  const onRemove = async (id: string) => {
-    const current = cart;
-    if (!current) return;
-    // Eliminación optimista: refleja el cambio en la interfaz de inmediato,
-    // aunque Drupal tarde en devolver el carrito actualizado (o el refetch venga stale).
-    const remaining = (current.lines ?? []).filter((l) => (l.orderItemId ?? l.id) !== id);
-    const optimistic: Cart = {
-      ...current,
-      lines: remaining,
-      count: remaining.reduce((a, l) => a + l.cantidad, 0),
-      subtotal: remaining.reduce((a, l) => a + (l.precioUnitario ?? 0) * l.cantidad, 0),
-    };
-    aplicar(optimistic);
-    try {
-      const server = await quitar(id);
-      const stillThere = (server?.lines ?? []).some((l) => (l.orderItemId ?? l.id) === id);
-      if (!stillThere) aplicar(server);
-    } catch (e) {
-      console.error(e); // Drupal ya eliminó; el estado optimista es el correcto
+      if (delta > 0) {
+        // Sumar: vía add-to-cart (funciona en real y mock; el backend valida stock).
+        // Si la línea no tiene tienda, no disparar (evita 400 del servidor).
+        if (!tieneTienda(line, order)) {
+          refrescar();
+          return;
+        }
+        await incrementarLinea(line.sku, line.storeId ?? order.storeId ?? '', delta);
+        refrescar();
+      } else if (line.itemId) {
+        if (nueva < 1) {
+          // Llegó a 0 → borrar la línea del pedido (desaparece de Drupal y del slider).
+          const next = await quitar(line.itemId);
+          aplicar(next);
+        } else {
+          // Restar: PATCH a la línea (respeta stock por construcción: el máx es
+          // el stock de la tienda menos lo ya en el carrito).
+          const next = await setCantidad(line.itemId, nueva);
+          aplicar(next);
+        }
+      } else {
+        // Sin item_id en modo real: no existe primitiva de decremento; recargamos
+        // para no dejar el estado inconsistente (el botón − queda deshabilitado).
+        refrescar();
+      }
+    } catch {
+      // Cualquier error (p.ej. stock_insufficient del servidor) → estado autoritativo.
+      refrescar();
+    } finally {
+      setPendingId(null);
     }
   };
 
-  const lines = cart?.lines ?? [];
+  const orders = cart?.orders ?? [];
 
   return (
     <>
@@ -142,89 +181,109 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
         <div className="flex-1 overflow-y-auto px-6">
           {loading && !cart ? (
             <p className="font-display text-text-secondary text-center py-10">…</p>
-          ) : lines.length === 0 ? (
+          ) : orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <span className="icon text-5xl text-egrem-gray/40 mb-3">shopping_cart</span>
               <p className="font-display text-body text-text-secondary m-0">{tr('tienda.cart.empty')}</p>
             </div>
           ) : (
-            <ul className="divide-y divide-egrem-gray-light">
-              {lines.map((line) => {
-                const id = line.orderItemId ?? line.id;
-                const unit = line.precioUnitario ?? 0;
-                return (
-                  <li key={id} className="flex gap-3 py-4">
-                    <div className="w-16 h-16 shrink-0 bg-egrem-gray-light border border-form-border rounded-lg overflow-hidden flex items-center justify-center">
-                      {line.imagen ? (
-                        <img src={line.imagen} alt={line.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="icon text-2xl text-egrem-gray/40">inventory_2</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display font-bold text-[15px] uppercase text-egrem-black leading-tight m-0 truncate">
-                        {line.title}
-                      </p>
-                      <p className="font-display text-small text-text-secondary m-0">
-                        {[
-                          line.talla && `Talla: ${line.talla}`,
-                          line.color && `Color: ${line.color}`,
-                          line.edicion && `Edición: ${line.edicion}`,
-                          line.formato && `Formato: ${line.formato}`,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => onDec(id, line.cantidad)}
-                          aria-label="-"
-                          className="w-7 h-7 flex items-center justify-center rounded-md border border-form-border hover:border-egrem-red hover:text-egrem-red transition-colors"
-                        >
-                          <span className="icon" style={{ fontSize: 16 }}>remove</span>
-                        </button>
-                        <span className="font-display font-bold text-egrem-black w-6 text-center">
-                          {line.cantidad}
-                        </span>
-                         <button
-                           type="button"
-                           onClick={() => onInc(id, line.cantidad, line.stock)}
-                           aria-label="+"
-                           // TODO(stock-multitienda): `line.stock` es el de la TIENDA DEFAULT
-                           // (ver enrichCartLines en carrito.ts / plan §8), no el total agregado
-                           // multitienda de la ficha. Puede diferir de lo que vio el usuario.
-                           disabled={line.stock != null && line.cantidad >= line.stock}
-                          title={line.stock != null && line.cantidad >= line.stock ? tr('tienda.cart.max_stock') : undefined}
-                          className="w-7 h-7 flex items-center justify-center rounded-md border border-form-border hover:border-egrem-red hover:text-egrem-red transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-form-border disabled:hover:text-egrem-black"
-                        >
-                          <span className="icon" style={{ fontSize: 16 }}>add</span>
-                        </button>
-                      </div>
-                      {line.stock != null && line.cantidad >= line.stock && (
-                        <span className="font-display text-[11px] uppercase tracking-wide text-egrem-gray mt-1">
-                          {line.stock === 0
-                            ? tr('tienda.product.sin_stock')
-                            : tr('tienda.cart.max_stock')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end justify-between">
-                      <button
-                        type="button"
-                        onClick={() => onRemove(id)}
-                        className="font-display text-small uppercase text-egrem-gray hover:text-egrem-red transition-colors"
-                      >
-                        {tr('tienda.cart.quitar')}
-                      </button>
-                      <span className="font-display font-bold text-egrem-black">
-                        {fmt(unit * line.cantidad, lang)}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="space-y-6">
+              {orders.filter((o) => o.items.length > 0).map((order) => (
+                <div key={order.orderId}>
+                  {/* Separador minimalista por tienda */}
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-egrem-gray-light">
+                    <span className="font-display font-bold text-[13px] uppercase tracking-wider text-egrem-black">
+                      {order.storeLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onRemove(String(order.orderId))}
+                      className="font-display text-small uppercase text-egrem-gray hover:text-egrem-red transition-colors"
+                    >
+                      {tr('tienda.cart.vaciar_pedido_tienda')}
+                    </button>
+                  </div>
+                  <ul className="divide-y divide-egrem-gray-light">
+                     {order.items.map((line) => {
+                       const id = lineKey(line, order);
+                       const unit = line.unitPrice ?? 0;
+                       const puedeModificar = puedeModificarLinea(line);
+                       const enPendiente = pendingId === id;
+                       return (
+                         <li key={id} className="flex gap-3 py-4">
+                           <div className="w-16 h-16 shrink-0 bg-egrem-gray-light border border-form-border rounded-lg overflow-hidden flex items-center justify-center">
+                             {line.imagen ? (
+                               <img src={line.imagen} alt={line.title} className="w-full h-full object-cover" />
+                             ) : (
+                               <span className="icon text-2xl text-egrem-gray/40">inventory_2</span>
+                             )}
+                           </div>
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-start justify-between gap-2">
+                               <p className="font-display font-bold text-[15px] uppercase text-egrem-black leading-tight m-0 truncate">
+                                 {line.title}
+                               </p>
+                               <span className="shrink-0 font-display font-bold text-egrem-black">
+                                 {fmt(unit * line.quantity, lang)}
+                               </span>
+                             </div>
+                             <p className="font-display text-small text-text-secondary m-0">
+                               {[
+                                 line.talla && `Talla: ${line.talla}`,
+                                 line.color && `Color: ${line.color}`,
+                                 line.edicion && `Edición: ${line.edicion}`,
+                                 line.formato && `Formato: ${line.formato}`,
+                               ]
+                                 .filter(Boolean)
+                                 .join(' · ')}
+                             </p>
+                             <div className="mt-2 flex items-center gap-2">
+                               <div className="inline-flex items-stretch border-2 border-form-border rounded-xl h-9 overflow-hidden divide-x divide-form-border bg-white">
+                                 <button
+                                   type="button"
+                                    onClick={() => cambiar(line, order, -1)}
+                                    disabled={enPendiente || !puedeModificar}
+                                   aria-label={tr('tienda.cart.quitar_uno')}
+                                   title={puedeModificar ? undefined : tr('tienda.cart.quitar_no_disponible')}
+                                   className="w-9 h-full flex items-center justify-center text-egrem-black hover:bg-egrem-red hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-egrem-gold transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                 >
+                                   <span className="icon text-[18px]" aria-hidden="true">
+                                     remove
+                                   </span>
+                                 </button>
+                                 <span className="w-9 h-full flex items-center justify-center font-display font-bold text-[15px] tabular-nums text-egrem-black">
+                                   {line.quantity}
+                                 </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => cambiar(line, order, 1)}
+                                    disabled={enPendiente || !tieneTienda(line, order) || (line.stock != null && line.quantity >= line.stock)}
+                                    aria-label={tr('tienda.cart.agregar_uno')}
+                                    title={tieneTienda(line, order) ? undefined : tr('tienda.cart.quitar_no_disponible')}
+                                    className="w-9 h-full flex items-center justify-center text-egrem-black hover:bg-egrem-red hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-egrem-gold transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                  >
+                                   <span className="icon text-[18px]" aria-hidden="true">
+                                     add
+                                   </span>
+                                 </button>
+                               </div>
+                               {line.stock != null && line.quantity >= line.stock && (
+                                 <span className="font-display text-[11px] uppercase tracking-wide text-egrem-gray">
+                                   {tr('tienda.cart.max_stock_corto')}
+                                 </span>
+                               )}
+                             </div>
+                           </div>
+                         </li>
+                       );
+                     })}
+                  </ul>
+                  <p className="font-display text-small text-text-secondary text-right mt-1">
+                    {tr('tienda.cart.subtotal_tienda')}: {fmt(order.total, lang)}
+                  </p>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -236,13 +295,6 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
               {fmt(cart?.subtotal ?? 0, lang)}
             </span>
           </div>
-          <a
-            href="/carrito"
-            onClick={onClose}
-            className="block w-full text-center border border-egrem-red text-egrem-red font-display font-bold uppercase py-3 rounded-2xl hover:bg-egrem-red hover:text-white transition-colors no-underline"
-          >
-            {tr('tienda.cart.ver_carrito')}
-          </a>
           <a
             href="/checkout/merch"
             onClick={onClose}

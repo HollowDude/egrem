@@ -53,7 +53,7 @@ export { getRelatedItems, resolveRelated } from './related';
 
 // Utilities
 export { resolveFileUrl, normalizeDrupalUri } from './parsers';
-export { slugify, stripHtml, estimateReadingTime } from './helpers';
+export { slugify, stripHtml, estimateReadingTime, displayTag } from './helpers';
 
 // YouTube
 export {

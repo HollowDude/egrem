@@ -109,13 +109,53 @@ const facebookHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURICo
     }
   });
 
+  const showInstagramHint = () => {
+    const existing = document.getElementById('ig-share-hint');
+    if (existing) existing.remove();
+    const hint = document.createElement('div');
+    hint.id = 'ig-share-hint';
+    hint.setAttribute('role', 'status');
+    hint.setAttribute('aria-live', 'polite');
+    hint.textContent = 'Enlace copiado. Abre Instagram y pégalo en tu historia o publicación.';
+    hint.style.cssText =
+      'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1b1b1b;color:#fff;font-family:var(--font-display);font-size:13px;font-weight:700;padding:10px 16px;border-radius:9999px;box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:9999;max-width:calc(100vw - 2rem);text-align:center;opacity:0;transition:opacity 180ms ease;';
+    document.body.appendChild(hint);
+    requestAnimationFrame(() => (hint.style.opacity = '1'));
+    setTimeout(() => {
+      hint.style.opacity = '0';
+      setTimeout(() => hint.remove(), 180);
+    }, 3200);
+  };
+
   igBtn?.addEventListener('click', async () => {
+    // Instagram no tiene sharer web (facebook.com/sharer.php). La vía nativa es
+    // el Web Share Sheet (móvil) que sí lista Instagram si está instalada.
+    const shareData = { title: pageTitle, text: pageTitle, url: pageUrl };
+    const canNativeShare =
+      typeof navigator !== 'undefined' &&
+      typeof (navigator as unknown as { share?: unknown }).share === 'function';
+    if (canNativeShare) {
+      try {
+        // canShare es opcional en algunos navegadores
+        const canShareFn = (navigator as unknown as { canShare?: (d: unknown) => boolean }).canShare;
+        if (!canShareFn || canShareFn(shareData)) {
+          await (navigator as unknown as { share: (d: unknown) => Promise<void> }).share(shareData);
+          return;
+        }
+      } catch (e) {
+        const name = (e as Error)?.name;
+        if (name === 'AbortError') return;
+        // si falla, caemos al fallback de copiar
+      }
+    }
     try {
       await navigator.clipboard.writeText(pageUrl);
       showCopied(igBtn);
-      window.open('https://www.instagram.com/', '_blank', 'noopener');
+      showInstagramHint();
+      window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
     } catch {
-      // fallback
+      // último fallback: abre Instagram igualmente
+      window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
     }
   });
 

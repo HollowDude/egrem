@@ -17,6 +17,10 @@ export type TiendaDisponibilidad = 'stock' | 'preventa' | 'agotado';
 export interface TiendaInfo {
   id: string;
   label: string;
+  /** Resueltos por el backend (no hay que mapear ids de taxonomía). */
+  provincia?: string;
+  municipio?: string;
+  direccion?: string;
 }
 
 /** Resumen de una variación para el listado: suficiente para swatches + foto + precio. */

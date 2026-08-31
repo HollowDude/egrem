@@ -12,6 +12,8 @@ import type { Cart } from '@/lib/nodehive/carrito';
 type Listener = () => void;
 
 let cache: Map<string, number> | null = null;
+// Magnitudes por tienda: variationUuid -> (storeId -> cantidad).
+let cacheByStore: Map<string, Map<string, number>> | null = null;
 let loading = false;
 const listeners = new Set<Listener>();
 let wired = false;
@@ -23,12 +25,27 @@ async function refetch(): Promise<void> {
     const res = await fetch('/api/cart');
     const cart: Cart | null = res.ok ? ((await res.json()) as Cart) : null;
     const map = new Map<string, number>();
-    for (const l of cart?.lines ?? []) {
-      if (l.variationUuid) {
-        map.set(l.variationUuid, (map.get(l.variationUuid) ?? 0) + l.cantidad);
+    const byStore = new Map<string, Map<string, number>>();
+    // El carrito real de Drupal solo trae `sku` por línea (sin `variationUuid`), así que
+    // indexamos por `sku` (y también por `variationUuid` cuando exista, p. ej. mock).
+    const indexar = (key: string | null | undefined, cant: number, sid?: string | null) => {
+      if (!key) return;
+      map.set(key, (map.get(key) ?? 0) + cant);
+      if (sid) {
+        if (!byStore.has(key)) byStore.set(key, new Map());
+        const m = byStore.get(key)!;
+        m.set(sid, (m.get(sid) ?? 0) + cant);
+      }
+    };
+    for (const o of cart?.orders ?? []) {
+      const sid = o.storeId;
+      for (const l of o.items) {
+        indexar(l.sku, l.quantity, sid);
+        indexar(l.variationUuid, l.quantity, sid);
       }
     }
     cache = map;
+    cacheByStore = byStore;
     listeners.forEach((fn) => fn());
   } catch {
     /* sin conexión: dejamos el cache anterior */
@@ -45,9 +62,15 @@ function ensureWired(): void {
   window.addEventListener('cart:removed', refetch);
 }
 
-export function getCartQty(variationUuid?: string): number {
+export function getCartQty(variationUuid?: string | null): number {
   if (!variationUuid) return 0;
   return cache?.get(variationUuid) ?? 0;
+}
+
+/** Cantidad de una variación que ya está en el carrito para una tienda concreta. */
+export function getCartQtyForStore(variationUuid?: string | null, storeId?: string | null): number {
+  if (!variationUuid || !storeId) return 0;
+  return cacheByStore?.get(variationUuid)?.get(storeId) ?? 0;
 }
 
 export function subscribeCartQty(fn: Listener): () => void {

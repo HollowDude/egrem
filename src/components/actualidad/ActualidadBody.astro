@@ -2,6 +2,7 @@
 import Badge from '@/components/ui/Badge.astro';
 import type { NhActualidadTag } from '@/lib/nodehive';
 import { resolveInlineImages } from '@/lib/nodehive';
+import { displayTag } from '@/lib/nodehive/helpers';
 
 interface Props {
   body: string;
@@ -30,9 +31,9 @@ const resolvedBody = resolveInlineImages(
     <div class="flex flex-wrap gap-2 mt-10 pt-6 border-t border-black/10">
       {tags.map((tag) =>
         hashtagStyle ? (
-          <Badge variant="outline">{'#' + tag.label}</Badge>
+          <Badge variant="outline">{'#' + displayTag(tag.label)}</Badge>
         ) : (
-          <Badge variant="outline">{tag.label}</Badge>
+          <Badge variant="outline">{displayTag(tag.label)}</Badge>
         ),
       )}
     </div>

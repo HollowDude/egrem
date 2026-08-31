@@ -9,18 +9,21 @@ import { fetchEventosListado } from '@/lib/nodehive';
 import { entradaToProducto } from '@/lib/tienda/entradas';
 import { fetchProductosMerchDetalle } from '@/lib/nodehive/comercio';
 import { productoATiendaProducto } from '@/lib/tienda/productoAdapters';
-import { MERCH_API_REAL } from '@/types/producto';
 import type { TiendaProducto } from '@/types/tienda';
 import { useTranslations } from '@/i18n/translations';
+import UbicacionPopup from '@/components/tienda/UbicacionPopup';
+import {
+  MUNICIPIOS_COOKIE,
+  parseMunicipiosCookie,
+  resolverTiendasPermitidas,
+} from '@/lib/tienda/ubicacion';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
 const entradas = (await fetchEventosListado(lang)).map(entradaToProducto);
 const merch = await fetchProductosMerchDetalle(lang);
-const merchandising: TiendaProducto[] = MERCH_API_REAL
-  ? merch.productos.map(productoATiendaProducto)
-  : [];
+const merchandising: TiendaProducto[] = merch.productos.map(productoATiendaProducto);
 const musica: TiendaProducto[] = [];
 const productos: TiendaProducto[] = [...entradas, ...merchandising, ...musica];
 
@@ -44,6 +47,10 @@ const facetFormatos = ([
 // aunque aún no tengan stock en ningún producto). Se ocultan las no selectables
 // ("Main") en el propio stock.ts.
 const facetTiendas = merch.tiendas;
+
+// Preferencia de zona del usuario (cookie). Con selección vacía no se filtra.
+const seleccionMunicipios = parseMunicipiosCookie(Astro.cookies.get(MUNICIPIOS_COOKIE)?.value);
+const tiendasPermitidas = resolverTiendasPermitidas(seleccionMunicipios, facetTiendas);
 ---
 
 <BaseLayout title={tr('tienda.page_title')} description={tr('tienda.page_description')}>
@@ -69,31 +76,51 @@ const facetTiendas = merch.tiendas;
         colores={facetColores}
         ediciones={facetEdiciones}
         formatos={facetFormatos}
-        tiendas={facetTiendas}
       />
 
       <!-- Grid de productos -->
       <div class="flex-grow">
-        <div class="flex justify-between items-center mb-6 pb-4 border-b border-egrem-gray-light">
-          <span class="font-display text-text-secondary" data-product-count>
-            {tr('tienda.list.showing', { count: productos.length })}
-          </span>
+        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between sm:items-center mb-6 pb-4 border-b border-egrem-gray-light">
           <div class="flex items-center gap-3">
-            <span class="font-display text-text-secondary">{tr('tienda.filter.orden')}:</span>
-            <select
-              data-tienda-sort
-              class="bg-white border border-form-border text-egrem-black font-display py-1 pl-2 pr-8 rounded-xl focus:border-egrem-red focus:ring-1 focus:ring-egrem-red outline-none"
+            <button
+              type="button"
+              id="tienda-filters-btn"
+              class="lg:hidden inline-flex items-center gap-2 h-11 px-4 rounded-2xl border-2 border-egrem-red text-egrem-red font-display font-bold uppercase tracking-wide text-sm hover:bg-egrem-red hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-egrem-gold transition-colors"
+              aria-expanded="false"
+              aria-controls="tienda-filters"
             >
-              <option value="recomendados">{tr('tienda.sort.recomendados')}</option>
-              <option value="novedades">{tr('tienda.sort.novedades')}</option>
-              <option value="precio-asc">{tr('tienda.filter.orden.precio-asc')}</option>
-              <option value="precio-desc">{tr('tienda.filter.orden.precio-desc')}</option>
-            </select>
+              <span class="icon text-[18px]" aria-hidden="true">tune</span>
+              {tr('tienda.filter.title')}
+            </button>
+            <span class="font-display text-text-secondary" data-product-count>
+              {tr('tienda.list.showing', { count: productos.length })}
+            </span>
+          </div>
+          <div class="flex items-center gap-3 min-w-0 sm:ml-auto">
+            <UbicacionPopup
+              tiendas={facetTiendas}
+              seleccionInicial={seleccionMunicipios}
+              lang={lang}
+              client:load
+            />
+            <div class="flex items-center gap-3 flex-none">
+              <span class="font-display text-text-secondary">{tr('tienda.filter.orden')}:</span>
+              <select
+                data-tienda-sort
+                class="bg-white border border-form-border text-egrem-black font-display py-1 pl-2 pr-8 rounded-xl focus:border-egrem-red focus:ring-1 focus:ring-egrem-red outline-none"
+              >
+                <option value="recomendados">{tr('tienda.sort.recomendados')}</option>
+                <option value="novedades">{tr('tienda.sort.novedades')}</option>
+                <option value="precio-asc">{tr('tienda.filter.orden.precio-asc')}</option>
+                <option value="precio-desc">{tr('tienda.filter.orden.precio-desc')}</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <div
           id="product-grid"
+          data-tiendas-permitidas={JSON.stringify([...tiendasPermitidas])}
           class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6 mb-12"
         >
           {
@@ -118,8 +145,90 @@ const facetTiendas = merch.tiendas;
     </div>
   </main>
 
+  <div class="tienda-filters-backdrop" data-filters-backdrop aria-hidden="true"></div>
+
+  <style>
+    .tienda-filters-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 55;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .tienda-filters-backdrop.tienda-filters-backdrop--open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (min-width: 1024px) {
+      .tienda-filters-backdrop {
+        display: none;
+      }
+    }
+  </style>
+
   <script>
-    const grid = document.getElementById('product-grid');
+    // ── Filtros: drawer deslizante accesible (botón "Filtros") ──
+    const filtrosBtn = document.getElementById('tienda-filters-btn');
+    const filtrosPanel = document.getElementById('tienda-filters');
+    const filtrosBackdrop = document.querySelector('[data-filters-backdrop]');
+    const filtrosClose = filtrosPanel?.querySelector('[data-filters-close]') ?? null;
+
+    const setFiltrosOpen = (open: boolean) => {
+      if (!filtrosPanel || !filtrosBtn) return;
+      filtrosPanel.classList.toggle('tienda-filters--open', open);
+      filtrosBackdrop?.classList.toggle('tienda-filters-backdrop--open', open);
+      filtrosBtn.setAttribute('aria-expanded', String(open));
+      document.body.style.overflow = open ? 'hidden' : '';
+      const focusTarget = (filtrosClose ?? filtrosPanel) as HTMLElement;
+      if (open) focusTarget.focus();
+      else filtrosBtn.focus();
+    };
+
+    filtrosBtn?.addEventListener('click', () =>
+      setFiltrosOpen(!(filtrosPanel?.classList.contains('tienda-filters--open') ?? false)),
+    );
+    filtrosClose?.addEventListener('click', () => setFiltrosOpen(false));
+    filtrosBackdrop?.addEventListener('click', () => setFiltrosOpen(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && filtrosPanel?.classList.contains('tienda-filters--open')) {
+        setFiltrosOpen(false);
+      }
+    });
+    // Trampa de foco dentro del drawer.
+    filtrosPanel?.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const f = Array.from(
+        filtrosPanel.querySelectorAll(
+          'a[href], button:not([disabled]), input, select, [tabindex]:not([tabindex="-1"])',
+        ),
+      ) as HTMLElement[];
+      if (!f.length) return;
+      const first = f[0];
+      const last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+    // Si pasamos a escritorio con el drawer abierto, lo cerramos sin robar foco.
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024 && filtrosPanel?.classList.contains('tienda-filters--open')) {
+        filtrosPanel.classList.remove('tienda-filters--open');
+        filtrosBackdrop?.classList.remove('tienda-filters-backdrop--open');
+        filtrosBtn?.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+    });
+
+    const grid = document.getElementById('product-grid') as HTMLElement | null;
+    const tiendasPermitidasInicial: string[] = grid
+      ? JSON.parse(grid.dataset.tiendasPermitidas || '[]')
+      : [];
     const countEl = document.querySelector('[data-product-count]');
     const pagEl = document.getElementById('tienda-pagination');
     const emptyEl = document.getElementById('tienda-empty');
@@ -133,12 +242,14 @@ const facetTiendas = merch.tiendas;
       const state = {
         chip: '',
         maxPrice: 200,
-        avail: new Set<string>(),
-        tallas: new Set<string>(),
-        colores: new Set<string>(),
-        ediciones: new Set<string>(),
-        formatos: new Set<string>(),
-        tiendas: new Set<string>(),
+        // avail: new Set() as Set<string>, // disponibilidad comentado
+        tallas: new Set() as Set<string>,
+        colores: new Set() as Set<string>,
+        ediciones: new Set() as Set<string>,
+        formatos: new Set() as Set<string>,
+        // Filtro geográfico: ids de tienda permitidos según la cookie de zona.
+        // Vacío = sin filtro (se muestra todo). Lo rellena el popup vía evento.
+        tiendas: new Set(tiendasPermitidasInicial) as Set<string>,
         query: '',
         sort: 'recomendados',
         page: 1,
@@ -155,7 +266,9 @@ const facetTiendas = merch.tiendas;
         const price = c.dataset.price || '';
         if (price !== '' && parseFloat(price) > state.maxPrice) return false;
 
+        /* disponibilidad comentado
         if (state.avail.size > 0 && !state.avail.has(c.dataset.availability || '')) return false;
+        */
 
         if (state.tallas.size > 0) {
           const ts = (c.dataset.tallas || '').split(',').filter(Boolean);
@@ -223,13 +336,23 @@ const facetTiendas = merch.tiendas;
         emptyEl.classList.toggle('hidden', total !== 0);
         grid.classList.toggle('hidden', total === 0);
 
-        // Filtros dinámicos: cada grupo solo se muestra en su categoría (o "Todos").
-        const chipSel = state.chip;
+        // Filtros dinámicos: solo filtros del tipo seleccionado (o todos si "Todos").
+        // merch -> merchandising (talla+color), libros -> libro (edicion), discos -> disco (formato),
+        // instrumentos/entradas no tienen filtros dinámicos.
+        const chipToGroups: Record<string, string[]> = {
+          '': ['merchandising', 'libro', 'disco'],
+          merchandising: ['merchandising'],
+          discos: ['disco'],
+          libros: ['libro'],
+          instrumentos: [],
+          entradas: [],
+        };
+        const allowedGroups = chipToGroups[state.chip] ?? [];
         (
           sidebar.querySelectorAll('[data-tienda-filter-group]') as unknown as HTMLElement[]
         ).forEach((g) => {
           const cat = g.dataset.tiendaFilterGroup || '';
-          const grupoOk = chipSel === '' || chipSel === cat;
+          const grupoOk = allowedGroups.includes(cat);
           g.classList.toggle('hidden', !grupoOk);
         });
 
@@ -331,7 +454,8 @@ const facetTiendas = merch.tiendas;
         });
       }
 
-      // ── Sidebar: disponibilidad ──
+      // ── Sidebar: disponibilidad ── (comentado)
+      /*
       (sidebar.querySelectorAll('[data-tienda-avail]') as unknown as HTMLInputElement[]).forEach(
         (cb) => {
           cb.addEventListener('change', () => {
@@ -342,18 +466,15 @@ const facetTiendas = merch.tiendas;
           });
         },
       );
+      */
 
-      // ── Sidebar: tienda (stock multitienda) ──
-      (sidebar.querySelectorAll('[data-tienda-store]') as unknown as HTMLInputElement[]).forEach(
-        (cb) => {
-          cb.addEventListener('change', () => {
-            if (cb.checked) state.tiendas.add(cb.value);
-            else state.tiendas.delete(cb.value);
-            state.page = 1;
-            render();
-          });
-        },
-      );
+      // ── Filtro geográfico: lo controla el popup UbicacionPopup vía evento. ──
+      window.addEventListener('ubicacion:cambiada', (e: Event) => {
+        const detail = (e as CustomEvent).detail as { tiendasPermitidas?: string[] };
+        state.tiendas = new Set(detail.tiendasPermitidas ?? []);
+        state.page = 1;
+        render();
+      });
 
       // ── Sidebar: chips de filtro (talla/color/edición/formato) ──
       const setParaDim = (dim: string): Set<string> => {
@@ -381,7 +502,7 @@ const facetTiendas = merch.tiendas;
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
           state.chip = '';
-          state.avail.clear();
+          // state.avail.clear(); // disponibilidad comentado
           state.tallas.clear();
           state.colores.clear();
           state.ediciones.clear();
@@ -454,12 +575,13 @@ const facetTiendas = merch.tiendas;
       const img = card.querySelector('img');
       if (img && v?.imagen) img.src = v.imagen as string;
       // Mover el estado activo (borde + escala + anillo rojo) al dot clicado.
-      card.querySelectorAll<HTMLElement>('[data-color-dot]').forEach((d) => {
-        const active = d === dot;
-        d.classList.toggle('border-egrem-red', active);
-        d.classList.toggle('border-white/70', !active);
-        d.classList.toggle('scale-110', active);
-        d.style.boxShadow = active
+      card.querySelectorAll('[data-color-dot]').forEach((d) => {
+        const el = d as HTMLElement;
+        const active = el === dot;
+        el.classList.toggle('border-egrem-red', active);
+        el.classList.toggle('border-white/70', !active);
+        el.classList.toggle('scale-110', active);
+        el.style.boxShadow = active
           ? '0 0 0 2px white, 0 0 0 3.5px var(--color-egrem-red)'
           : '';
       });

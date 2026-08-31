@@ -5,6 +5,8 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import ProductoFicha from '@/components/tienda/ProductoFicha.tsx';
 import TiendaProductCard from '@/components/tienda/TiendaProductCard.astro';
 import { fetchProductosMerchDetalle } from '@/lib/nodehive/comercio';
+import { fetchTiendas } from '@/lib/nodehive/tiendas';
+import { parseMunicipiosCookie, resolverTiendasPermitidas } from '@/lib/tienda/ubicacion';
 import { productoATiendaProducto } from '@/lib/tienda/productoAdapters';
 import { useTranslations } from '@/i18n/translations';
 
@@ -35,6 +37,13 @@ const relacionados = [
   ...resto.filter((p) => p.tipo !== producto.tipo).slice(0, Math.max(0, 4 - mismaCategoria.length)),
 ].map(productoATiendaProducto);
 
+// Catálogo de tiendas (para el selector de tienda por zona) y zona guardada en cookie.
+const tiendasCatalogo = await fetchTiendas(lang);
+const zonaGuardada = parseMunicipiosCookie(Astro.cookies.get('egrem_municipios')?.value);
+// Tiendas permitidas por la zona guardada: las tarjetas relacionadas necesitan este
+// atributo para aplicar el filtro de zona y el modal de confirmación fuera de zona.
+const tiendasPermitidasRel = resolverTiendasPermitidas(zonaGuardada, tiendasCatalogo);
+
 const pageTitle = `${producto.titulo} | EGREM`;
 ---
 
@@ -55,7 +64,14 @@ const pageTitle = `${producto.titulo} | EGREM`;
 
     {/* Grid principal: ProductoFicha posee galería + selector (un solo island). */}
     <div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-24 mb-24 md:items-start">
-      <ProductoFicha producto={producto} lang={lang} seleccionInicial={seleccionInicial} client:load />
+      <ProductoFicha
+        producto={producto}
+        lang={lang}
+        seleccionInicial={seleccionInicial}
+        tiendasCatalogo={tiendasCatalogo}
+        tiendaSeleccion={zonaGuardada}
+        client:load
+      />
     </div>
 
     {/* Productos Relacionados */}
@@ -63,7 +79,10 @@ const pageTitle = `${producto.titulo} | EGREM`;
       <div class="border-b-2 border-egrem-gold inline-flex pb-2 mb-8">
         <h2 class="text-h3 uppercase m-0">{tr('tienda.product.relacionados')}</h2>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 lg:gap-6">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 lg:gap-6"
+        data-tiendas-permitidas={JSON.stringify([...tiendasPermitidasRel])}
+      >
         {relacionados.map((p) => (
           <TiendaProductCard producto={p} lang={lang} mostrarCta={true} />
         ))}

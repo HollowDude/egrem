@@ -39,3 +39,15 @@ export function slugify(name: string): string {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '');
 }
+
+/**
+ * Etiqueta mostrada para taxonomías/tipo_de_evento.
+ * Drupal sigue enviando "Local" (slug "local"), pero en el front
+ * se muestra "Locación" (redefinición solicitada).
+ * Añade aquí otros mapeos si aparecen (ej. "local" -> "Locación").
+ */
+export function displayTag(label: string): string {
+  if (!label) return label;
+  if (label.trim().toLowerCase() === 'local') return 'Locación';
+  return label;
+}

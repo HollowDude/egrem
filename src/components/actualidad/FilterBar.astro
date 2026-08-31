@@ -1,4 +1,6 @@
 ---
+import { displayTag } from '@/lib/nodehive/helpers';
+
 interface Props {
   tags: { slug: string; label: string }[];
   activeTag: string;
@@ -30,7 +32,7 @@ const { tags, activeTag } = Astro.props;
             : 'bg-transparent text-egrem-black border-egrem-gray/30 hover:border-egrem-red hover:text-egrem-red',
         ]}
       >
-        {tag.label}
+        {displayTag(tag.label)}
       </a>
     ))
   }

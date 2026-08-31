@@ -100,6 +100,7 @@ async function doLoginAfterPasswordSet(
           csrfToken: (json.csrf_token as string) ?? '',
           logoutToken: (json.logout_token as string) ?? '',
           accessToken: (json.access_token as string) ?? '',
+          sessionCookie: loginRes.headers.get('set-cookie') ?? '',
         };
       }
     }

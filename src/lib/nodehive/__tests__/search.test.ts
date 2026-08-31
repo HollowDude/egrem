@@ -222,6 +222,8 @@ describe('searchContent', () => {
   });
 
   it('aggregates results from all sources', async () => {
+    // 5 primeros mocks = productos (5 bundles) → vacíos para este test
+    for (let i = 0; i < 5; i++) mockJsonApiFetch.mockResolvedValueOnce({ data: [], included: [] });
     mockJsonApiFetch
       .mockResolvedValueOnce({ data: [makeNode('a1', 1, 'Album Test', 'album')], included: [] })
       .mockResolvedValueOnce({ data: [makeNode('ar1', 2, 'Artist Test', 'artista')] })
@@ -250,6 +252,7 @@ describe('searchContent', () => {
   });
 
   it('handles partial source failures gracefully', async () => {
+    for (let i = 0; i < 5; i++) mockJsonApiFetch.mockRejectedValueOnce(new Error('Productos down'));
     mockJsonApiFetch
       .mockRejectedValueOnce(new Error('Albums down'))
       .mockResolvedValueOnce({ data: [makeNode('ar1', 2, 'Artist Test', 'artista')] })

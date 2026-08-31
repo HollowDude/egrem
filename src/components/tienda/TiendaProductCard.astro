@@ -30,19 +30,8 @@ interface Props {
 const { producto, lang = 'es', ctaLabel, mostrarCta = true } = Astro.props;
 const tr = useTranslations(lang);
 
-const precio =
-  producto.precio !== null ? `$${producto.precio.toFixed(2)}` : tr('tienda.product.consultar');
 const esNovedad = producto.badge === 'Novedad' || producto.badge === 'Oferta';
 const detailHref = producto.href ?? '';
-
-const ediciones =
-  producto.variaciones
-    ? [...new Set(producto.variaciones.map((v) => v.edicion).filter((x): x is string => !!x))]
-    : [];
-const formatos =
-  producto.variaciones
-    ? [...new Set(producto.variaciones.map((v) => v.formato).filter((x): x is string => !!x))]
-    : [];
 
 const esCompra = !!producto.catalogo && producto.catalogo.length > 0;
 const requeridas = esCompra ? dimensionesRequeridas(producto.tipo as TipoArticulo) : [];
@@ -52,6 +41,22 @@ const primeraDisp = catalogo.find((v) => v.disponible) ?? null;
 const directo = esCompra && hayDisp && (catalogo.length === 1 || requeridas.length === 0) && !!primeraDisp;
 const necesitaPopover = esCompra && hayDisp && !directo;
 const agotado = esCompra && !hayDisp;
+
+// Instrumento: enumerar hasta 4 variaciones para preview rápida (material/garantía)
+const instrumentoVars =
+  producto.tipo === 'instrumento' && catalogo.length > 1 ? catalogo.slice(0, 4) : [];
+const instrumentoDefault = instrumentoVars.find((v) => v.disponible) ?? instrumentoVars[0] ?? null;
+
+const ediciones = [...new Set(catalogo.map((v) => v.edicion).filter((x): x is string => !!x))];
+const formatos = [...new Set(catalogo.map((v) => v.formato).filter((x): x is string => !!x))];
+
+const _precioBase =
+  producto.tipo === 'instrumento' && instrumentoDefault?.precio != null
+    ? instrumentoDefault.precio
+    : (producto.tipo === 'libro' || producto.tipo === 'disco') && primeraDisp?.precio != null
+      ? primeraDisp.precio
+      : producto.precio;
+const precio = _precioBase !== null ? `$${_precioBase.toFixed(2)}` : tr('tienda.product.consultar');
 
 const dimLabel: Record<string, string> = {
   talla: tr('tienda.product.talla'),
@@ -114,6 +119,7 @@ const dimsAttr = requeridas.join(',');
   data-tipo={producto.tipo}
   data-dims={dimsAttr}
   data-titulo={producto.titulo}
+  data-directo={directo ? '1' : ''}
 >
   <div class="relative aspect-square overflow-hidden bg-egrem-gray-light">
     {
@@ -186,82 +192,205 @@ const dimsAttr = requeridas.join(',');
       )
     }
     {
-      ediciones.length > 0 && (
+      producto.tipo === 'libro' && ediciones.length > 1 ? (
+        <div class="relative z-20 mb-3" data-variant-switcher="edicion">
+          <p class="font-display text-[10px] font-bold uppercase tracking-widest text-text-secondary mb-1.5">
+            {tr('tienda.product.edicion')}
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            {ediciones.map((e) => {
+              const disp = catalogo.some((v) => v.disponible && v.edicion === e);
+              const isActive = primeraDisp?.edicion === e;
+              const vImg = catalogo.find((v) => v.edicion === e);
+              const img = vImg?.imagenVarianteUrl ?? (vImg as unknown as { imagen?: string })?.imagen ?? '';
+              return (
+                <button
+                  type="button"
+                  data-variant-chip
+                  data-variant-type="edicion"
+                  data-variant-val={e}
+                  data-img={img}
+                  disabled={!disp}
+                  aria-pressed={isActive ? 'true' : 'false'}
+                  title={disp ? e : `${e} — ${tr('tienda.product.sin_stock')}`}
+                  class={`min-h-[28px] px-3 rounded-full border text-[11px] font-display font-bold uppercase tracking-wide transition-all ${isActive ? 'bg-egrem-black text-white border-egrem-black shadow-sm' : 'bg-white text-text-secondary border-form-border hover:border-egrem-red hover:text-egrem-red'} ${!disp ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {e}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : ediciones.length > 0 ? (
         <p class="font-display text-[11px] uppercase tracking-wide text-text-secondary mb-3">
           {tr('tienda.product.edicion')}: {ediciones.join(' · ')}
         </p>
-      )
+      ) : null
     }
     {
-      formatos.length > 0 && (
+      producto.tipo === 'disco' && formatos.length > 1 ? (
+        <div class="relative z-20 mb-3" data-variant-switcher="formato">
+          <p class="font-display text-[10px] font-bold uppercase tracking-widest text-text-secondary mb-1.5">
+            {tr('tienda.product.formato')}
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            {formatos.map((f) => {
+              const disp = catalogo.some((v) => v.disponible && v.formato === f);
+              const isActive = primeraDisp?.formato === f;
+              const vImg = catalogo.find((v) => v.formato === f);
+              const img = vImg?.imagenVarianteUrl ?? (vImg as unknown as { imagen?: string })?.imagen ?? '';
+              return (
+                <button
+                  type="button"
+                  data-variant-chip
+                  data-variant-type="formato"
+                  data-variant-val={f}
+                  data-img={img}
+                  disabled={!disp}
+                  aria-pressed={isActive ? 'true' : 'false'}
+                  title={disp ? f : `${f} — ${tr('tienda.product.sin_stock')}`}
+                  class={`min-h-[28px] px-3 rounded-full border text-[11px] font-display font-bold uppercase tracking-wide transition-all ${isActive ? 'bg-egrem-black text-white border-egrem-black shadow-sm' : 'bg-white text-text-secondary border-form-border hover:border-egrem-red hover:text-egrem-red'} ${!disp ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {f}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : formatos.length > 0 ? (
         <p class="font-display text-[11px] uppercase tracking-wide text-text-secondary mb-3">
           {tr('tienda.product.formato')}: {formatos.join(' · ')}
         </p>
+      ) : null
+    }
+    {
+      producto.tipo === 'instrumento' && instrumentoVars.length > 0 && (
+        <div class="relative z-20 mb-3 space-y-2" data-variant-switcher="instrumento">
+          <p class="font-display text-[10px] font-bold uppercase tracking-widest text-text-secondary">
+            Variantes · {instrumentoVars.length}
+          </p>
+          <div class="grid grid-cols-2 gap-1.5">
+            {instrumentoVars.map((v, i) => {
+              const isActive = instrumentoDefault?.uuid === v.uuid;
+              const label = v.materiales ? v.materiales.split(',')[0].trim().slice(0, 14) : `Var. ${i + 1}`;
+              const shortLabel = label.length > 14 ? label.slice(0, 12) + '…' : label;
+              return (
+                <button
+                  type="button"
+                  data-variant-chip
+                  data-variant-type="instrumento"
+                  data-variant-idx={String(i)}
+                  data-variant-uuid={v.uuid}
+                  data-img={v.imagenVarianteUrl ?? (v as unknown as { imagen?: string })?.imagen ?? ''}
+                  disabled={!v.disponible}
+                  aria-pressed={isActive ? 'true' : 'false'}
+                  title={v.disponible ? `${v.materiales ?? ''} · ${v.garantia ?? ''}`.trim() : tr('tienda.product.sin_stock')}
+                  class={`group/instr flex flex-col items-start gap-0.5 rounded-xl border px-2.5 py-2 text-left transition-all ${isActive ? 'bg-egrem-black text-white border-egrem-black shadow-md' : 'bg-white text-egrem-black border-form-border hover:border-egrem-red'} ${!v.disponible ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span class="font-display text-[11px] font-bold leading-none truncate w-full">{shortLabel}</span>
+                  <span class={`font-display text-[10px] leading-none ${isActive ? 'text-white/70' : 'text-text-secondary'}`}>
+                    {v.precio != null ? `$${v.precio.toFixed(0)}` : ''}
+                    {v.disponible ? '' : ' · Agotado'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div
+            data-instrumento-meta
+            class="rounded-xl bg-egrem-gray-light border border-black/5 px-3 py-2.5 transition-all duration-200"
+          >
+            <p class="font-display text-[11px] font-bold uppercase tracking-widest text-text-secondary mb-1 flex items-center gap-1">
+              <span class="icon text-[12px] text-egrem-gold">build</span> Detalle
+            </p>
+            <p class="instrumento-meta-text font-display text-[12px] leading-snug text-egrem-black line-clamp-2">
+              {instrumentoDefault?.materiales ? (
+                <>
+                  <span class="font-bold">Material:</span> {instrumentoDefault.materiales}
+                  {instrumentoDefault.garantia && (
+                    <>
+                      {' '}
+                      <span class="text-text-secondary">·</span> <span class="font-bold">Garantía:</span> {instrumentoDefault.garantia}
+                    </>
+                  )}
+                </>
+              ) : (
+                <span class="text-text-secondary">Selecciona una variante</span>
+              )}
+            </p>
+          </div>
+        </div>
       )
     }
-    <div class="mt-auto flex items-center justify-between pt-2">
-      <span class="font-display text-[22px] text-egrem-red font-bold" data-product-price>{precio}</span>
-      {
-        esCompra ? (
-          agotado ? (
+    <div class="mt-auto pt-3">
+      <div class="flex items-center justify-between gap-2">
+        <span class="font-display text-[22px] text-egrem-red font-bold leading-none" data-product-price>{precio}</span>
+        {
+          esCompra ? (
+            agotado ? (
+              <button
+                type="button"
+                disabled
+                aria-label={tr('tienda.product.sin_stock')}
+                title={tr('tienda.product.sin_stock')}
+                class="tienda-card__cta tienda-card__cta--oos"
+              >
+                <span class="icon">block</span>
+              </button>
+            ) : necesitaPopover ? (
+              <button
+                type="button"
+                data-quickbuy-toggle
+                data-oos-label={tr('tienda.product.sin_stock')}
+                data-error-label={tr('tienda.product.error_breve')}
+                data-added-label={tr('tienda.product.agregado')}
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label={tr('tienda.quickbuy.anadir')}
+                title={tr('tienda.quickbuy.anadir')}
+                class="tienda-card__cta"
+              >
+                <span class="icon">add_shopping_cart</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                data-quickbuy-direct
+                data-oos-label={tr('tienda.product.sin_stock')}
+                data-error-label={tr('tienda.product.error_breve')}
+                data-added-label={tr('tienda.product.agregado')}
+                data-variacion={primeraDisp?.uuid ?? ''}
+                data-sku={primeraDisp?.sku ?? ''}
+                data-bundle={producto.tipo}
+                data-titulo={producto.titulo}
+                aria-label={tr('tienda.quickbuy.anadir')}
+                title={tr('tienda.quickbuy.anadir')}
+                class="tienda-card__cta"
+              >
+                <span class="icon">add_shopping_cart</span>
+              </button>
+            )
+          ) : mostrarCta ? (
             <button
               type="button"
-              disabled
-              aria-label={tr('tienda.product.sin_stock')}
-              title={tr('tienda.product.sin_stock')}
-              class="relative z-20 w-12 h-12 rounded-full bg-egrem-gray text-white flex items-center justify-center cursor-not-allowed opacity-70"
+              data-add-to-cart
+              data-product-id={producto.id}
+              data-product-title={producto.titulo}
+              aria-label={ctaLabel ?? tr('tienda.list.buy')}
+              title={ctaLabel ?? tr('tienda.list.buy')}
+              class="tienda-card__cta"
             >
-              <span class="icon text-[20px]">block</span>
+              <span class="icon">add_shopping_cart</span>
             </button>
-          ) : necesitaPopover ? (
-            <button
-              type="button"
-              data-quickbuy-toggle
-              data-oos-label={tr('tienda.product.sin_stock')}
-              data-error-label={tr('tienda.product.error_breve')}
-              aria-haspopup="true"
-              aria-expanded="false"
-              aria-label={tr('tienda.quickbuy.anadir')}
-              title={tr('tienda.quickbuy.anadir')}
-              class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
-            >
-              <span class="icon text-[22px]">add_shopping_cart</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              data-quickbuy-direct
-              data-oos-label={tr('tienda.product.sin_stock')}
-              data-error-label={tr('tienda.product.error_breve')}
-              data-variacion={primeraDisp?.uuid ?? ''}
-              data-bundle={producto.tipo}
-              data-titulo={producto.titulo}
-              aria-label={tr('tienda.quickbuy.anadir')}
-              title={tr('tienda.quickbuy.anadir')}
-              class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-egrem-red"
-            >
-              <span class="icon text-[22px]">add_shopping_cart</span>
-            </button>
-          )
-        ) : mostrarCta ? (
-          <button
-            type="button"
-            data-add-to-cart
-            data-product-id={producto.id}
-            data-product-title={producto.titulo}
-            aria-label={ctaLabel ?? tr('tienda.list.buy')}
-            title={ctaLabel ?? tr('tienda.list.buy')}
-            class="relative z-20 w-12 h-12 rounded-full bg-egrem-red text-white flex items-center justify-center hover:bg-egrem-red-dark transition-colors focus:ring-2 focus:ring-egrem-gold no-underline"
-          >
-            <span class="icon text-[22px]">add_shopping_cart</span>
-          </button>
-        ) : detailHref ? (
-          <a href={detailHref} class="action-link no-underline">
-            {tr('tienda.list.view_details')}
-            <span class="icon" style="font-size:16px">arrow_forward</span>
-          </a>
-        ) : null
-      }
+          ) : detailHref ? (
+            <a href={detailHref} class="action-link no-underline">
+              {tr('tienda.list.view_details')}
+              <span class="icon" style="font-size:16px">arrow_forward</span>
+            </a>
+          ) : null
+        }
+      </div>
+      <p class="quickbuy-status" data-quickbuy-status role="status" aria-live="polite"></p>
     </div>
   </div>
 
@@ -523,11 +652,276 @@ const dimsAttr = requeridas.join(',');
       0 0 0 3.5px var(--color-egrem-red) !important;
     transform: scale(1.1);
   }
+
+  /* ── Variante preview (libro/disco/instrumento) ─────────────────── */
+  [data-variant-chip][aria-pressed='true'] {
+    background-color: var(--color-egrem-black) !important;
+    color: white !important;
+    border-color: var(--color-egrem-black) !important;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  }
+  [data-variant-chip][aria-pressed='false'] {
+    background-color: white !important;
+    border-color: var(--color-form-border) !important;
+  }
+  [data-variant-chip][aria-pressed='false']:not([data-variant-type='instrumento']) {
+    color: var(--color-text-secondary) !important;
+  }
+  [data-variant-chip][data-variant-type='instrumento'][aria-pressed='false'] {
+    color: var(--color-egrem-black) !important;
+  }
+  [data-variant-chip][aria-pressed='true'] span {
+    color: white !important;
+  }
+
+  /* ── CTA de compra rápida (rediseño impeccable) ─────────────────── */
+  .tienda-card__cta {
+    position: relative;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 0;
+    border-radius: 0.875rem;
+    background: var(--color-egrem-red);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 10px 20px -10px rgba(204, 0, 0, 0.55);
+    transition:
+      background 0.15s ease,
+      transform 0.12s ease,
+      box-shadow 0.15s ease;
+  }
+  .tienda-card__cta .icon {
+    font-size: 1.375rem;
+  }
+  .tienda-card__cta:hover:not([disabled]) {
+    background: var(--color-egrem-red-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 24px -10px rgba(204, 0, 0, 0.6);
+  }
+  .tienda-card__cta:active:not([disabled]) {
+    transform: scale(0.94);
+  }
+  .tienda-card__cta:focus-visible {
+    outline: 2px solid var(--color-egrem-gold);
+    outline-offset: 2px;
+  }
+  .tienda-card__cta[disabled] {
+    cursor: not-allowed;
+  }
+  .tienda-card__cta--oos {
+    background: var(--color-egrem-gray);
+    box-shadow: none;
+    opacity: 0.7;
+  }
+  .tienda-card__cta .icon.is-spin {
+    animation: zc-spin 0.8s linear infinite;
+  }
+
+  /* ── Estado de alta rápida: visible y fuera del botón ──────────── */
+  .quickbuy-status {
+    display: none;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 0.5rem 0 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.625rem;
+  }
+  .quickbuy-status.is-visible {
+    display: flex;
+    animation: zc-status 0.2s ease-out;
+  }
+  .quickbuy-status .icon {
+    font-size: 1rem;
+  }
+  .quickbuy-status--added {
+    background: rgba(22, 163, 74, 0.12);
+    color: #15803d;
+  }
+  .quickbuy-status--error,
+  .quickbuy-status--oos {
+    background: var(--color-form-error-bg);
+    color: var(--color-form-error);
+  }
+  @keyframes zc-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes zc-status {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<style is:global>
+  .zona-confirm {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(17, 17, 17, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    animation: zc-fade 0.18s ease-out;
+  }
+  .zona-confirm__modal {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 1.25rem;
+    padding: 2rem 1.75rem 1.5rem;
+    box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.45);
+    text-align: center;
+    animation: zc-pop 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .zona-confirm__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin: 0 auto 1rem;
+    border-radius: 9999px;
+    background: var(--color-egrem-red);
+    color: #fff;
+  }
+  .zona-confirm__icon .icon {
+    font-size: 1.75rem;
+  }
+  .zona-confirm__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: 1.25rem;
+    line-height: 1.1;
+    margin: 0 0 0.5rem;
+    color: var(--color-egrem-black);
+  }
+  .zona-confirm__msg {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    margin: 0 0 1.5rem;
+  }
+  .zona-confirm__msg strong {
+    font-weight: 700;
+    color: var(--color-egrem-black);
+  }
+  .zona-confirm__actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .zona-confirm__no,
+  .zona-confirm__yes {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border-radius: 0.75rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease,
+      transform 0.1s ease;
+  }
+  .zona-confirm__no {
+    background: #fff;
+    border: 2px solid var(--color-egrem-black);
+    color: var(--color-egrem-black);
+  }
+  .zona-confirm__no:hover {
+    background: var(--color-egrem-black);
+    color: #fff;
+  }
+  .zona-confirm__yes {
+    background: var(--color-egrem-red);
+    border: 2px solid var(--color-egrem-red);
+    color: #fff;
+  }
+  .zona-confirm__yes:hover {
+    background: var(--color-egrem-red-dark);
+    border-color: var(--color-egrem-red-dark);
+  }
+  .zona-confirm__no:active,
+  .zona-confirm__yes:active {
+    transform: scale(0.97);
+  }
+  .zona-confirm__no:focus-visible,
+  .zona-confirm__yes:focus-visible {
+    outline: 2px solid var(--color-egrem-gold);
+    outline-offset: 2px;
+  }
+  @keyframes zc-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes zc-pop {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @media (max-width: 420px) {
+    .zona-confirm__actions {
+      flex-direction: column-reverse;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zona-confirm,
+    .zona-confirm__modal {
+      animation: none;
+    }
+  }
 </style>
 
 <script>
-  import { subscribeCartQty, getCartQty } from '@/lib/tienda/cartStore';
+  import { subscribeCartQty, getCartQty, getCartQtyForStore } from '@/lib/tienda/cartStore';
 
+  type StockTienda = {
+    ilimitado?: boolean;
+    cantidad?: number;
+    tienda: { id: string; label?: string; provincia?: string; municipio?: string };
+  };
   type Var = {
     uuid: string;
     variationId: number | null;
@@ -539,8 +933,32 @@ const dimsAttr = requeridas.join(',');
     stock: number | null;
     precio: number | null;
     sku?: string | null;
+    stockPorTienda?: StockTienda[];
+    imagen?: string | null;
+    imagenVarianteUrl?: string | null;
+    materiales?: string | null;
+    garantia?: string | null;
+    accesoriosIncluidos?: string | null;
   };
   type Sel = { talla?: string; color?: string; edicion?: string; formato?: string };
+
+  // Tiendas permitidas por el filtro de zona (vacío = sin filtro geográfico).
+  let tiendasPermitidas: Set<string> = new Set();
+  function leerPermitidasInicial(): void {
+    const grid = document.querySelector('[data-tiendas-permitidas]');
+    try {
+      const arr = JSON.parse(grid?.getAttribute('data-tiendas-permitidas') || '[]');
+      if (Array.isArray(arr)) tiendasPermitidas = new Set(arr as string[]);
+    } catch {
+      tiendasPermitidas = new Set();
+    }
+  }
+  leerPermitidasInicial();
+  window.addEventListener('ubicacion:cambiada', (e: Event) => {
+    const detail = (e as CustomEvent).detail as { tiendasPermitidas?: string[] };
+    tiendasPermitidas = new Set(detail.tiendasPermitidas ?? []);
+    document.querySelectorAll('article[data-tiendas]').forEach((c) => evaluarZona(c as HTMLElement));
+  });
 
   function hayDisponible(catalogo: Var[], sel: Sel): boolean {
     return catalogo.some(
@@ -576,10 +994,170 @@ const dimsAttr = requeridas.join(',');
     }
   }
 
+  // Solo el icono del botón (nunca texto): el feedback textual va al estado visible.
+  function iconoBoton(btn: HTMLElement, name: string): void {
+    btn.innerHTML =
+      '<span class="icon' + (name === 'autorenew' ? ' is-spin' : '') + '">' + name + '</span>';
+  }
+
+  // Mensaje de alta rápida fuera del botón (visible, accesible vía role=status).
+  function mostrarEstado(
+    card: Element | null,
+    tipo: 'added' | 'error' | 'oos',
+    msg: string,
+  ): void {
+    const el = card?.querySelector('[data-quickbuy-status]') as HTMLElement | null;
+    if (!el) return;
+    el.textContent = '';
+    el.className = 'quickbuy-status quickbuy-status--' + tipo;
+    const ic = document.createElement('span');
+    ic.className = 'icon';
+    ic.setAttribute('aria-hidden', 'true');
+    ic.style.fontSize = '16px';
+    ic.textContent = tipo === 'added' ? 'check_circle' : tipo === 'oos' ? 'block' : 'error';
+    el.appendChild(ic);
+    el.appendChild(document.createTextNode(' ' + msg));
+    el.classList.add('is-visible');
+    window.clearTimeout((el as unknown as { _toc?: number })._toc);
+    (el as unknown as { _toc?: number })._toc = window.setTimeout(() => {
+      el.classList.remove('is-visible');
+      el.textContent = '';
+    }, 2600);
+  }
+
+  /** Stock disponible para una variación. `soloZona`=true solo cuenta tiendas de la zona filtrada. */
+  function stockDisponible(v: Var, soloZona: boolean): boolean {
+    const sp = v.stockPorTienda ?? [];
+    for (const s of sp) {
+      const sid = s.tienda?.id;
+      if (!sid) continue;
+      if (soloZona && tiendasPermitidas.size > 0 && !tiendasPermitidas.has(sid)) continue;
+      const base = s.ilimitado ? Number.MAX_SAFE_INTEGER : (s.cantidad ?? 0);
+      const enCarrito = getCartQtyForStore(v.sku, sid);
+      if (base - enCarrito > 0) return true;
+    }
+    return false;
+  }
+
+  /** Modal de confirmación cuando no hay stock en la zona y se usará una tienda fuera de ella. */
+  function confirmarFueraDeZona(
+    tienda: { label?: string; provincia?: string; municipio?: string },
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const nombre = tienda.label ?? 'otra tienda';
+      const lugar = [tienda.municipio, tienda.provincia].filter(Boolean).join(', ');
+      const overlay = document.createElement('div');
+      overlay.className = 'zona-confirm';
+      overlay.innerHTML =
+        '<div class="zona-confirm__modal" role="alertdialog" aria-modal="true" aria-labelledby="zc-title" aria-describedby="zc-msg">' +
+        '<div class="zona-confirm__icon" aria-hidden="true"><span class="icon">warning</span></div>' +
+        '<h2 class="zona-confirm__title" id="zc-title">Sin stock en tu zona</h2>' +
+        '<p class="zona-confirm__msg" id="zc-msg">No hay disponibilidad en las tiendas de tu zona. ¿Añadir desde <strong>' +
+        nombre +
+        '</strong>' +
+        (lugar ? ' (' + lugar + ')' : '') +
+        '?</p>' +
+        '<div class="zona-confirm__actions">' +
+        '<button type="button" class="zona-confirm__no" data-no>Cancelar</button>' +
+        '<button type="button" class="zona-confirm__yes" data-yes>Añadir</button>' +
+        '</div></div>';
+      document.body.appendChild(overlay);
+      const yesBtn = overlay.querySelector('[data-yes]') as HTMLButtonElement | null;
+      const cerrar = (val: boolean) => {
+        document.removeEventListener('keydown', onKey);
+        overlay.remove();
+        resolve(val);
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          cerrar(false);
+        }
+      };
+      overlay.addEventListener('click', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('[data-yes]')) cerrar(true);
+        else if (t.closest('[data-no]') || t === overlay) cerrar(false);
+      });
+      document.addEventListener('keydown', onKey);
+      yesBtn?.focus();
+    });
+  }
+
+  /** Deshabilita el botón solo cuando la variación no tiene stock en ningún lado. */
+  function evaluarZona(card: HTMLElement | null): void {
+    if (!card) return;
+    // Sin filtro de zona → siempre habilitado (la elección fuera de zona pide confirmación).
+    if (tiendasPermitidas.size === 0) {
+      card.querySelectorAll('[data-quickbuy-add],[data-quickbuy-toggle]').forEach((b) => ((b as HTMLButtonElement).disabled = false));
+      card.classList.remove('zona-agotado');
+      return;
+    }
+    const catalogo = leerCatalogo(card);
+    const sel = leerSeleccionCard(card);
+    const v = resolver(catalogo, sel) ?? catalogo.find((x) => x.disponible) ?? null;
+    const ok = v ? stockDisponible(v, false) : false; // hay stock en algún lado
+    const addBtn = card.querySelector('[data-quickbuy-add]') as HTMLButtonElement | null;
+    if (addBtn) addBtn.disabled = !ok;
+    if (card.getAttribute('data-directo') === '1') {
+      const toggle = card.querySelector('[data-quickbuy-toggle]') as HTMLButtonElement | null;
+      if (toggle) toggle.disabled = !ok;
+    }
+    card.classList.toggle('zona-agotado', !ok);
+  }
+
   async function agregar(btn: HTMLElement, v: Var, tipo: string, titulo: string) {
     if (btn.getAttribute('data-loading') === '1') return;
     btn.setAttribute('data-loading', '1');
     const original = btn.innerHTML;
+    iconoBoton(btn, 'autorenew');
+    const card = btn.closest('article');
+    // Elegir la tienda: preferencia en la zona filtrada; si no hay en zona pero sí
+    // fuera, pedir confirmación antes de añadir de una tienda ajena a la zona.
+    const sp = v.stockPorTienda ?? [];
+    const disponibleEn = (s: StockTienda): boolean => {
+      const base = s.ilimitado ? Number.MAX_SAFE_INTEGER : (s.cantidad ?? 0);
+      return base - getCartQtyForStore(v.sku, s.tienda.id) > 0;
+    };
+    let storeId: string | null = null;
+    let tiendaFuera: StockTienda | null = null;
+    // 1) tienda dentro de la zona con stock
+    for (const s of sp) {
+      const sid = s.tienda?.id;
+      if (!sid) continue;
+      if (tiendasPermitidas.size > 0 && !tiendasPermitidas.has(sid)) continue;
+      if (disponibleEn(s)) {
+        storeId = sid;
+        break;
+      }
+    }
+    // 2) sin stock en zona → una fuera de zona requiere confirmación
+    if (!storeId && tiendasPermitidas.size > 0) {
+      for (const s of sp) {
+        const sid = s.tienda?.id;
+        if (!sid || tiendasPermitidas.has(sid)) continue;
+        if (disponibleEn(s)) {
+          tiendaFuera = s;
+          break;
+        }
+      }
+      if (tiendaFuera) {
+        const acepta = await confirmarFueraDeZona(tiendaFuera.tienda);
+        if (!acepta) {
+          btn.removeAttribute('data-loading');
+          btn.innerHTML = original;
+          return;
+        }
+        storeId = tiendaFuera.tienda.id;
+      }
+    }
+    if (!storeId) {
+      // Sin stock en ningún lado → no añadir (el mensaje se muestra fuera del botón).
+      btn.removeAttribute('data-loading');
+      btn.innerHTML = original;
+      mostrarEstado(card, 'oos', btn.getAttribute('data-oos-label') || 'Agotado');
+      return;
+    }
     const payload = {
       variationUuid: v.uuid,
       variationId: v.variationId,
@@ -593,6 +1171,7 @@ const dimsAttr = requeridas.join(',');
       title: titulo,
       precioUnitario: v.precio ?? null,
       imagen: null,
+      storeId,
     };
     try {
       const res = await fetch('/api/cart/add', {
@@ -611,16 +1190,14 @@ const dimsAttr = requeridas.join(',');
           esStock = b?.message === 'stock_insufficient';
         } catch {}
         btn.removeAttribute('data-loading');
-        const icon = esStock ? 'block' : 'error';
-        const label = esStock
-          ? btn.getAttribute('data-oos-label') || 'Agotado'
-          : btn.getAttribute('data-error-label') || 'Error';
-        btn.innerHTML = '<span class="icon">' + icon + '</span><span>' + label + '</span>';
-        btn.classList.add('is-error');
-        window.setTimeout(() => {
-          btn.innerHTML = original;
-          btn.classList.remove('is-error');
-        }, 1600);
+        btn.innerHTML = original;
+        mostrarEstado(
+          card,
+          esStock ? 'oos' : 'error',
+          esStock
+            ? btn.getAttribute('data-oos-label') || 'Agotado'
+            : btn.getAttribute('data-error-label') || 'Error',
+        );
         return;
       }
       const data = (await res.json().catch(() => null)) as { count?: number } | null;
@@ -639,21 +1216,16 @@ const dimsAttr = requeridas.join(',');
         }),
       );
       const addedLabel = btn.getAttribute('data-added-label') || 'Añadido';
-      btn.innerHTML = '<span class="icon">check</span><span>' + addedLabel + '</span>';
-      btn.classList.add('is-added');
+      iconoBoton(btn, 'check');
+      mostrarEstado(card, 'added', addedLabel);
       window.setTimeout(() => {
         btn.innerHTML = original;
-        btn.classList.remove('is-added');
         btn.removeAttribute('data-loading');
       }, 1600);
     } catch {
       btn.removeAttribute('data-loading');
-      btn.innerHTML = '<span class="icon">error</span><span>' + (btn.getAttribute('data-error-label') || 'Error') + '</span>';
-      btn.classList.add('is-error');
-      window.setTimeout(() => {
-        btn.innerHTML = original;
-        btn.classList.remove('is-error');
-      }, 1600);
+      btn.innerHTML = original;
+      mostrarEstado(card, 'error', btn.getAttribute('data-error-label') || 'Error');
     }
   }
 
@@ -694,8 +1266,9 @@ const dimsAttr = requeridas.join(',');
       priceEl.textContent = '$' + (Math.round(v.precio * 100) / 100).toFixed(2);
     }
     if (add) {
-      const sinStock = v ? getCartQty(v.uuid) >= (v.stock ?? Infinity) : false;
-      if (completa && v && !sinStock) add.removeAttribute('disabled');
+      const sinStock = v ? getCartQty(v.sku) >= (v.stock ?? Infinity) : false;
+      // Habilitado si hay stock en algún lado (el alta pide confirmación si es fuera de zona).
+      if (completa && v && !sinStock && stockDisponible(v, false)) add.removeAttribute('disabled');
       else add.setAttribute('disabled', '');
     }
   }
@@ -704,6 +1277,11 @@ const dimsAttr = requeridas.join(',');
     const sel: Sel = {};
     const c = card?.getAttribute('data-selected-color');
     if (c) sel.color = c;
+    const ed = card?.getAttribute('data-selected-edicion');
+    if (ed) sel.edicion = ed;
+    const fm = card?.getAttribute('data-selected-formato');
+    if (fm) sel.formato = fm;
+    // Instrumento: no tiene dimensión en Sel, pero guardamos uuid para directo
     return sel;
   }
 
@@ -726,9 +1304,10 @@ const dimsAttr = requeridas.join(',');
       const card = btn.closest('article');
       const catalogo = leerCatalogo(card);
       const uuid = btn.getAttribute('data-variacion') || '';
+      const sku = btn.getAttribute('data-sku') || '';
       const v = catalogo.find((x) => x.uuid === uuid);
       const stock = v?.stock ?? null;
-      const sinStock = stock != null && getCartQty(uuid) >= stock;
+      const sinStock = stock != null && getCartQty(sku) >= stock;
       if (sinStock) {
         btn.setAttribute('disabled', '');
         btn.classList.add('is-oos');
@@ -769,6 +1348,92 @@ const dimsAttr = requeridas.join(',');
       const img = card?.querySelector('img');
       const imgUrl = dot.getAttribute('data-img');
       if (img && imgUrl) img.setAttribute('src', imgUrl);
+      return;
+    }
+
+    // Preview switcher: disco formato / libro edicion / instrumento enumeración (actualiza precio/imagen/meta sin abrir popover)
+    const variantChip = t.closest('[data-variant-chip]') as HTMLElement | null;
+    if (variantChip && !variantChip.closest('[data-quickbuy]')) {
+      e.preventDefault();
+      if (variantChip.hasAttribute('disabled')) return;
+      const card = variantChip.closest('article');
+      const tipo = variantChip.getAttribute('data-variant-type') || '';
+      const group = variantChip.closest('[data-variant-switcher]');
+      if (group) {
+        group.querySelectorAll('[data-variant-chip]').forEach((el) => {
+          el.setAttribute('aria-pressed', 'false');
+          el.classList.remove('bg-egrem-black', 'text-white', 'border-egrem-black', 'shadow-sm', 'shadow-md');
+          if (tipo === 'instrumento') {
+            el.classList.add('bg-white', 'text-egrem-black', 'border-form-border');
+            const ip = el.querySelector('span:last-child') as HTMLElement | null;
+            if (ip) {
+              ip.classList.remove('text-white/70', 'text-white');
+              ip.classList.add('text-text-secondary');
+            }
+            const lb = el.querySelector('span:first-child') as HTMLElement | null;
+            if (lb) {
+              lb.classList.remove('text-white');
+              lb.classList.add('text-egrem-black');
+            }
+          } else {
+            el.classList.add('bg-white', 'text-text-secondary', 'border-form-border');
+          }
+        });
+        variantChip.setAttribute('aria-pressed', 'true');
+        variantChip.classList.remove('bg-white', 'text-text-secondary', 'text-egrem-black', 'border-form-border');
+        variantChip.classList.add('bg-egrem-black', 'text-white', 'border-egrem-black');
+        variantChip.classList.add(tipo === 'instrumento' ? 'shadow-md' : 'shadow-sm');
+        if (tipo === 'instrumento') {
+          const ip = variantChip.querySelector('span:last-child') as HTMLElement | null;
+          if (ip) {
+            ip.classList.remove('text-text-secondary');
+            ip.classList.add('text-white/70');
+          }
+          const lb = variantChip.querySelector('span:first-child') as HTMLElement | null;
+          if (lb) {
+            lb.classList.remove('text-egrem-black');
+            lb.classList.add('text-white');
+          }
+        }
+      }
+      const catalogo = leerCatalogo(card);
+      let v: Var | null = null;
+      if (tipo === 'edicion') {
+        const val = variantChip.getAttribute('data-variant-val') || '';
+        v = catalogo.find((x) => x.edicion === val) ?? null;
+      } else if (tipo === 'formato') {
+        const val = variantChip.getAttribute('data-variant-val') || '';
+        v = catalogo.find((x) => x.formato === val) ?? null;
+      } else if (tipo === 'instrumento') {
+        const idx = parseInt(variantChip.getAttribute('data-variant-idx') || '0', 10);
+        v = catalogo[idx] ?? null;
+        const meta = card?.querySelector('[data-instrumento-meta] .instrumento-meta-text') as HTMLElement | null;
+        if (meta && v) {
+          const mat = v.materiales ? `<span class="font-bold">Material:</span> ${v.materiales}` : '';
+          const gar = v.garantia ? ` <span class="text-text-secondary">·</span> <span class="font-bold">Garantía:</span> ${v.garantia}` : '';
+          const acc = !mat && !gar && v.accesoriosIncluidos ? `<span class="font-bold">Incluye:</span> ${v.accesoriosIncluidos}` : '';
+          meta.innerHTML = mat || gar ? mat + gar : acc || '<span class="text-text-secondary">Selecciona una variante</span>';
+        }
+      }
+      if (v) {
+        const priceEl = card?.querySelector('[data-product-price]') as HTMLElement | null;
+        if (priceEl && v.precio != null) priceEl.textContent = `$${v.precio.toFixed(2)}`;
+        const img = card?.querySelector('img') as HTMLImageElement | null;
+        const imgUrl =
+          variantChip.getAttribute('data-img') ||
+          (v as unknown as { imagenVarianteUrl?: string }).imagenVarianteUrl ||
+          (v as unknown as { imagen?: string }).imagen ||
+          '';
+        if (img && imgUrl) img.setAttribute('src', imgUrl);
+        const directBtn = card?.querySelector('[data-quickbuy-direct]') as HTMLElement | null;
+        if (directBtn && v.uuid) {
+          directBtn.setAttribute('data-variacion', v.uuid);
+          directBtn.setAttribute('data-sku', v.sku || '');
+        }
+        if (tipo === 'instrumento' && v.uuid) card?.setAttribute('data-selected-instrumento', v.uuid);
+        if (tipo === 'edicion' && v.edicion) card?.setAttribute('data-selected-edicion', v.edicion);
+        if (tipo === 'formato' && v.formato) card?.setAttribute('data-selected-formato', v.formato);
+      }
       return;
     }
 
@@ -866,5 +1531,12 @@ const dimsAttr = requeridas.join(',');
     if (e.key === 'Escape') {
       document.querySelectorAll('[data-quickbuy]:not([hidden])').forEach((p) => cerrarPopover(p as HTMLElement));
     }
+  });
+
+  // Deshabilitar el alta rápida cuando la variación no tiene stock en la zona filtrada,
+  // y reaccionar a cambios de carrito (lo ya agregado descuenta el stock disponible).
+  document.querySelectorAll('article[data-tiendas]').forEach((c) => evaluarZona(c as HTMLElement));
+  subscribeCartQty(() => {
+    document.querySelectorAll('article[data-tiendas]').forEach((c) => evaluarZona(c as HTMLElement));
   });
 </script>

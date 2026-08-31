@@ -1,9 +1,7 @@
 /**
  * stock.ts — Stock multitienda para la Tienda EGREM.
  *
- * Fuente de datos real: endpoint Drupal `POST /{lang}/api/stock` (ver el plan).
- * Sin el flag STOCK_MULTITIENDA_REAL, se usa mockStock() para poder construir
- * el frontend en paralelo al backend (ver Fase 1 del plan).
+ * Fuente: endpoint Drupal `POST /{lang}/api/stock`.
  */
 
 import { getApiKeyValue, getBaseUrlValue } from './client';
@@ -21,10 +19,7 @@ export interface StockResponse {
   items: Record<string, StockItem>;
 }
 
-const STOCK_MULTITIENDA_REAL = (() => {
-  const v = import.meta.env.STOCK_MULTITIENDA_REAL;
-  return v === 'true' || v === '1';
-})();
+const STOCK_MULTITIENDA_REAL = true;
 
 const STOCK_CACHE_TTL_MS = (() => {
   const v = Number(import.meta.env.STOCK_CACHE_TTL_MS);
@@ -71,13 +66,28 @@ export function mockStock(skus: string[]): StockResponse {
  * - item.unlimited → ilimitado.
  * - si no hay item para el sku → agotado (degradación segura del merge).
  */
+/**
+ * Resuelve el stock de una variación a partir de la respuesta del endpoint:
+ * - alwaysInStock → ilimitado en todas las tiendas.
+ * - item.unlimited → ilimitado.
+ * - si no hay item para el sku → agotado (degradación segura del merge).
+ *
+ * @param catalogoTiendas catálogo completo de tiendas (`fetchTiendas`) usado para
+ *   poblar `provincia`/`municipio`/`direccion` en cada entrada. Si está vacío,
+ *   cae a `stockData.stores` (sin dirección). Las tiendas no selectables ("Main")
+ *   se filtran en ambos casos.
+ */
 export function resolverStockTienda(
   sku: string,
   stockData: StockResponse,
   alwaysInStock: boolean,
+  catalogoTiendas: TiendaInfo[] = [],
 ): { stock: number | null; disponible: boolean; stockPorTienda: ProductoTiendaStock[] | null } {
+  const base = catalogoTiendas.length > 0 ? catalogoTiendas : stockData.stores;
+  const visibles = base.filter((t) => !TIENDAS_OCULTAS.has(t.label.toLowerCase()));
+
   if (alwaysInStock) {
-    const stockPorTienda = stockData.stores.map((tienda) => ({
+    const stockPorTienda = visibles.map((tienda) => ({
       tienda,
       cantidad: null,
       ilimitado: true,
@@ -90,7 +100,7 @@ export function resolverStockTienda(
     return { stock: 0, disponible: false, stockPorTienda: null };
   }
   if (item.unlimited) {
-    const stockPorTienda = stockData.stores.map((tienda) => ({
+    const stockPorTienda = visibles.map((tienda) => ({
       tienda,
       cantidad: null,
       ilimitado: true,
@@ -98,7 +108,7 @@ export function resolverStockTienda(
     return { stock: null, disponible: true, stockPorTienda };
   }
 
-  const stockPorTienda: ProductoTiendaStock[] = stockData.stores.map((tienda) => ({
+  const stockPorTienda: ProductoTiendaStock[] = visibles.map((tienda) => ({
     tienda,
     cantidad: item.byStore[tienda.id] ?? 0,
     ilimitado: false,
@@ -109,7 +119,7 @@ export function resolverStockTienda(
 }
 
 /** Tiendas que NO son físicas/selectables y se ocultan de la UI (case-insensitive). */
-const TIENDAS_OCULTAS = new Set(['main']);
+export const TIENDAS_OCULTAS = new Set(['main']);
 
 /** Quita las tiendas no selectables (p.ej. "Main") de stores/byStore y recalcula el total. */
 export function ocultarNoTiendas(data: StockResponse): StockResponse {
@@ -132,8 +142,7 @@ export function ocultarNoTiendas(data: StockResponse): StockResponse {
 
 /**
  * Obtiene el stock multitienda de un lote de SKUs en una sola llamada.
- * En modo mock (flag apagado) devuelve datos deterministas de mockStock().
- * En caso de fallo real devuelve { stores: [], items: {} } (merge tolerante).
+ * En caso de fallo devuelve { stores: [], items: {} } (merge tolerante).
  */
 export async function fetchStockPorTienda(
   skus: string[],
@@ -144,10 +153,6 @@ export async function fetchStockPorTienda(
   const uniq = [...new Set(skus.filter(Boolean))];
   if (uniq.length === 0) {
     return { stores: [], items: {} };
-  }
-
-  if (!STOCK_MULTITIENDA_REAL) {
-    return ocultarNoTiendas(mockStock(uniq));
   }
 
   const key = `${lang}|${uniq.slice().sort().join(',')}`;

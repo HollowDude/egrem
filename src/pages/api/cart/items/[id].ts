@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
-import { updateCartItem, removeCartItem } from '@/lib/nodehive/carrito';
+import { updateCartItem, removeCartItem, CART_GROUP_COOKIE } from '@/lib/nodehive/carrito';
 
 export const prerender = false;
 
@@ -22,12 +22,19 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
   }
   const session = await getSession(cookies);
   if (!session) return json({ message: 'login_required' }, 401);
+  const cartGroup = cookies.get(CART_GROUP_COOKIE)?.value ?? undefined;
   try {
-    const cart = await updateCartItem(id, quantity, {
-      accessToken: session.accessToken,
-      csrfToken: session.csrfToken,
-      uid: session.uid,
-    });
+    const cart = await updateCartItem(
+      id,
+      quantity,
+      {
+        accessToken: session.accessToken,
+        sessionCookie: session.sessionCookie,
+        csrfToken: session.csrfToken,
+        uid: session.uid,
+      },
+      cartGroup,
+    );
     return json(cart, 200);
   } catch (e) {
     console.error('[api/cart/items] error:', e);
@@ -57,12 +64,18 @@ export const DELETE: APIRoute = async ({ params, cookies }) => {
   const id = params.id!;
   const session = await getSession(cookies);
   if (!session) return json({ message: 'login_required' }, 401);
+  const cartGroup = cookies.get(CART_GROUP_COOKIE)?.value ?? undefined;
   try {
-    const cart = await removeCartItem(id, {
-      accessToken: session.accessToken,
-      csrfToken: session.csrfToken,
-      uid: session.uid,
-    });
+    const cart = await removeCartItem(
+      id,
+      {
+        accessToken: session.accessToken,
+        sessionCookie: session.sessionCookie,
+        csrfToken: session.csrfToken,
+        uid: session.uid,
+      },
+      cartGroup,
+    );
     return json(cart, 200);
   } catch (e) {
     console.error('[api/cart/items] error:', e);

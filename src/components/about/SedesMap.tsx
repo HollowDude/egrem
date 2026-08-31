@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import type * as LeafletType from 'leaflet';
 import type { NhSede } from '@/lib/nodehive/entities';
 import { getProvinceName } from '@/lib/cuba';
 
@@ -73,8 +72,22 @@ interface Props {
 
 export default function SedesMap({ sedes }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
-  const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const mapInstance = useRef<LeafletType.Map | null>(null);
+  const markersRef = useRef<Map<string, LeafletType.Marker>>(new Map());
+  const [L, setL] = useState<typeof LeafletType | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    import('leaflet').then((mod) => {
+      if (cancelled) return;
+      const leaflet = (mod.default ?? mod) as unknown as typeof LeafletType;
+      setL(leaflet);
+      import('leaflet/dist/leaflet.css');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterProvincia, setFilterProvincia] = useState('');
@@ -142,7 +155,7 @@ export default function SedesMap({ sedes }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
+    if (!L || !mapRef.current || mapInstance.current) return;
     const map = L.map(mapRef.current, {
       center: [22.1, -79.5],
       zoom: 7,
@@ -153,9 +166,10 @@ export default function SedesMap({ sedes }: Props) {
       maxZoom: 18,
     }).addTo(map);
     mapInstance.current = map;
-  }, []);
+  }, [L]);
 
   useEffect(() => {
+    if (!L) return;
     const map = mapInstance.current;
     if (!map) return;
 
@@ -190,9 +204,10 @@ export default function SedesMap({ sedes }: Props) {
       }
       markersRef.current.clear();
     };
-  }, [normalized, handleSelect]);
+  }, [L, normalized, handleSelect]);
 
   useEffect(() => {
+    if (!L) return;
     const map = mapInstance.current;
     if (!map) return;
 
@@ -236,7 +251,7 @@ export default function SedesMap({ sedes }: Props) {
         map.fitBounds(bounds.pad(0.35), { animate: true });
       }
     }
-  }, [filtered, selectedId, selectedSede, normalized]);
+  }, [L, filtered, selectedId, selectedSede, normalized]);
 
   const selected = selectedSede;
 

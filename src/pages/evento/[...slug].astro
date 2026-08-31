@@ -10,6 +10,7 @@ import EventoTicketCard from '@/components/evento/EventoTicketCard.astro';
 import EventoEventosRelacionados from '@/components/evento/EventoEventosRelacionados.astro';
 import { fetchEventoByPath, fetchEventoByNid, esEventoPasado } from '@/lib/nodehive';
 import type { NhEventoDetalle } from '@/lib/nodehive';
+import { displayTag } from '@/lib/nodehive/helpers';
 import { resolveCtaCompra } from '@/lib/tienda/cta';
 import { useTranslations } from '@/i18n/translations';
 
@@ -141,7 +142,7 @@ const diaChipsPorSku = new Map(
               {
                 evento.categoria && (
                   <span class="bg-egrem-red text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
-                    {evento.categoria}
+                    {displayTag(evento.categoria)}
                   </span>
                 )
               }

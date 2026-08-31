@@ -7,6 +7,7 @@ import EventoEventosRelacionados from '@/components/evento/EventoEventosRelacion
 import EventoCompraWidget from '@/components/tienda/EventoCompraWidget.tsx';
 import { fetchEventoByPath, fetchEventoByNid } from '@/lib/nodehive';
 import type { NhEventoDetalle } from '@/lib/nodehive';
+import { displayTag } from '@/lib/nodehive/helpers';
 import { solicitarCheckout } from '@/lib/tienda/checkout';
 import { useTranslations } from '@/i18n/translations';
 
@@ -137,7 +138,7 @@ const handleConfirm = async (items: { sku: string; cantidad: number }[]) => {
             {
               evento.categoria && (
                 <span class="absolute top-4 left-4 bg-egrem-red text-white px-3 py-1 font-display font-bold text-[12px] uppercase tracking-widest rounded">
-                  {evento.categoria}
+                  {displayTag(evento.categoria)}
                 </span>
               )
             }

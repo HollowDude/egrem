@@ -33,6 +33,7 @@ export async function setSession(
     csrfToken: user.csrfToken,
     logoutToken: user.logoutToken,
     accessToken: user.accessToken,
+    sessionCookie: user.sessionCookie,
   };
 
   const token = await new EncryptJWT(payload)
@@ -82,6 +83,7 @@ export async function getSession(cookies: AstroCookies): Promise<SessionUser | n
       csrfToken: payload['csrfToken'] as string,
       logoutToken: payload['logoutToken'] as string,
       accessToken,
+      sessionCookie: (payload['sessionCookie'] as string) ?? '',
     };
   } catch {
     return null;

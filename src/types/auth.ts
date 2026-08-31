@@ -6,4 +6,6 @@ export interface SessionUser {
   csrfToken: string;
   logoutToken: string;
   accessToken: string;
+  /** Cookie de sesión de Drupal (crudo del login) — para autenticar escrituras. */
+  sessionCookie: string;
 }

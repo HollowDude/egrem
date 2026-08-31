@@ -4,7 +4,7 @@
  * Tipo de evento (taxonomía tipo_de_evento), lugar (distintos field_lugar), ventana de fecha y búsqueda.
  */
 import { useTranslations } from '@/i18n/translations';
-import { slugify } from '@/lib/nodehive';
+import { displayTag, slugify } from '@/lib/nodehive';
 
 interface Props {
   lugares: string[];
@@ -44,7 +44,7 @@ const tipoOptions = Array.from(new Set(categorias.filter(Boolean))).sort((a, b) 
           {
             tipoOptions.map((t) => (
               <option value={slugify(t)} selected={tipo === slugify(t)}>
-                {t}
+                {displayTag(t)}
               </option>
             ))
           }

@@ -5,17 +5,15 @@
  * Instrumentos y Libros se renderizan pero sin data-sidebar-cat (inertes, 0 productos).
  */
 import { useTranslations } from '@/i18n/translations';
-import type { TiendaInfo } from '@/types/tienda';
 
 interface Props {
   tallas?: string[];
   colores?: string[];
   ediciones?: string[];
   formatos?: string[];
-  tiendas?: TiendaInfo[];
 }
 
-const { tallas = [], colores = [], ediciones = [], formatos = [], tiendas = [] } = Astro.props;
+const { tallas = [], colores = [], ediciones = [], formatos = [] } = Astro.props;
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
 
@@ -31,12 +29,29 @@ const COLOR_DOT: Record<string, string> = {
 const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
 ---
 
-<aside class="w-full lg:w-64 flex-shrink-0" data-tienda-sidebar>
-  <div class="lg:sticky lg:top-24">
-    <h2 class="font-display font-bold text-egrem-black text-lg uppercase tracking-wide mb-6">
+<aside id="tienda-filters" class="tienda-filters" data-tienda-sidebar tabindex="-1">
+  <div class="lg:sticky lg:top-24 space-y-8">
+    <!-- Cabecera del drawer (solo móvil/tablet) -->
+    <div
+      class="flex items-center justify-between lg:hidden pb-4 mb-4 border-b border-egrem-gray-light"
+    >
+      <h2 class="font-display font-bold text-egrem-black text-lg uppercase tracking-wide m-0">
+        {tr('tienda.filter.title')}
+      </h2>
+      <button
+        type="button"
+        data-filters-close
+        class="inline-flex items-center justify-center w-11 h-11 rounded-xl text-egrem-black hover:bg-egrem-gray-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-egrem-gold transition-colors"
+        aria-label={tr('tienda.filter.cerrar')}
+      >
+        <span class="icon text-[24px]" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <h2
+      class="hidden lg:block font-display font-bold text-egrem-black text-lg uppercase tracking-wide mb-6"
+    >
       {tr('tienda.filter.title')}
     </h2>
-    <div class="space-y-8">
     <!-- Buscar -->
     <div>
       <h3 class="font-display font-bold text-egrem-black text-xl uppercase mb-4">
@@ -76,7 +91,8 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
       </div>
     </div>
 
-    <!-- Disponibilidad -->
+    <!-- Disponibilidad — comentado para ocultar filtro (restaurar quitando el comentario HTML) -->
+    <!--
     <div class="border-t border-egrem-gray-light pt-7">
       <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
         {tr('tienda.filter.disponibilidad')}
@@ -110,32 +126,7 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
         </li>
       </ul>
     </div>
-
-    <!-- Tienda (stock multitienda) -->
-    {
-      tiendas.length > 0 && (
-        <div class="border-t border-egrem-gray-light pt-7">
-          <h3 class="font-display font-bold text-egrem-black text-[15px] uppercase tracking-wide mb-4">
-            {tr('tienda.filter.tienda')}
-          </h3>
-          <ul class="space-y-2 font-display text-text-secondary">
-            {tiendas.map((t) => (
-              <li>
-                <label class="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    value={t.id}
-                    data-tienda-store
-                    class="w-5 h-5 rounded accent-egrem-red cursor-pointer"
-                  />
-                  <span class="group-hover:text-egrem-red transition-colors">{t.label}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )
-    }
+    -->
 
     <!-- Filtros dinámicos por categoría: solo se muestran según el chip activo -->
     <div class="hidden border-t border-egrem-gray-light pt-7" data-tienda-filter-group="merchandising">
@@ -269,5 +260,37 @@ const dot = (c: string) => COLOR_DOT[c] ?? '#888888';
       0 0 0 2px #fff,
       0 0 0 3.5px var(--color-egrem-red);
     transform: scale(1.08);
+  }
+
+  /* ── Drawer de filtros (móvil/tablet): sidebar estática en lg+ ── */
+  .tienda-filters {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 86%;
+    max-width: 20rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    background: #fff;
+    z-index: 60;
+    overflow-y: auto;
+    padding: 1.25rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  }
+  .tienda-filters.tienda-filters--open {
+    transform: translateX(0);
+  }
+  @media (min-width: 1024px) {
+    .tienda-filters {
+      position: static;
+      transform: none;
+      width: 16rem;
+      max-width: none;
+      flex-shrink: 0;
+      background: transparent;
+      z-index: auto;
+      overflow: visible;
+      padding: 0;
+      box-shadow: none;
+    }
   }
 </style>

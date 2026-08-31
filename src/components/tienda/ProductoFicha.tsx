@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import type { ProductoDetalle } from '@/types/producto';
+import type { ProductoDetalle, ProductoTiendaStock } from '@/types/producto';
 import { formatPrecio } from '@/lib/moneda';
 import {
   seleccionCompleta,
@@ -14,7 +14,12 @@ import {
   formatosDisponibles,
   type SeleccionAtributos,
 } from '@/lib/tienda/productoSeleccion';
-import type { CartLine } from '@/lib/nodehive/carrito';
+import type { CartLineItem } from '@/lib/nodehive/carrito';
+import {
+  resolverTiendasPermitidas,
+  type MunicipioSeleccionado,
+} from '@/lib/tienda/ubicacion';
+import type { TiendaInfo } from '@/types/tienda';
 import ProductoFichaTecnica from './ProductoFichaTecnica';
 
 interface Props {
@@ -22,6 +27,10 @@ interface Props {
   lang?: Lang;
   /** Selección inicial desde query params (?color=&talla=) — continuidad listado→detalle. */
   seleccionInicial?: SeleccionAtributos;
+  /** Catálogo de tiendas con dirección (para el selector de tienda). */
+  tiendasCatalogo?: TiendaInfo[];
+  /** Zona elegida por el usuario (cookie) — filtra las tiendas mostradas. */
+  tiendaSeleccion?: MunicipioSeleccionado[];
 }
 
 /**
@@ -32,7 +41,13 @@ interface Props {
  * cambio de `seleccion`. Monta con `client:load` (SSR isomórfico de Astro
  * renderiza la primera imagen en el HTML inicial).
  */
-export default function ProductoFicha({ producto, lang = 'es', seleccionInicial }: Props) {
+export default function ProductoFicha({
+  producto,
+  lang = 'es',
+  seleccionInicial,
+  tiendasCatalogo = [],
+  tiendaSeleccion = [],
+}: Props) {
   const tr = useTranslations(lang);
   const { tipo, variaciones, materiales, plazoEnvio } = producto;
 
@@ -49,8 +64,16 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
   const [activeImg, setActiveImg] = useState(0);
   const [zooming, setZooming] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
-  // Líneas del carrito (para restar lo ya agregado de la variación concreta).
-  const [cartLines, setCartLines] = useState<CartLine[] | null>(null);
+  // Tienda elegida para el sourcing estricto (id de TiendaInfo).
+  const [tiendaSel, setTiendaSel] = useState<string | null>(null);
+  // Líneas del carrito (para restar lo ya agregado de la variación+tienda concreta).
+  const [cartLines, setCartLines] = useState<CartLineItem[] | null>(null);
+
+  // Ids de tienda permitidos según la zona del usuario (vacío = sin filtro).
+  const tiendasPermitidas = useMemo(
+    () => resolverTiendasPermitidas(tiendaSeleccion, tiendasCatalogo),
+    [tiendaSeleccion, tiendasCatalogo],
+  );
 
   const esPrenda = tipo === 'prenda';
   const completa = seleccionCompleta(tipo, seleccion);
@@ -73,6 +96,29 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
     () => (completa ? resolverVariacion(variaciones, seleccion) : null),
     [completa, variaciones, seleccion],
   );
+
+  // Tiendas donde esta variación tiene stock (cantidad>0 o ilimitado).
+  const tiendasConStock = useMemo<ProductoTiendaStock[]>(() => {
+    if (!variacion?.stockPorTienda) return [];
+    return variacion.stockPorTienda.filter((s) => s.ilimitado || (s.cantidad ?? 0) > 0);
+  }, [variacion]);
+
+  // Tiendas elegibles: intersección con la zona; si queda vacío, fallback a todas
+  // las con stock (regla confirmada: si ninguna tienda permitida tiene stock, se
+  // listan todas las que sí lo tienen, ignorando el filtro).
+  const tiendasElegibles = useMemo<ProductoTiendaStock[]>(() => {
+    if (tiendasConStock.length === 0) return [];
+    if (tiendasPermitidas.size === 0) return tiendasConStock;
+    const filtradas = tiendasConStock.filter((s) => tiendasPermitidas.has(s.tienda.id));
+    return filtradas.length > 0 ? filtradas : tiendasConStock;
+  }, [tiendasConStock, tiendasPermitidas]);
+
+  // Auto-seleccionar si solo hay una tienda elegible (sin ambigüedad).
+  useEffect(() => {
+    if (tiendasElegibles.length === 1) setTiendaSel(tiendasElegibles[0].tienda.id);
+    else if (!tiendasElegibles.some((s) => s.tienda.id === tiendaSel)) setTiendaSel(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tiendasElegibles]);
   const precioMostrar = preview?.precio ?? null;
 
   // Resetear miniatura activa cuando cambia la variación previsualizada.
@@ -100,8 +146,8 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
     const cargar = () => {
       fetch('/api/cart')
         .then((r) => (r.ok ? r.json() : null))
-        .then((c: { lines?: CartLine[] } | null) => {
-          if (!cancelled && c?.lines) setCartLines(c.lines);
+        .then((c: { orders?: { items: CartLineItem[] }[] } | null) => {
+          if (!cancelled && c?.orders) setCartLines(c.orders.flatMap((o) => o.items));
         })
         .catch(() => {});
     };
@@ -129,25 +175,33 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
     return [...map.values()];
   }, [variaciones]);
 
-  // Stock que realmente queda por agregar: stock de la variación menos lo ya en el carrito.
-  // Si el stock es nulo pero la variación está marcada como disponible, es stock ilimitado
-  // (always_in_stock); si no es disponible y no tiene stock declarado, se trata como agotado.
-  const stockBase =
-    variacion?.stock != null
-      ? variacion.stock
-      : variacion?.disponible
-        ? null
-        : 0;
+  // Stock que realmente queda por agregar: el de la TIENDA ELEGIDA (sourcing
+  // estricto), menos lo ya en el carrito para esa misma tienda. Si la tienda es
+  // ilimitada, el tope es Infinito. Sin tienda elegida no hay tope todavía.
+  const tiendaElegida = useMemo(
+    () => variacion?.stockPorTienda?.find((s) => s.tienda.id === tiendaSel) ?? null,
+    [variacion, tiendaSel],
+  );
+  const stockBase = tiendaElegida
+    ? tiendaElegida.ilimitado
+      ? null
+      : (tiendaElegida.cantidad ?? 0)
+    : null;
   const yaEnCarrito = useMemo(() => {
-    if (!variacion?.uuid || !cartLines) return 0;
-    const line = cartLines.find((l) => l.variationUuid === variacion.uuid);
-    return line?.cantidad ?? 0;
-  }, [variacion?.uuid, cartLines]);
+    if (!variacion || !cartLines || !tiendaSel) return 0;
+    const key = variacion.sku;
+    const line = cartLines.find(
+      (l) => (l.sku ?? l.variationUuid) === key && (l.storeId ?? '') === tiendaSel,
+    );
+    return line?.quantity ?? 0;
+  }, [variacion, cartLines, tiendaSel]);
   const stockRestante = stockBase == null ? Infinity : Math.max(0, stockBase - yaEnCarrito);
-  const hayStock = completa && !!variacion && stockRestante > 0;
+  const hayStock = completa && !!variacion && !!tiendaSel && stockRestante > 0;
 
   // Mensaje de error preciso según qué dimensión falta.
   const faltantes = dimensionesRequeridas(tipo).filter((d) => !seleccion[d]);
+  // Con variación resuelta pero sin tienda elegida (sourcing estricto).
+  const faltaTienda = completa && !!variacion && !tiendaSel && tiendasElegibles.length > 0;
   const mensajeError =
     faltantes.length === 1
       ? faltantes[0] === 'talla'
@@ -157,9 +211,11 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
           : faltantes[0] === 'edicion'
             ? tr('tienda.product.selecciona_edicion')
             : tr('tienda.product.selecciona_formato')
-      : esPrenda
-        ? tr('tienda.product.seleccion_incompleta')
-        : tr('tienda.product.seleccion_incompleta_color');
+      : faltaTienda
+        ? tr('tienda.ubicacion.selecciona_tienda_error')
+        : esPrenda
+          ? tr('tienda.product.seleccion_incompleta')
+          : tr('tienda.product.seleccion_incompleta_color');
 
   // Al cambiar una dimensión, invalida las OTRAS dimensiones seleccionadas que
   // ya no tienen combinación disponible (p. ej. talla S + color Azul → si Azul
@@ -205,14 +261,14 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
   const cambiarCantidad = (delta: number) =>
     setCantidad((c) => Math.max(1, Math.min(stockRestante > 0 ? stockRestante : 1, c + delta)));
 
-  // Reajustar la cantidad si cambia la variación o el stock disponible.
+  // Reajustar la cantidad si cambia la variación, la tienda o el stock disponible.
   useEffect(() => {
     setCantidad((c) => Math.max(1, Math.min(stockRestante > 0 ? stockRestante : 1, c)));
-  }, [stockRestante]);
+  }, [stockRestante, tiendaSel]);
 
   async function anadirAlCarrito() {
     setServerError(null);
-    if (!completa || !variacion) {
+    if (!completa || !variacion || !tiendaSel) {
       setErrorVisible(true);
       return;
     }
@@ -231,6 +287,7 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
       title: producto.titulo,
       precioUnitario: variacion.precio ?? undefined,
       imagen: variacion.imagenVarianteUrl ?? variacion.imagenes[0] ?? null,
+      storeId: tiendaSel,
     };
     try {
       const res = await fetch('/api/cart/add', {
@@ -455,56 +512,99 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
         {(completa && variacion) && (
           <p
             className={`flex items-center gap-1.5 font-display text-[13px] -mt-2 mb-4 ${
-              hayStock ? 'text-[#16a34a]' : 'text-egrem-red'
+              tiendaSel
+                ? hayStock
+                  ? 'text-[#16a34a]'
+                  : 'text-egrem-red'
+                : tiendasElegibles.length > 0
+                  ? 'text-text-secondary'
+                  : 'text-egrem-red'
             }`}
           >
-            <span className="icon text-[16px]">{hayStock ? 'check_circle' : 'error'}</span>
-            {hayStock ? (
-              stockBase == null ? (
-                yaEnCarrito > 0 ? (
-                  tr('tienda.product.en_carrito', { enCarrito: yaEnCarrito })
+            <span className="icon text-[16px]">
+              {tiendaSel ? (hayStock ? 'check_circle' : 'error') : 'store'}
+            </span>
+            {tiendaSel ? (
+              hayStock ? (
+                stockBase == null ? (
+                  yaEnCarrito > 0 ? (
+                    tr('tienda.product.en_carrito', { enCarrito: yaEnCarrito })
+                  ) : (
+                    tr('tienda.product.en_stock')
+                  )
+                ) : yaEnCarrito > 0 ? (
+                  <span>
+                    {tr('tienda.product.stock_restante', { restante: stockRestante, enCarrito: yaEnCarrito })}
+                  </span>
                 ) : (
                   tr('tienda.product.en_stock')
                 )
               ) : yaEnCarrito > 0 ? (
-                <span>
-                  {tr('tienda.product.stock_restante', { restante: stockRestante, enCarrito: yaEnCarrito })}
-                </span>
+                tr('tienda.product.max_en_carrito', { enCarrito: yaEnCarrito })
               ) : (
-                tr('tienda.product.en_stock')
+                tr('tienda.product.sin_stock')
               )
-            ) : yaEnCarrito > 0 ? (
-              tr('tienda.product.max_en_carrito', { enCarrito: yaEnCarrito })
+            ) : tiendasElegibles.length > 0 ? (
+              tr('tienda.ubicacion.selecciona_tienda')
             ) : (
               tr('tienda.product.sin_stock')
             )}
           </p>
         )}
 
-        {(completa && variacion?.stockPorTienda && variacion.stockPorTienda.length > 0) && (
-          <details className="group mb-4">
-            <summary className="cursor-pointer select-none flex items-center gap-1.5 font-display text-[13px] text-egrem-gold hover:text-egrem-red">
-              <span className="icon text-[16px]">store</span>
-              {tr('tienda.product.stock_por_tienda')}
-              <span className="icon text-[16px] transition-transform group-open:rotate-180">
-                expand_more
-              </span>
-            </summary>
-            <ul className="mt-2 space-y-1 font-display text-[13px] text-text-secondary">
-              {variacion!.stockPorTienda!.map((s) => (
-                <li key={s.tienda.id} className="flex justify-between gap-3">
-                  <span>{s.tienda.label}</span>
-                  <span
-                    className={
-                      s.ilimitado || (s.cantidad ?? 0) > 0 ? 'text-[#16a34a]' : 'text-egrem-red'
-                    }
-                  >
-                    {s.ilimitado ? tr('tienda.product.stock_ilimitado') : `${s.cantidad} ud.`}
-                  </span>
-                </li>
-              ))}
+        {tiendasElegibles.length > 0 && (
+          <div className="mb-6">
+            <p className={labelClase}>{tr('tienda.ubicacion.selector_titulo')}</p>
+            <ul className="space-y-2">
+              {tiendasElegibles.map((s) => {
+                const sel = tiendaSel === s.tienda.id;
+                const agotada = !s.ilimitado && (s.cantidad ?? 0) <= 0;
+                return (
+                  <li key={s.tienda.id}>
+                    <label
+                      className={[
+                        'flex items-start gap-3 border-2 rounded-xl p-3 cursor-pointer transition-all',
+                        sel
+                          ? 'border-egrem-red bg-white'
+                          : agotada
+                            ? 'border-form-border opacity-50 cursor-not-allowed'
+                            : 'border-form-border hover:border-egrem-red',
+                      ].join(' ')}
+                    >
+                      <input
+                        type="radio"
+                        name="tienda"
+                        value={s.tienda.id}
+                        checked={sel}
+                        disabled={agotada}
+                        onChange={() => setTiendaSel(s.tienda.id)}
+                        className="mt-1 accent-egrem-red"
+                      />
+                      <span className="flex-1 min-w-0">
+                        <span className="block font-display font-bold text-egrem-black">{s.tienda.label}</span>
+                        {s.tienda.direccion && (
+                          <span className="block font-display text-small text-text-secondary">
+                            {s.tienda.direccion}
+                          </span>
+                        )}
+                        <span
+                          className={`font-display text-small ${
+                            s.ilimitado || (s.cantidad ?? 0) > 0 ? 'text-[#16a34a]' : 'text-egrem-red'
+                          }`}
+                        >
+                          {agotada
+                            ? tr('tienda.ubicacion.agotado_en_esta_tienda')
+                            : s.ilimitado
+                              ? tr('tienda.product.stock_ilimitado')
+                              : `${s.cantidad} ud.`}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
             </ul>
-          </details>
+          </div>
         )}
 
         <div className="h-px w-full bg-egrem-gray-light mb-6" />
@@ -630,22 +730,22 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
           )}
 
           {/* ── Cantidad + CTA ── */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center border border-form-border rounded-md bg-white h-14 w-32 overflow-hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <div className="flex w-full sm:w-auto items-stretch border-2 border-form-border rounded-2xl bg-white h-14 overflow-hidden divide-x divide-form-border">
               <button
                 type="button"
                 onClick={() => cambiarCantidad(-1)}
                 disabled={cantidad <= 1}
                 aria-label={tr('tienda.product.cantidad') + ' -'}
-                className="w-10 h-full flex items-center justify-center text-egrem-black hover:text-egrem-red transition-colors focus:outline-none disabled:opacity-40"
+                className="flex-none w-14 sm:w-12 h-full flex items-center justify-center text-egrem-black hover:text-egrem-red hover:bg-egrem-gray-light transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-egrem-gold focus-visible:ring-inset disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
               >
-                <span className="icon" style={{ fontSize: 20 }}>
+                <span className="icon" style={{ fontSize: 22 }}>
                   remove
                 </span>
               </button>
               <input
                 aria-label={tr('tienda.product.cantidad')}
-                className="w-full h-full text-center font-display font-bold text-[18px] border-none bg-transparent focus:ring-0 p-0 text-egrem-black"
+                className="flex-1 sm:flex-none sm:w-14 h-full text-center font-display font-bold text-[18px] border-none bg-transparent text-egrem-black tabular-nums p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-egrem-gold focus-visible:ring-inset"
                 type="text"
                 value={cantidad}
                 readOnly
@@ -655,9 +755,9 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
                 onClick={() => cambiarCantidad(1)}
                 disabled={cantidad >= stockRestante || stockRestante <= 0}
                 aria-label={tr('tienda.product.cantidad') + ' +'}
-                className="w-10 h-full flex items-center justify-center text-egrem-black hover:text-egrem-red transition-colors focus:outline-none disabled:opacity-40"
+                className="flex-none w-14 sm:w-12 h-full flex items-center justify-center text-egrem-black hover:text-egrem-red hover:bg-egrem-gray-light transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-egrem-gold focus-visible:ring-inset disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
               >
-                <span className="icon" style={{ fontSize: 20 }}>
+                <span className="icon" style={{ fontSize: 22 }}>
                   add
                 </span>
               </button>
@@ -666,12 +766,9 @@ export default function ProductoFicha({ producto, lang = 'es', seleccionInicial 
             <button
               type="button"
               onClick={() => void anadirAlCarrito()}
-              disabled={!completa || adding || stockRestante <= 0}
-              aria-disabled={!completa || adding || stockRestante <= 0}
-              className={[
-                'flex-1 bg-egrem-red text-white font-display text-[20px] font-bold uppercase h-14 rounded-2xl flex items-center justify-center gap-2 hover:bg-egrem-red-dark transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed',
-                !completa && !adding ? 'cursor-not-allowed' : '',
-              ].join(' ')}
+              disabled={!completa || !tiendaSel || adding || stockRestante <= 0}
+              aria-disabled={!completa || !tiendaSel || adding || stockRestante <= 0}
+              className="w-full sm:flex-1 bg-egrem-red text-white font-display text-[18px] font-bold uppercase tracking-wide h-14 rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:bg-egrem-red-dark hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
             >
               <span className="icon" aria-hidden="true" style={{ fontSize: 22 }}>
                 {adding ? 'autorenew' : 'shopping_cart'}
