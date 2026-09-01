@@ -5,10 +5,30 @@ import type { Lang } from '@/i18n';
 interface Props {
   lang: Lang;
   userName: string;
+  currentPath?: string;
 }
 
-const { lang, userName } = Astro.props;
+const { lang, userName, currentPath = '/mi-cuenta' } = Astro.props;
 const tr = useTranslations(lang);
+
+interface NavLink {
+  href: string;
+  icon: string;
+  label: string;
+}
+
+const links: NavLink[] = [
+  { href: '/mi-cuenta', label: tr('auth.dashboard.profile'), icon: 'person' },
+  { href: '/mi-cuenta/direcciones', label: tr('auth.dashboard.addresses'), icon: 'location_on' },
+  { href: '/mi-cuenta/pedidos', label: tr('auth.dashboard.orders'), icon: 'inventory_2' },
+  { href: '#', label: tr('auth.dashboard.tickets'), icon: 'local_activity' },
+];
+
+function isActive(href: string, current: string): boolean {
+  if (href === '#') return false;
+  if (href === '/mi-cuenta') return current === '/mi-cuenta' || current === '/mi-cuenta/';
+  return current === href || current.startsWith(href + '/');
+}
 ---
 
 <aside class="w-full md:w-64 shrink-0">
@@ -22,36 +42,35 @@ const tr = useTranslations(lang);
   </div>
 
   <nav class="flex flex-col gap-2">
-    <a
-      href="/mi-cuenta"
-      class="flex items-center gap-3 px-3 py-3 rounded-r-lg transition-all text-h4 no-underline"
-      style="background: var(--color-surface-container); color: var(--color-brand-primary);"
-    >
-      <span class="icon text-[20px]" style="font-variation-settings: 'FILL' 1;">person</span>
-      {tr('auth.dashboard.profile')}
-    </a>
-
-    <a
-      href="#"
-      class="flex items-center gap-3 px-3 py-3 rounded-r-lg transition-all text-h4 no-underline"
-      style="color: var(--color-text-secondary); border-left: 4px solid transparent;"
-      onmouseover="this.style.background='var(--color-surface-container)'; this.style.color='var(--color-brand-primary)'; this.style.borderLeftColor='var(--color-egrem-gold)';"
-      onmouseout="this.style.background=''; this.style.color=''; this.style.borderLeftColor='transparent';"
-    >
-      <span class="icon text-[20px]">inventory_2</span>
-      {tr('auth.dashboard.orders')}
-    </a>
-
-    <a
-      href="#"
-      class="flex items-center gap-3 px-3 py-3 rounded-r-lg transition-all text-h4 no-underline"
-      style="color: var(--color-text-secondary); border-left: 4px solid transparent;"
-      onmouseover="this.style.background='var(--color-surface-container)'; this.style.color='var(--color-brand-primary)'; this.style.borderLeftColor='var(--color-egrem-gold)';"
-      onmouseout="this.style.background=''; this.style.color=''; this.style.borderLeftColor='transparent';"
-    >
-      <span class="icon text-[20px]">local_activity</span>
-      {tr('auth.dashboard.tickets')}
-    </a>
+    {links.map((link) => {
+      const active = isActive(link.href, currentPath);
+      return (
+        <a
+          href={link.href}
+          class="flex items-center gap-3 px-3 py-3 rounded-r-lg transition-all text-h4 no-underline"
+          style={
+            active
+              ? 'background: var(--color-surface-container); color: var(--color-brand-primary);'
+              : 'color: var(--color-text-secondary); border-left: 4px solid transparent;'
+          }
+          onmouseover={
+            !active
+              ? "this.style.background='var(--color-surface-container)'; this.style.color='var(--color-brand-primary)'; this.style.borderLeftColor='var(--color-egrem-gold)';"
+              : undefined
+          }
+          onmouseout={
+            !active
+              ? "this.style.background=''; this.style.color=''; this.style.borderLeftColor='transparent';"
+              : undefined
+          }
+        >
+          <span class="icon text-[20px]" style={active ? "font-variation-settings: 'FILL' 1;" : undefined}>
+            {link.icon}
+          </span>
+          {link.label}
+        </a>
+      );
+    })}
   </nav>
 
   <div class="mt-auto pt-8">

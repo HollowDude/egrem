@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar.astro';
-import EditProfileForm from '@/components/dashboard/EditProfileForm';
+import OrderDetail from '@/components/dashboard/OrderDetail';
 import { useTranslations } from '@/i18n/translations';
 
 const lang = Astro.locals.lang;
@@ -9,7 +9,12 @@ const tr = useTranslations(lang);
 const user = Astro.locals.user;
 
 if (!user) {
-  return Astro.redirect(`/login?redirect=/mi-cuenta`);
+  return Astro.redirect(`/login?redirect=/mi-cuenta/pedidos/${Astro.params.uuid}`);
+}
+
+const uuid = Astro.params.uuid as string;
+if (!uuid) {
+  return Astro.redirect('/mi-cuenta/pedidos');
 }
 ---
 
@@ -19,7 +24,7 @@ if (!user) {
   >
     <DashboardSidebar lang={lang} userName={user.name} currentPath={Astro.url.pathname} />
     <div class="flex-1">
-      <EditProfileForm client:load lang={lang} />
+      <OrderDetail client:load lang={lang} uuid={uuid} />
     </div>
   </div>
 </BaseLayout>
