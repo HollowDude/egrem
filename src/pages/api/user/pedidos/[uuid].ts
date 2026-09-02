@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
-import { obtenerPedido, cancelarPedido, borrarPedido } from '@/lib/nodehive/pedidos';
+import { obtenerPedido, obtenerPedidoAgrupado, cancelarPedido, borrarPedido } from '@/lib/nodehive/pedidos';
 
 export const GET: APIRoute = async ({ params, cookies }) => {
   const session = await getSession(cookies);
@@ -20,12 +20,23 @@ export const GET: APIRoute = async ({ params, cookies }) => {
   }
 
   try {
-    const pedido = await obtenerPedido(uuid, {
-      uid: session.uid,
-      accessToken: session.accessToken,
-      csrfToken: session.csrfToken,
-      sessionCookie: session.sessionCookie,
-    });
+    // Intentar agrupado (si tiene cart_group, trae todos los hermanos)
+    let pedido;
+    try {
+      pedido = await obtenerPedidoAgrupado(uuid, {
+        uid: session.uid,
+        accessToken: session.accessToken,
+        csrfToken: session.csrfToken,
+        sessionCookie: session.sessionCookie,
+      });
+    } catch {
+      pedido = await obtenerPedido(uuid, {
+        uid: session.uid,
+        accessToken: session.accessToken,
+        csrfToken: session.csrfToken,
+        sessionCookie: session.sessionCookie,
+      });
+    }
     return new Response(JSON.stringify(pedido), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -72,12 +83,43 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
       });
     }
 
-    await cancelarPedido(uuid, {
+    const auth = {
       uid: session.uid,
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
       sessionCookie: session.sessionCookie,
-    });
+    };
+    // Si es parte de un grupo estricto, cancelar todos del mismo grupo
+    let uuidsToCancel = [uuid];
+    try {
+      const { obtenerPedidoAgrupado } = await import('@/lib/nodehive/pedidos');
+      const agrupado = await obtenerPedidoAgrupado(uuid, auth);
+      if (agrupado.hermanos.length > 0) {
+        uuidsToCancel = [uuid, ...agrupado.hermanos.map((h) => h.uuid)];
+      } else if (agrupado.cartGroupUuid) {
+        // Fallback por si el agrupado no trajo hermanos pero hay grupo estricto
+        const { listarPedidosPorCartGroup, obtenerPedido } = await import('@/lib/nodehive/pedidos');
+        const base = await obtenerPedido(uuid, auth);
+        if (base.cartGroupUuid) {
+          const hermanos = await listarPedidosPorCartGroup(base.cartGroupUuid, auth);
+          const mismoGrupo = hermanos.filter((h) => h.state === base.state);
+          if (mismoGrupo.length > 1) uuidsToCancel = mismoGrupo.map((h) => h.uuid);
+        }
+      }
+    } catch {}
+    for (const id of uuidsToCancel) {
+      try {
+        await cancelarPedido(id, {
+          uid: session.uid,
+          accessToken: session.accessToken,
+          csrfToken: session.csrfToken,
+          sessionCookie: session.sessionCookie,
+        });
+      } catch (e) {
+        // Si uno falla por ser completed, continuar con los demás
+        if (uuidsToCancel.length === 1) throw e;
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -119,12 +161,55 @@ export const DELETE: APIRoute = async ({ params, cookies }) => {
   }
 
   try {
-    await borrarPedido(uuid, {
+    const auth = {
       uid: session.uid,
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
       sessionCookie: session.sessionCookie,
-    });
+    };
+    let uuidsToDelete = [uuid];
+    try {
+      const { obtenerPedidoAgrupado } = await import('@/lib/nodehive/pedidos');
+      const agrupado = await obtenerPedidoAgrupado(uuid, auth);
+      if (agrupado.hermanos.length > 0) {
+        uuidsToDelete = [uuid, ...agrupado.hermanos.map((h) => h.uuid)];
+      }
+    } catch {
+      try {
+        const { obtenerPedido, listarPedidosPorCartGroup } = await import('@/lib/nodehive/pedidos');
+        const base = await obtenerPedido(uuid, auth);
+        if (base.cartGroupUuid) {
+          const hermanos = await listarPedidosPorCartGroup(base.cartGroupUuid, auth);
+          if (hermanos.length > 1) uuidsToDelete = hermanos.map((h) => h.uuid);
+        }
+      } catch {}
+    }
+    let lastError: unknown = null;
+    for (const id of uuidsToDelete) {
+      try {
+        await borrarPedido(id, {
+          uid: session.uid,
+          accessToken: session.accessToken,
+          csrfToken: session.csrfToken,
+          sessionCookie: session.sessionCookie,
+        });
+      } catch (e) {
+        lastError = e;
+        if (uuidsToDelete.length === 1) throw e;
+        // Para grupo, continuar aunque uno falle
+      }
+    }
+    if (lastError && uuidsToDelete.length > 1) {
+      // Si todos fallaron, propagar error
+      const stillExist = await (async () => {
+        try {
+          const { obtenerPedido } = await import('@/lib/nodehive/pedidos');
+          await obtenerPedido(uuid, auth);
+          return true;
+        } catch { return false; }
+      })();
+      if (stillExist) throw lastError;
+    }
     return new Response(null, { status: 204 });
   } catch (e) {
     console.error('[api/user/pedidos DELETE]', e);

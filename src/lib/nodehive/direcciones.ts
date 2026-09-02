@@ -20,6 +20,7 @@ export interface Direccion {
   lastName: string;
   phone: string;
   ciPassport: string;
+  isDefault: boolean;
 }
 
 function sessionCookieHeader(raw?: string): string | undefined {
@@ -91,6 +92,7 @@ function parseDireccionResource(resource: {
     lastName: (resource.attributes.field_last_name as string) ?? '',
     phone,
     ciPassport: (resource.attributes.field_ci_passport as string) ?? '',
+    isDefault: Boolean(resource.attributes.is_default),
   };
 }
 
@@ -116,10 +118,10 @@ async function getUserUuid(auth: DireccionAuth): Promise<string | null> {
 }
 
 export async function listarDirecciones(auth: DireccionAuth): Promise<Direccion[]> {
-  // Sin filtro por uid: el endpoint ya devuelve solo los profiles del usuario autenticado
+  // Listar libreta con default primero (Drupal sort=-is_default)
   const data = await profileFetch<{
     data: Array<{ id: string; attributes: Record<string, unknown> }>;
-  }>(`profile/customer`, auth);
+  }>(`profile/customer?sort=-is_default`, auth);
 
   const list = Array.isArray(data.data) ? data.data : [];
   const result: Direccion[] = [];
@@ -127,11 +129,13 @@ export async function listarDirecciones(auth: DireccionAuth): Promise<Direccion[
     const parsed = parseDireccionResource(r as never);
     if (parsed) result.push(parsed);
   }
+  // Asegurar default primero en cliente también
+  result.sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
   return result;
 }
 
 export async function crearDireccion(
-  data: Omit<Direccion, 'uuid'>,
+  data: Omit<Direccion, 'uuid'> & { isDefault?: boolean },
   auth: DireccionAuth,
 ): Promise<Direccion> {
   // No enviamos relationships.uid con el ID numérico (causa 404 "user--user:8").
@@ -158,6 +162,7 @@ export async function crearDireccion(
         field_last_name: data.lastName || '',
         field_phone: toPhonePayload(data.phone || ''),
         field_ci_passport: data.ciPassport || '',
+        ...(data.isDefault !== undefined ? { is_default: data.isDefault } : {}),
       },
       ...(userUuid
         ? { relationships: { uid: { data: { type: 'user--user', id: userUuid } } } }
@@ -222,6 +227,7 @@ export async function actualizarDireccion(
   if (data.lastName !== undefined) attributesPatch.field_last_name = data.lastName;
   if (data.phone !== undefined) attributesPatch.field_phone = toPhonePayload(data.phone);
   if (data.ciPassport !== undefined) attributesPatch.field_ci_passport = data.ciPassport;
+  if ((data as Record<string, unknown>).isDefault !== undefined) attributesPatch.is_default = (data as { isDefault?: boolean }).isDefault;
 
   const body = {
     data: {

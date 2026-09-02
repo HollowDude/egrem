@@ -21,7 +21,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
 
   try {
     const body = (await request.json()) as Record<string, unknown>;
-    const patch: Record<string, string> = {};
+    const patch: Record<string, unknown> = {};
     if (body.addressLine1 !== undefined) patch.addressLine1 = String(body.addressLine1).trim();
     if (body.administrativeArea !== undefined) patch.administrativeArea = String(body.administrativeArea).trim();
     if (body.locality !== undefined) patch.locality = String(body.locality).trim();
@@ -32,6 +32,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
     if (body.lastName !== undefined) patch.lastName = String(body.lastName).trim();
     if (body.phone !== undefined) patch.phone = String(body.phone).trim();
     if (body.ciPassport !== undefined) patch.ciPassport = String(body.ciPassport).trim();
+    if (body.isDefault !== undefined || body.is_default !== undefined) patch.isDefault = Boolean(body.isDefault ?? body.is_default);
 
     if (Object.keys(patch).length === 0) {
       return new Response(JSON.stringify({ error: 'Nada para actualizar.' }), {

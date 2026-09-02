@@ -295,13 +295,30 @@ export default function MinicartPanel({ open, onClose, lang = 'es' }: Props) {
               {fmt(cart?.subtotal ?? 0, lang)}
             </span>
           </div>
-          <a
-            href="/checkout/merch"
-            onClick={onClose}
-            className="block w-full text-center bg-egrem-red text-white font-display font-bold uppercase py-3 rounded-2xl hover:bg-egrem-red-dark transition-colors no-underline"
+          <button
+            type="button"
+            onClick={async () => {
+              const btn = document.activeElement as HTMLElement | null;
+              try {
+                const res = await fetch('/api/checkout/start', { method: 'POST' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && (data as { ok?: boolean }).ok) {
+                  try {
+                    if (cart) sessionStorage.setItem('egrem_checkout_snapshot', JSON.stringify(cart));
+                  } catch {}
+                  onClose();
+                  window.location.href = '/checkout/pago';
+                  return;
+                }
+              } catch {}
+              onClose();
+              window.location.href = '/checkout/merch';
+              if (btn) (btn as HTMLButtonElement).blur?.();
+            }}
+            className="block w-full text-center bg-egrem-red text-white font-display font-bold uppercase py-3 rounded-2xl hover:bg-egrem-red-dark transition-colors no-underline disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {tr('tienda.cart.proceder_pago')}
-          </a>
+          </button>
         </div>
       </aside>
     </>

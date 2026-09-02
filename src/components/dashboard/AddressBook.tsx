@@ -16,6 +16,7 @@ interface Direccion {
   lastName: string;
   phone: string;
   ciPassport: string;
+  isDefault: boolean;
 }
 
 interface Props {
@@ -80,6 +81,24 @@ export default function AddressBook({ lang = 'es' }: Props) {
       load();
     } catch (e) {
       setError(String((e as Error)?.message ?? 'No se pudo eliminar.'));
+    }
+  }
+
+  async function handleSetDefault(uuid: string) {
+    setError('');
+    try {
+      const res = await fetch(`/api/user/direcciones/${uuid}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDefault: true }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || 'Error');
+      }
+      load();
+    } catch (e) {
+      setError(String((e as Error)?.message ?? 'No se pudo marcar como predeterminada.'));
     }
   }
 
@@ -151,10 +170,38 @@ export default function AddressBook({ lang = 'es' }: Props) {
               style={{ borderColor: CSS.formBorder }}
             >
               <div className="flex items-start justify-between mb-3">
-                <span className="icon text-[20px]" style={{ color: CSS.egremGold }}>
-                  location_on
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="icon text-[20px]" style={{ color: CSS.egremGold }}>
+                    location_on
+                  </span>
+                  {d.isDefault && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border" style={{ background: 'var(--color-brand-primary)', color: '#fff', borderColor: 'var(--color-brand-primary)' }}>
+                      <span className="icon text-[12px]">star</span>
+                      {tr('auth.dashboard.address_default')}
+                    </span>
+                  )}
+                </div>
                 <div className="flex gap-2">
+                  {!d.isDefault && (
+                    <button
+                      type="button"
+                      onClick={() => handleSetDefault(d.uuid)}
+                      className="w-8 h-8 rounded-full border flex items-center justify-center transition-colors"
+                      style={{ borderColor: CSS.formBorder, color: CSS.textSecondary }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = CSS.egremGold;
+                        (e.currentTarget as HTMLElement).style.borderColor = CSS.egremGold;
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = CSS.textSecondary;
+                        (e.currentTarget as HTMLElement).style.borderColor = CSS.formBorder;
+                      }}
+                      aria-label={tr('auth.dashboard.address_set_default')}
+                      title={tr('auth.dashboard.address_set_default')}
+                    >
+                      <span className="icon text-[16px]">star</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {

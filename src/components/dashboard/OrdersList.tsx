@@ -10,9 +10,24 @@ interface PedidoResumen {
   uuid: string;
   orderId: number;
   state: string;
+  checkoutStep: string | null;
+  cartGroupUuid: string | null;
   placed: string | null;
   total: number;
   storeLabel?: string;
+}
+interface PedidoAgrupado {
+  uuid: string;
+  orderId: number;
+  orderIds: number[];
+  uuids: string[];
+  state: string;
+  checkoutStep: string | null;
+  cartGroupUuid: string | null;
+  placed: string | null;
+  total: number;
+  pedidos: PedidoResumen[];
+  storeLabels: string[];
 }
 
 interface Props {
@@ -26,6 +41,23 @@ const CSS = {
   brandPrimary: 'var(--color-brand-primary)',
 };
 
+type EstadoInfo = { label: string; variant: 'green' | 'gold' | 'red' | 'white' };
+const PASO_LABEL: Record<string, string> = {
+  egrem_billing: 'Falta facturación',
+  egrem_shipping: 'Falta envío',
+  egrem_payment_method: 'Falta método de pago',
+  egrem_payment: 'Falta confirmar pago',
+};
+function estadoInfo(state: string, checkoutStep: string | null): EstadoInfo {
+  const s = state.toLowerCase();
+  if (s === 'completed' || s === 'complete') return { label: 'Completado', variant: 'green' };
+  if (s === 'canceled' || s === 'cancelled') return { label: 'Cancelado', variant: 'red' };
+  if (s === 'draft') {
+    const paso = checkoutStep ? PASO_LABEL[checkoutStep] : null;
+    return { label: paso ? `En proceso — ${paso}` : 'En proceso', variant: 'gold' };
+  }
+  return { label: state, variant: 'white' };
+}
 function badgeVariant(state: string): 'green' | 'gold' | 'red' | 'white' {
   const s = state.toLowerCase();
   if (s === 'completed' || s === 'complete' || s === 'fulfilled') return 'green';
@@ -45,10 +77,49 @@ function formatFecha(dateStr: string | null, lang: Lang): string {
   });
 }
 
+function agruparPedidosClient(pedidos: PedidoResumen[]): PedidoAgrupado[] {
+  const map = new Map<string, PedidoResumen[]>();
+  for (const p of pedidos) {
+    const key = p.cartGroupUuid ?? `single:${p.uuid}`;
+    const arr = map.get(key);
+    if (arr) arr.push(p);
+    else map.set(key, [p]);
+  }
+  const grupos: PedidoAgrupado[] = [];
+  for (const [, arr] of map) {
+    arr.sort((a, b) => a.orderId - b.orderId);
+    const first = arr[0];
+    const total = arr.reduce((s, x) => s + x.total, 0);
+    const placed = arr.reduce((acc: string | null, x) => {
+      if (!x.placed) return acc;
+      if (!acc) return x.placed;
+      return new Date(x.placed) > new Date(acc) ? x.placed : acc;
+    }, first.placed);
+    grupos.push({
+      uuid: first.uuid,
+      orderId: first.orderId,
+      orderIds: arr.map((x) => x.orderId),
+      uuids: arr.map((x) => x.uuid),
+      state: first.state,
+      checkoutStep: first.checkoutStep,
+      cartGroupUuid: first.cartGroupUuid,
+      placed,
+      total,
+      pedidos: arr,
+      storeLabels: [...new Set(arr.map((x) => x.storeLabel).filter(Boolean) as string[])],
+    });
+  }
+  grupos.sort((a, b) => {
+    if (!a.placed || !b.placed) return 0;
+    return new Date(b.placed).getTime() - new Date(a.placed).getTime();
+  });
+  return grupos;
+}
+
 export default function OrdersList({ lang = 'es' }: Props) {
   const tr = useTranslations(lang as Lang);
   const [tab, setTab] = useState<PedidoTab>('realizados');
-  const [pedidos, setPedidos] = useState<PedidoResumen[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoAgrupado[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -66,11 +137,12 @@ export default function OrdersList({ lang = 'es' }: Props) {
         const data = await res.json().catch(() => ({}));
         throw new Error((data as { error?: string }).error || 'Error');
       }
-      const data = (await res.json()) as { pedidos: PedidoResumen[]; nextCursor: string | null };
+      const data = (await res.json()) as { pedidos: PedidoResumen[]; grupos?: PedidoAgrupado[]; nextCursor: string | null };
+      const grupos = data.grupos && data.grupos.length > 0 ? data.grupos : agruparPedidosClient(data.pedidos ?? []);
       if (reset) {
-        setPedidos(data.pedidos ?? []);
+        setPedidos(grupos);
       } else {
-        setPedidos((prev) => [...prev, ...(data.pedidos ?? [])]);
+        setPedidos((prev) => [...prev, ...grupos]);
       }
       setNextCursor(data.nextCursor ?? null);
     } catch (e) {
@@ -147,41 +219,74 @@ export default function OrdersList({ lang = 'es' }: Props) {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-display font-bold text-sm" style={{ color: 'var(--color-egrem-black)' }}>
+                    <p className="font-display font-bold text-h4" style={{ color: 'var(--color-egrem-black)' }}>
+                      <span style={{ color: 'var(--color-egrem-gold)' }}>#</span>{p.orderId}
+                    </p>
+                    <p className="text-caption" style={{ color: CSS.textSecondary }}>
                       {tr('auth.dashboard.order_detail_title').replace('{id}', String(p.orderId))}
                     </p>
                     <p className="text-small" style={{ color: CSS.textSecondary }}>
                       {formatFecha(p.placed, lang as Lang)}
-                      {p.storeLabel ? ` · ${p.storeLabel}` : ''}
+                      {p.storeLabels.length > 0 ? ` · ${p.storeLabels.join(' · ')}` : ''}
+                      {p.orderIds.length > 1 ? ` · ${p.orderIds.length} tiendas` : ''}
                     </p>
                   </div>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                      badgeVariant(p.state) === 'green'
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : badgeVariant(p.state) === 'red'
-                          ? 'bg-red-50 text-red-700 border-red-200'
-                          : badgeVariant(p.state) === 'gold'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-white text-text-secondary border-black/10'
-                    }`}
-                  >
-                    {p.state}
-                  </span>
+                  {(() => {
+                    const e = estadoInfo(p.state, p.checkoutStep);
+                    return (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shrink-0 ${
+                          e.variant === 'green'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : e.variant === 'red'
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : e.variant === 'gold'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-white text-text-secondary border-black/10'
+                        }`}
+                      >
+                        {e.label}
+                      </span>
+                    );
+                  })()}
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: CSS.formBorder }}>
+                <div className="flex items-center justify-between pt-2 border-t gap-2" style={{ borderColor: CSS.formBorder }}>
                   <span className="font-display font-bold text-sm" style={{ color: 'var(--color-egrem-black)' }}>
                     {formatPrecio(p.total, lang as Lang)}
                   </span>
-                  <a
-                    href={`/mi-cuenta/pedidos/${p.uuid}`}
-                    className="inline-flex items-center gap-1 text-sm font-display font-bold no-underline"
-                    style={{ color: CSS.brandPrimary }}
-                  >
-                    Ver detalle
-                    <span className="icon text-[16px]">arrow_forward</span>
-                  </a>
+                  <div className="flex items-center gap-2">
+                    {p.state === 'draft' && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await fetch('/api/checkout/resume', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ uuid: p.uuid }),
+                          });
+                          if (res.ok) {
+                            window.location.href = '/checkout/pago';
+                            return;
+                          }
+                          const data = await res.json().catch(() => ({}));
+                          setError((data as { error?: string }).error ?? 'No se pudo continuar el pedido.');
+                        }}
+                        className="btn-primary !w-auto px-4 py-2 text-xs inline-flex items-center gap-1"
+                      >
+                        <span className="icon text-[16px]">arrow_forward</span>
+                        {tr('auth.dashboard.order_continue_checkout')}
+                      </button>
+                    )}
+                    <a
+                      href={`/mi-cuenta/pedidos/${p.uuid}`}
+                      className="inline-flex items-center gap-1 text-sm font-display font-bold no-underline"
+                      style={{ color: CSS.brandPrimary }}
+                    >
+                      Ver detalle
+                      <span className="icon text-[16px]">arrow_forward</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             ))}

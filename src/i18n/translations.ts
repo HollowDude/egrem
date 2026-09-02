@@ -25,6 +25,7 @@ import { about } from './about';
 import { contacto } from './contacto';
 import { evento } from './evento';
 import { tienda } from './tienda';
+import { checkout } from './checkout';
 
 export const t: Record<Lang, Record<string, string>> = {
   es: {
@@ -41,6 +42,7 @@ export const t: Record<Lang, Record<string, string>> = {
     ...contacto.es,
     ...evento.es,
     ...tienda.es,
+    ...checkout.es,
   },
   en: {
     ...nav.en,
@@ -56,6 +58,7 @@ export const t: Record<Lang, Record<string, string>> = {
     ...contacto.en,
     ...evento.en,
     ...tienda.en,
+    ...checkout.en,
   },
 };
 

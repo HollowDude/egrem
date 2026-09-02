@@ -1,0 +1,55 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getSession } from '@/lib/auth/session';
+import { obtenerCheckout } from '@/lib/nodehive/checkout';
+import CheckoutWizard from '@/components/checkout/CheckoutWizard';
+const lang = Astro.locals.lang;
+
+const session = await getSession(Astro.cookies);
+if (!session) {
+  return Astro.redirect(`/login?redirect=/checkout/pago`);
+}
+
+// Leer cookie de checkout
+const raw = Astro.cookies.get('egrem_checkout_orders')?.value;
+if (!raw) {
+  return Astro.redirect('/tienda');
+}
+
+let orderIds: number[] = [];
+let cartGroup: string | null = null;
+try {
+  const parsed = JSON.parse(raw);
+  orderIds = parsed.orderIds ?? [];
+  cartGroup = parsed.cartGroup ?? null;
+} catch {}
+
+if (!orderIds.length) {
+  return Astro.redirect('/tienda');
+}
+
+let initialOrder = null;
+try {
+  initialOrder = await obtenerCheckout(
+    { orderId: orderIds[0] },
+    { accessToken: session.accessToken, csrfToken: session.csrfToken, sessionCookie: session.sessionCookie, lang },
+  );
+} catch (e) {
+  console.error('[checkout/pago] obtenerCheckout failed', e);
+  return Astro.redirect('/tienda');
+}
+---
+
+<BaseLayout title="Checkout" description="Checkout">
+  <main id="main-content" class="container-site py-8 md:py-12">
+    <nav class="mb-4 flex items-center gap-2 text-caption">
+      <a href="/tienda" class="no-underline hover:underline" style="color: var(--color-text-secondary)">Tienda</a>
+      <span class="icon text-[14px]" style="color: var(--color-text-secondary)">chevron_right</span>
+      <span style="color: var(--color-egrem-black)">Checkout</span>
+    </nav>
+    <h1 class="text-h1 uppercase mb-8">Checkout</h1>
+    <CheckoutWizard client:load initialOrder={initialOrder} orderIds={orderIds} cartGroup={cartGroup} lang={lang} />
+  </main>
+</BaseLayout>

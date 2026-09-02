@@ -8,6 +8,8 @@ interface PedidoDetalle {
   uuid: string;
   orderId: number;
   state: string;
+  checkoutStep: string | null;
+  cartGroupUuid: string | null;
   placed: string | null;
   total: number;
   storeLabel?: string;
@@ -17,9 +19,19 @@ interface PedidoDetalle {
     unitPrice: number;
     imagen?: string | null;
   }>;
+  billingProfile: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    ciPassport: string;
+    address: { addressLine1: string; locality: string; administrativeArea: string; postalCode?: string } | null;
+  } | null;
   direccion?: { addressLine1: string; locality: string; administrativeArea: string; postalCode?: string };
   puedeCancelar: boolean;
   puedeBorrar: boolean;
+  storeGroups?: Array<{ storeLabel?: string; items: Array<{ title: string; quantity: number; unitPrice: number; imagen?: string | null }> }>;
+  todosItems?: Array<{ title: string; quantity: number; unitPrice: number; imagen?: string | null }>;
+  hermanos?: Array<unknown>;
 }
 
 interface Props {
@@ -34,6 +46,29 @@ const CSS = {
   brandPrimary: 'var(--color-brand-primary)',
 };
 
+const PASOS = [
+  { key: 'egrem_billing', label: 'Facturación' },
+  { key: 'egrem_shipping', label: 'Envío' },
+  { key: 'egrem_payment_method', label: 'Método de Pago' },
+  { key: 'egrem_payment', label: 'Pago' },
+];
+const PASO_LABEL: Record<string, string> = {
+  egrem_billing: 'Falta facturación',
+  egrem_shipping: 'Falta envío',
+  egrem_payment_method: 'Falta método de pago',
+  egrem_payment: 'Falta confirmar pago',
+};
+type EstadoInfo = { label: string; variant: string };
+function estadoInfo(state: string, checkoutStep: string | null): EstadoInfo {
+  const s = state.toLowerCase();
+  if (s === 'completed' || s === 'complete') return { label: 'Completado', variant: 'bg-green-50 text-green-700 border-green-200' };
+  if (s === 'canceled' || s === 'cancelled') return { label: 'Cancelado', variant: 'bg-red-50 text-red-700 border-red-200' };
+  if (s === 'draft') {
+    const paso = checkoutStep ? PASO_LABEL[checkoutStep] : null;
+    return { label: paso ? `En proceso — ${paso}` : 'En proceso', variant: 'bg-amber-50 text-amber-700 border-amber-200' };
+  }
+  return { label: state, variant: 'bg-white text-text-secondary border-black/10' };
+}
 function badgeVariant(state: string): string {
   const s = state.toLowerCase();
   if (s === 'completed' || s === 'complete') return 'bg-green-50 text-green-700 border-green-200';
@@ -124,6 +159,25 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
     }
   }
 
+  async function continuarCheckout() {
+    setActionError('');
+    try {
+      const res = await fetch('/api/checkout/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uuid }),
+      });
+      if (res.ok) {
+        window.location.href = '/checkout/pago';
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      setActionError((data as { error?: string }).error ?? 'No se pudo continuar el pedido.');
+    } catch {
+      setActionError('No se pudo continuar el pedido.');
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -143,18 +197,21 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
     );
   }
 
+  const estado = estadoInfo(pedido.state, pedido.checkoutStep);
+  const idxActual = pedido.checkoutStep ? PASOS.findIndex((p) => p.key === pedido.checkoutStep) : -1;
+
   return (
     <div>
       <header className="mb-8">
         <a href="/mi-cuenta/pedidos" className="inline-flex items-center gap-1 text-small no-underline mb-4" style={{ color: CSS.brandPrimary }}>
           <span className="icon text-[16px]">arrow_back</span> Pedidos
         </a>
-        <h3 className="text-h2 uppercase m-0 border-b-2 border-egrem-gold pb-2" style={{ borderColor: CSS.egremGold }}>
-          {tr('auth.dashboard.order_detail_title').replace('{id}', String(pedido.orderId))}
+        <h3 className="text-h2 uppercase m-0 border-b-2 border-egrem-gold pb-2 flex items-baseline gap-2" style={{ borderColor: CSS.egremGold }}>
+          <span style={{ color: 'var(--color-egrem-gold)' }}>#</span>{pedido.orderId} <span className="text-h4" style={{ color: CSS.textSecondary, textTransform: 'none' }}>{tr('auth.dashboard.order_detail_title').replace('{id}', String(pedido.orderId)).replace(`#${pedido.orderId}`, '').replace(`Pedido ${pedido.orderId}`, '').trim() || `Pedido #${pedido.orderId}`}</span>
         </h3>
         <div className="flex items-center gap-3 mt-3">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${badgeVariant(pedido.state)}`}>
-            {pedido.state}
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${estado.variant}`}>
+            {estado.label}
           </span>
           <span className="text-small" style={{ color: CSS.textSecondary }}>
             {formatFecha(pedido.placed, lang as Lang)}
@@ -166,6 +223,35 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
       <Alert type="error" message={actionError} />
       <Alert type="success" message={actionSuccess} />
 
+      {pedido.state === 'draft' && (
+        <>
+          <div className="checkout-stepper mb-6">
+            {PASOS.map((paso, idx) => {
+              const isActive = pedido.checkoutStep === paso.key;
+              const isDone = idxActual > idx;
+              const isLast = idx === PASOS.length - 1;
+              return (
+                <div key={paso.key} className="flex items-end flex-1">
+                  <div className="flex flex-col items-center gap-1.5 flex-1">
+                    <div className={`checkout-step-dot ${isActive ? 'checkout-step-dot--active' : ''} ${isDone ? 'checkout-step-dot--done' : ''}`}>
+                      {isDone ? <span className="icon text-[18px]">check</span> : idx + 1}
+                    </div>
+                    <span className={`checkout-step-label ${isActive ? 'checkout-step-label--active' : ''} ${isDone ? 'checkout-step-label--done' : ''}`}>{paso.label}</span>
+                  </div>
+                  {!isLast && <div className={`checkout-step-line ${isDone ? 'checkout-step-line--done' : ''}`} />}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mb-6 p-4 rounded-xl flex items-center justify-between gap-4" style={{ background: 'rgba(204,0,0,0.04)', border: '1px solid var(--color-form-border)' }}>
+            <p className="text-small m-0" style={{ color: CSS.textSecondary }}>{tr('auth.dashboard.order_continue_note')}</p>
+            <button type="button" onClick={continuarCheckout} className="btn-primary !w-auto px-6 py-3 flex-shrink-0">
+              {tr('auth.dashboard.order_continue_checkout')}
+            </button>
+          </div>
+        </>
+      )}
+
       <div className="bg-white border rounded-xl p-6 shadow-sm mb-6" style={{ borderColor: CSS.formBorder }}>
         <h4 className="text-h3 m-0 pb-2 mb-4 flex items-center gap-2 border-b" style={{ borderColor: CSS.formBorder }}>
           <span className="icon text-[20px]" style={{ color: CSS.egremGold }}>
@@ -173,30 +259,40 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
           </span>
           Productos
         </h4>
-        <div className="space-y-4">
-          {pedido.items.map((item, idx) => (
-            <div key={idx} className="flex gap-4 py-3 border-b last:border-0" style={{ borderColor: CSS.formBorder }}>
-              <div className="w-16 h-16 bg-egrem-gray-light rounded-lg overflow-hidden flex items-center justify-center shrink-0">
-                {item.imagen ? (
-                  <img src={item.imagen} alt={item.title} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="icon text-egrem-gray/40 text-2xl">inventory_2</span>
-                )}
+        {(pedido.storeGroups && pedido.storeGroups.length > 1 ? pedido.storeGroups : [{ storeLabel: pedido.storeLabel, items: pedido.items }]).map((group, gIdx) => (
+          <div key={gIdx} className={gIdx > 0 ? 'mt-6 pt-6 border-t' : ''} style={gIdx > 0 ? { borderColor: CSS.formBorder } : undefined}>
+            {pedido.storeGroups && pedido.storeGroups.length > 1 && (
+              <div className="flex items-center gap-2 mb-3">
+                <span className="icon text-[18px]" style={{ color: CSS.egremGold }}>storefront</span>
+                <span className="font-display font-bold text-sm uppercase tracking-wider" style={{ color: 'var(--color-egrem-black)' }}>{group.storeLabel ?? `Tienda ${gIdx + 1}`}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-display font-bold text-sm truncate" style={{ color: 'var(--color-egrem-black)' }}>
-                  {item.title}
-                </p>
-                <p className="text-small" style={{ color: CSS.textSecondary }}>
-                  Cantidad: {item.quantity} · {formatPrecio(item.unitPrice, lang as Lang)}
-                </p>
-              </div>
-              <p className="font-display font-bold text-sm" style={{ color: 'var(--color-egrem-black)' }}>
-                {formatPrecio(item.unitPrice * item.quantity, lang as Lang)}
-              </p>
+            )}
+            <div className="space-y-4">
+              {group.items.map((item, idx) => (
+                <div key={idx} className="flex gap-4 py-3 border-b last:border-0" style={{ borderColor: CSS.formBorder }}>
+                  <div className="w-16 h-16 bg-egrem-gray-light rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+                    {item.imagen ? (
+                      <img src={item.imagen} alt={item.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="icon text-egrem-gray/40 text-2xl">inventory_2</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-sm truncate" style={{ color: 'var(--color-egrem-black)' }}>
+                      {item.title}
+                    </p>
+                    <p className="text-small" style={{ color: CSS.textSecondary }}>
+                      Cantidad: {item.quantity} · {formatPrecio(item.unitPrice, lang as Lang)}
+                    </p>
+                  </div>
+                  <p className="font-display font-bold text-sm" style={{ color: 'var(--color-egrem-black)' }}>
+                    {formatPrecio(item.unitPrice * item.quantity, lang as Lang)}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
         <div className="flex justify-end pt-4 mt-4 border-t" style={{ borderColor: CSS.formBorder }}>
           <span className="font-display font-bold text-h3" style={{ color: 'var(--color-egrem-black)' }}>
             {formatPrecio(pedido.total, lang as Lang)}
@@ -205,24 +301,38 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
       </div>
 
       <div className="bg-white border rounded-xl p-6 shadow-sm mb-6" style={{ borderColor: CSS.formBorder }}>
-        <h4 className="text-h4 m-0 mb-3 flex items-center gap-2">
-          <span className="icon text-[20px]" style={{ color: CSS.egremGold }}>
-            location_on
-          </span>
-          {tr('auth.dashboard.order_billing_address')}
+        <h4 className="text-h4 m-0 mb-4 flex items-center gap-2">
+          <span className="icon text-[20px]" style={{ color: CSS.egremGold }}>person</span>
+          {tr('auth.dashboard.order_billing_info')}
         </h4>
-        {pedido.direccion ? (
+        {pedido.billingProfile ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-small" style={{ color: CSS.textSecondary }}>
+            <div>
+              <p className="text-caption uppercase tracking-wider mb-1">{tr('auth.dashboard.first_name')} / {tr('auth.dashboard.last_name')}</p>
+              <p style={{ color: 'var(--color-egrem-black)', fontWeight: 700 }}>{pedido.billingProfile.firstName} {pedido.billingProfile.lastName}</p>
+            </div>
+            <div>
+              <p className="text-caption uppercase tracking-wider mb-1">{tr('auth.dashboard.address_phone')}</p>
+              <p>{pedido.billingProfile.phone || '—'}</p>
+            </div>
+            <div>
+              <p className="text-caption uppercase tracking-wider mb-1">{tr('auth.dashboard.address_ci_passport')}</p>
+              <p>{pedido.billingProfile.ciPassport || '—'}</p>
+            </div>
+            <div>
+              <p className="text-caption uppercase tracking-wider mb-1">{tr('auth.dashboard.order_billing_address')}</p>
+              {pedido.billingProfile.address ? (
+                <p>{pedido.billingProfile.address.addressLine1}, {pedido.billingProfile.address.locality}, {pedido.billingProfile.address.administrativeArea} {pedido.billingProfile.address.postalCode ? `· ${pedido.billingProfile.address.postalCode}` : ''}</p>
+              ) : <p>—</p>}
+            </div>
+          </div>
+        ) : pedido.direccion ? (
           <div className="text-small space-y-1" style={{ color: CSS.textSecondary }}>
             <p style={{ color: 'var(--color-egrem-black)', fontWeight: 700 }}>{pedido.direccion.addressLine1}</p>
-            <p>
-              {pedido.direccion.locality}, {pedido.direccion.administrativeArea}
-              {pedido.direccion.postalCode ? ` · ${pedido.direccion.postalCode}` : ''}
-            </p>
+            <p>{pedido.direccion.locality}, {pedido.direccion.administrativeArea}{pedido.direccion.postalCode ? ` · ${pedido.direccion.postalCode}` : ''}</p>
           </div>
         ) : (
-          <p className="text-small" style={{ color: CSS.textSecondary }}>
-            {tr('auth.dashboard.order_no_address')}
-          </p>
+          <p className="text-small" style={{ color: CSS.textSecondary }}>{tr('auth.dashboard.order_no_address')}</p>
         )}
       </div>
 

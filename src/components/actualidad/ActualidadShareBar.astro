@@ -152,9 +152,23 @@ const facebookHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURICo
       await navigator.clipboard.writeText(pageUrl);
       showCopied(igBtn);
       showInstagramHint();
-      window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        // En móvil intenta abrir la app sin usar window.open con scheme (evita error Safari desktop)
+        const a = document.createElement('a');
+        a.href = 'instagram://story-camera';
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 1500);
+        // Fallback a web por si no tiene app
+        setTimeout(() => window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer'), 1200);
+      } else {
+        window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+      }
     } catch {
-      // último fallback: abre Instagram igualmente
       window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
     }
   });

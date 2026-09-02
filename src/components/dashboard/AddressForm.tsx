@@ -18,6 +18,7 @@ interface Direccion {
   lastName: string;
   phone: string;
   ciPassport: string;
+  isDefault: boolean;
 }
 
 interface Props {
@@ -57,6 +58,7 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
   const [postalCode, setPostalCode] = useState(direccion?.postalCode ?? '');
   const [phone, setPhone] = useState(direccion?.phone ?? '');
   const [ciPassport, setCiPassport] = useState(direccion?.ciPassport ?? '');
+  const [isDefault, setIsDefault] = useState(direccion?.isDefault ?? false);
   const [municipios, setMunicipios] = useState<string[]>([]);
   const [loadingMunicipios, setLoadingMunicipios] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -139,7 +141,7 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
 
     setLoading(true);
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         countryCode: 'CU',
         administrativeArea: province.trim(),
         locality: municipio.trim(),
@@ -150,6 +152,7 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
         lastName: lastName.trim(),
         phone: phone.trim(),
         ciPassport: ciPassport.trim(),
+        isDefault,
       };
 
       const url = isEdit ? `/api/user/direcciones/${direccion!.uuid}` : '/api/user/direcciones';
@@ -319,6 +322,22 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
             style={{ borderColor: CSS.formBorder, color: CSS.egremBlack }}
           />
         </div>
+
+        <label className="flex items-center gap-3 py-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isDefault}
+            onChange={(e) => setIsDefault(e.target.checked)}
+            className="w-4 h-4 rounded border-2 accent-[var(--color-brand-primary)]"
+            style={{ accentColor: 'var(--color-brand-primary)' }}
+          />
+          <span className="font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: CSS.textSecondary }}>
+            {tr('auth.dashboard.address_default')}
+          </span>
+          <span className="icon text-[16px]" style={{ color: isDefault ? 'var(--color-egrem-gold)' : 'var(--color-form-border)' }}>
+            star
+          </span>
+        </label>
 
         <div className="pt-4 flex justify-end gap-3">
           {onCancel && (

@@ -942,4 +942,130 @@
   html.colorblind-achromatopsia {
     filter: url(#cb-achromatopsia);
   }
+
+  /* ── Checkout: stepper ─────────────────────────────────────── */
+  .checkout-stepper {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+  }
+  .checkout-step-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-form-border);
+    background: #ffffff;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+  .checkout-step-dot--active {
+    background: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: #fff;
+  }
+  .checkout-step-dot--done {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+  }
+  .checkout-step-label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+  .checkout-step-label--active {
+    color: var(--color-brand-primary);
+  }
+  .checkout-step-label--done {
+    color: #16a34a;
+  }
+  .checkout-step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--color-form-border);
+    margin: 0 0.5rem 18px;
+  }
+  .checkout-step-line--done {
+    background: #16a34a;
+  }
+
+  /* ── Checkout: panel de paso ──────────────────────────────────── */
+  .checkout-panel {
+    background: #ffffff;
+    border: 1px solid var(--color-form-border);
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  .checkout-panel-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-form-border);
+    background: var(--color-egrem-gray-light);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .checkout-panel-body {
+    padding: 1.5rem;
+  }
+
+  /* ── Checkout: tarjeta seleccionable genérica (dirección / envío / pago) ── */
+  .checkout-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid var(--color-form-border);
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #ffffff;
+  }
+  .checkout-option:hover:not(.checkout-option--selected) {
+    border-color: var(--color-form-border-hover);
+  }
+  .checkout-option--selected {
+    border-color: var(--color-brand-primary);
+    background: rgba(204, 0, 0, 0.03);
+  }
+  .checkout-option--static {
+    cursor: default;
+  }
+
+  /* Radio visual (reusa la lógica de addr-card del mockup, con tokens reales) */
+  .checkout-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-form-border);
+    background: #fff;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .checkout-option--selected .checkout-radio {
+    border-color: var(--color-brand-primary);
+  }
+  .checkout-radio-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--color-brand-primary);
+    display: none;
+  }
+  .checkout-option--selected .checkout-radio-dot {
+    display: block;
+  }
 }

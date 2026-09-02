@@ -60,6 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const lastName = String(body.lastName ?? '').trim();
     const phone = String(body.phone ?? '').trim();
     const ciPassport = String(body.ciPassport ?? '').trim();
+    const isDefault = body.isDefault === true || body.is_default === true;
 
     if (!firstName || !lastName) {
       return new Response(
@@ -104,7 +105,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         lastName,
         phone,
         ciPassport,
-      },
+        isDefault,
+      } as never,
       {
         uid: session.uid,
         accessToken: session.accessToken,

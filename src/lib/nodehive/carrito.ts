@@ -302,6 +302,21 @@ async function getSkuVariacionMap(lang: string): Promise<Map<string, ProductoVar
   return map;
 }
 
+export async function enriquecerItemsConCatalogo(items: CartLineItem[], lang: string): Promise<void> {
+  const map = await getSkuVariacionMap(lang);
+  for (const l of items) {
+    const v = map.get(l.sku);
+    if (!v) continue;
+    if (!l.imagen) l.imagen = v.imagenVarianteUrl ?? v.imagenes?.[0] ?? null;
+    if (l.talla == null) l.talla = v.talla ?? null;
+    if (l.color == null) l.color = v.color?.nombre ?? null;
+    if (l.edicion == null) l.edicion = v.edicion ?? null;
+    if (l.formato == null) l.formato = v.formato ?? null;
+    const st = v.stockPorTienda?.find((s) => s.tienda.id === l.storeId);
+    l.stock = st ? (st.ilimitado ? null : st.cantidad) : null;
+  }
+}
+
 /**
  * Enriquece cada línea con la imagen, los atributos de variación y —sobre todo—
  * el `stock` disponible en su tienda, leyendo el mismo catálogo que la ficha de
@@ -309,20 +324,8 @@ async function getSkuVariacionMap(lang: string): Promise<Map<string, ProductoVar
  * de stock (máx = stock de la tienda menos lo ya en el carrito) que el resto.
  */
 async function enriquecerLineas(cart: Cart, lang: string): Promise<void> {
-  const map = await getSkuVariacionMap(lang);
-  for (const o of cart.orders) {
-    for (const l of o.items) {
-      const v = map.get(l.sku);
-      if (!v) continue;
-      if (!l.imagen) l.imagen = v.imagenVarianteUrl ?? v.imagenes?.[0] ?? null;
-      if (l.talla == null) l.talla = v.talla ?? null;
-      if (l.color == null) l.color = v.color?.nombre ?? null;
-      if (l.edicion == null) l.edicion = v.edicion ?? null;
-      if (l.formato == null) l.formato = v.formato ?? null;
-      const st = v.stockPorTienda?.find((s) => s.tienda.id === l.storeId);
-      l.stock = st ? (st.ilimitado ? null : st.cantidad) : null;
-    }
-  }
+  const allItems = cart.orders.flatMap((o) => o.items);
+  await enriquecerItemsConCatalogo(allItems, lang);
 }
 
 /**

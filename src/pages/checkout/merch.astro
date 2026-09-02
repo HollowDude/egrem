@@ -35,6 +35,9 @@ const fmt = (v: number) => (v !== null ? formatPrecio(v, lang) : tr('tienda.prod
 ---
 
 <BaseLayout title={tr('tienda.cart.proceder_pago')} description={tr('tienda.cart.proceder_pago')}>
+  <!-- snapshot para el wizard (no re-derivar en /checkout/pago) -->
+  <script is:inline type="application/json" id="checkout-snapshot" set:html={JSON.stringify(cart)} />
+
   <main id="main-content" class="container-site py-8 md:py-12">
     <h1 class="text-h1 uppercase mb-8">{tr('tienda.cart.proceder_pago')}</h1>
 
@@ -97,7 +100,7 @@ const fmt = (v: number) => (v !== null ? formatPrecio(v, lang) : tr('tienda.prod
                 data-cart-group={cart.cartGroup ?? ''}
                 class="block w-full text-center bg-egrem-red text-white font-display text-[18px] font-bold uppercase py-3 rounded-2xl hover:bg-egrem-red-dark transition-colors no-underline disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {tr('tienda.cart.proceder_pago')}
+                {tr('tienda.cart.continuar_checkout')}
               </button>
               <p id="checkout-msg" class="font-display text-small text-center mt-3 hidden"></p>
             </div>
@@ -120,24 +123,21 @@ const fmt = (v: number) => (v !== null ? formatPrecio(v, lang) : tr('tienda.prod
           msg.textContent = 'Procesando…';
         }
         try {
-          const res = await fetch('/api/cart/checkout', { method: 'POST' });
+          const res = await fetch('/api/checkout/start', { method: 'POST' });
           const data = await res.json().catch(() => ({}));
           if (res.ok && data.ok) {
-            if (msg) {
-              msg.className = 'font-display text-small text-center mt-3 text-[#16a34a]';
-              msg.textContent = '¡Pedido confirmado!';
+            const snapEl = document.getElementById('checkout-snapshot');
+            if (snapEl && snapEl.textContent) {
+              try { sessionStorage.setItem('egrem_checkout_snapshot', snapEl.textContent.trim()); } catch {}
             }
-            window.dispatchEvent(new CustomEvent('cart:updated', { detail: { count: 0 } }));
-            setTimeout(() => {
-              window.location.href = '/tienda';
-            }, 1500);
+            window.location.href = '/checkout/pago';
           } else {
-            throw new Error(data.message ?? 'checkout_error');
+            throw new Error(data.error ?? 'checkout_error');
           }
         } catch (err) {
           if (msg) {
             msg.className = 'font-display text-small text-center mt-3 text-egrem-red';
-            msg.textContent = 'No pudimos procesar el pedido. Inténtalo de nuevo.';
+            msg.textContent = 'No pudimos iniciar el checkout. Inténtalo de nuevo.';
           }
           btn.removeAttribute('disabled');
         }
