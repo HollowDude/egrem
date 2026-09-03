@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   const tabParam = url.searchParams.get('tab') ?? 'realizados';
-  const tab: PedidoTab = tabParam === 'en_proceso' ? 'en_proceso' : 'realizados';
+  const tab: PedidoTab = tabParam === 'en_proceso' ? 'en_proceso' : tabParam === 'cancelados' ? 'cancelados' : 'realizados';
   const cursor = url.searchParams.get('cursor');
 
   try {

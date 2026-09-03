@@ -8,7 +8,7 @@ export interface PedidoAuth {
   lang?: 'es' | 'en';
 }
 
-export type PedidoTab = 'realizados' | 'en_proceso';
+export type PedidoTab = 'realizados' | 'en_proceso' | 'cancelados';
 
 export interface PedidoResumen {
   uuid: string;
@@ -432,7 +432,7 @@ export async function listarPedidos(
   auth: PedidoAuth,
   cursor?: string | null,
 ): Promise<{ pedidos: PedidoResumen[]; nextCursor: string | null; grupos: PedidoAgrupado[] }> {
-  const state = tab === 'realizados' ? 'completed' : 'draft';
+  const state = tab === 'realizados' ? 'completed' : tab === 'cancelados' ? 'canceled' : 'draft';
   let path: string;
 
   if (cursor) {

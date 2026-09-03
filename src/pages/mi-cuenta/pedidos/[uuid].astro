@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar.astro';
 import OrderDetail from '@/components/dashboard/OrderDetail';
 import { useTranslations } from '@/i18n/translations';
+import { fetchTiendas } from '@/lib/nodehive/tiendas';
 
 const lang = Astro.locals.lang;
 const tr = useTranslations(lang);
@@ -16,6 +17,14 @@ const uuid = Astro.params.uuid as string;
 if (!uuid) {
   return Astro.redirect('/mi-cuenta/pedidos');
 }
+
+// Catálogo de tiendas con dirección (server-side: import.meta.env no existe en el navegador)
+let tiendas: import('@/types/tienda').TiendaInfo[] = [];
+try {
+  tiendas = await fetchTiendas(lang);
+} catch (e) {
+  console.error('[mi-cuenta/pedidos uuid] fetchTiendas failed', e);
+}
 ---
 
 <BaseLayout title={tr('auth.dashboard.title')}>
@@ -24,7 +33,7 @@ if (!uuid) {
   >
     <DashboardSidebar lang={lang} userName={user.name} currentPath={Astro.url.pathname} />
     <div class="flex-1">
-      <OrderDetail client:load lang={lang} uuid={uuid} />
+      <OrderDetail client:load lang={lang} uuid={uuid} tiendas={tiendas} />
     </div>
   </div>
 </BaseLayout>

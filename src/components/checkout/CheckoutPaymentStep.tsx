@@ -1,5 +1,6 @@
 import type { Lang } from '@/i18n';
 import type { CheckoutOrderDetail, PlaceResult } from '@/lib/nodehive/checkout';
+import type { TiendaInfo } from '@/types/tienda';
 import CheckoutPaymentEfectivo from './CheckoutPaymentEfectivo';
 import CheckoutPaymentTransfermovil from './CheckoutPaymentTransfermovil';
 
@@ -9,6 +10,7 @@ interface Props {
   cartGroup: string | null;
   lang?: Lang;
   snapshot: Record<string, unknown> | null;
+  tiendas?: TiendaInfo[];
   onBack: (step: 'billing' | 'shipping' | 'payment_method') => void;
   onPlaced: (result: PlaceResult) => void;
 }
@@ -22,5 +24,5 @@ export default function CheckoutPaymentStep(props: Props) {
   if (order.paymentMethod === 'transfermovil') {
     return <CheckoutPaymentTransfermovil {...props} subtotal={subtotal} />;
   }
-  return <CheckoutPaymentEfectivo {...props} subtotal={subtotal} />;
+  return <CheckoutPaymentEfectivo order={props.order} orderIds={props.orderIds} snapshot={props.snapshot} tiendas={props.tiendas ?? []} subtotal={subtotal} lang={props.lang} onBack={props.onBack} onPlaced={props.onPlaced} />;
 }

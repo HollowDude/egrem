@@ -1,28 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import type { PlaceResult } from '@/lib/nodehive/checkout';
 import { formatPrecio } from '@/lib/moneda';
-import { fetchTiendas } from '@/lib/nodehive/tiendas';
+import { buscarTiendaParaOrden } from '@/lib/checkout/resolverTiendas';
 import type { TiendaInfo } from '@/types/tienda';
 
 interface Props {
   result: PlaceResult;
   summary: Record<string, unknown> | null;
   lang?: Lang;
+  tiendas?: TiendaInfo[];
 }
 
-export default function CheckoutSuccess({ result, summary, lang = 'es' }: Props) {
+export default function CheckoutSuccess({ result, summary, lang = 'es', tiendas = [] }: Props) {
   const tr = useTranslations(lang);
-  const [tiendas, setTiendas] = useState<Map<string, TiendaInfo>>(new Map());
-
-  useEffect(() => {
-    fetchTiendas(lang).then((list) => {
-      const m = new Map<string, TiendaInfo>();
-      for (const t of list) m.set(String(t.id), t);
-      setTiendas(m);
-    });
-  }, [lang]);
 
   useEffect(() => {
     try { sessionStorage.removeItem('egrem_checkout_snapshot'); } catch {}
@@ -54,6 +46,8 @@ export default function CheckoutSuccess({ result, summary, lang = 'es' }: Props)
       if ((o as Record<string, unknown>).storeLabel) storeLabelByOrder.set(oid, String((o as Record<string, unknown>).storeLabel));
     }
   }
+
+  const listaTiendas = tiendas;
 
   const hasErrors = result.errors && result.errors.length > 0;
   const placedOrders: Array<{ orderId: number; state: string; storeLabel?: string; total?: number; storeId?: string | number }> = result.orders.length > 0 ? (result.orders as Array<{ orderId: number; state: string; storeLabel?: string; total?: number; storeId?: string | number }>) : result.placed.map((id) => ({ orderId: id, state: 'completed' }));
@@ -98,8 +92,9 @@ export default function CheckoutSuccess({ result, summary, lang = 'es' }: Props)
       <div className="space-y-4 text-left">
         {placedOrders.map((o) => {
           const sid = String((o as { storeId?: string | number }).storeId ?? storeIdByOrder.get(o.orderId) ?? '');
-          const tienda = tiendas.get(sid) ?? null;
-          const label = o.storeLabel ?? storeLabelByOrder.get(o.orderId) ?? tienda?.label ?? '';
+          const labelPrevio = o.storeLabel ?? storeLabelByOrder.get(o.orderId) ?? '';
+          const tienda = buscarTiendaParaOrden(listaTiendas, sid, labelPrevio);
+          const label = labelPrevio || tienda?.label || '';
           const items = itemsByOrder.get(o.orderId) ?? [];
           return (
             <div key={o.orderId} className="border rounded-xl p-4 bg-white" style={{ borderColor: 'var(--color-form-border)' }}>

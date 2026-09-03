@@ -945,9 +945,35 @@
 
   /* ── Checkout: stepper ─────────────────────────────────────── */
   .checkout-stepper {
+    display: none; /* oculto en móvil */
+  }
+  @media (min-width: 640px) {
+    .checkout-stepper {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 2rem;
+    }
+  }
+  .checkout-stepper-mobile {
     display: flex;
-    align-items: flex-end;
-    margin-bottom: 2rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (min-width: 640px) {
+    .checkout-stepper-mobile { display: none; }
+  }
+  .checkout-stepper-mobile-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--color-form-border);
+    overflow: hidden;
+  }
+  .checkout-stepper-mobile-fill {
+    height: 100%;
+    background: var(--color-brand-primary);
+    border-radius: 9999px;
+    transition: width 0.3s ease;
   }
   .checkout-step-dot {
     width: 36px;

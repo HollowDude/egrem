@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import type { CheckoutOrderDetail } from '@/lib/nodehive/checkout';
-import { fetchTiendas } from '@/lib/nodehive/tiendas';
+import { buscarTiendaParaOrden } from '@/lib/checkout/resolverTiendas';
 import type { TiendaInfo } from '@/types/tienda';
 
 interface Props {
@@ -10,28 +10,31 @@ interface Props {
   orderIds: number[];
   lang?: Lang;
   snapshot: Record<string, unknown> | null;
+  tiendas: TiendaInfo[];
   onSaved: (order: CheckoutOrderDetail) => void;
   onBack: () => void;
 }
 
-export default function CheckoutShippingStep({ order, lang = 'es', snapshot, onSaved, onBack }: Props) {
+export default function CheckoutShippingStep({ order, lang = 'es', snapshot, tiendas, onSaved, onBack }: Props) {
   const tr = useTranslations(lang);
-  const [tiendas, setTiendas] = useState<TiendaInfo[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchTiendas(lang).then(setTiendas).catch(() => {});
-  }, [lang]);
-
-  const storeIds = (() => {
-    const snapOrders = (snapshot as { orders?: Array<{ storeId?: string; store_id?: string }> } | null)?.orders;
-    if (snapOrders) return [...new Set(snapOrders.map((o) => String(o.storeId ?? o.store_id ?? order.storeId)).filter(Boolean))];
-    return [String(order.storeId)];
+  const tiendasPedido = (() => {
+    const snapOrders = (snapshot as { orders?: Array<{ storeId?: string; store_id?: string; storeLabel?: string; store_label?: string }> } | null)?.orders;
+    if (snapOrders?.length) {
+      return snapOrders.map((o) => ({
+        storeId: String(o.storeId ?? o.store_id ?? ''),
+        storeLabel: String(o.storeLabel ?? o.store_label ?? ''),
+      }));
+    }
+    return [{ storeId: String(order.storeId), storeLabel: '' }];
   })();
 
-  const tiendasFiltradas = tiendas.filter((t) => storeIds.includes(String(t.id)));
-  const aMostrar = tiendasFiltradas.length > 0 ? tiendasFiltradas : tiendas.slice(0, 1);
+  const tiendasResueltas = tiendasPedido
+    .map((p) => buscarTiendaParaOrden(tiendas, p.storeId, p.storeLabel))
+    .filter((t): t is TiendaInfo => t !== null);
+  const aMostrar = tiendasResueltas.length > 0 ? [...new Map(tiendasResueltas.map((t) => [t.id, t])).values()] : tiendas.slice(0, 1);
 
   async function handleContinue() {
     setError('');

@@ -4,6 +4,7 @@ export const prerender = false;
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { getSession } from '@/lib/auth/session';
 import { obtenerCheckout } from '@/lib/nodehive/checkout';
+import { fetchTiendas } from '@/lib/nodehive/tiendas';
 import CheckoutWizard from '@/components/checkout/CheckoutWizard';
 const lang = Astro.locals.lang;
 
@@ -40,6 +41,14 @@ try {
   console.error('[checkout/pago] obtenerCheckout failed', e);
   return Astro.redirect('/tienda');
 }
+
+// Catálogo de tiendas con dirección (server-side: import.meta.env no existe en el navegador)
+let tiendas: import('@/types/tienda').TiendaInfo[] = [];
+try {
+  tiendas = await fetchTiendas(lang);
+} catch (e) {
+  console.error('[checkout/pago] fetchTiendas failed', e);
+}
 ---
 
 <BaseLayout title="Checkout" description="Checkout">
@@ -50,6 +59,6 @@ try {
       <span style="color: var(--color-egrem-black)">Checkout</span>
     </nav>
     <h1 class="text-h1 uppercase mb-8">Checkout</h1>
-    <CheckoutWizard client:load initialOrder={initialOrder} orderIds={orderIds} cartGroup={cartGroup} lang={lang} />
+    <CheckoutWizard client:load initialOrder={initialOrder} orderIds={orderIds} cartGroup={cartGroup} lang={lang} tiendas={tiendas} />
   </main>
 </BaseLayout>

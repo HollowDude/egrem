@@ -8,8 +8,7 @@ export const GET: APIRoute = async ({ cookies }) => {
   let cartGroup = '';
   const c1 = cookies.get('egrem_checkout_orders')?.value;
   if (c1) try { cartGroup = JSON.parse(c1).cartGroup ?? ''; } catch {}
-  if (!cartGroup) cartGroup = cookies.get('egrem_cart_group')?.value ?? '';
-  if (!cartGroup) return new Response(JSON.stringify({ error: 'no_cart_group', code: 400 }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  if (!cartGroup) return new Response(JSON.stringify({ error: 'Tu sesión de checkout expiró. Vuelve a intentarlo desde el carrito.', code: 400 }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   try {
     const status = await consultarEstadoTransfermovil(cartGroup, {
       accessToken: session.accessToken,

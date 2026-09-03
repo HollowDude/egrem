@@ -4,7 +4,9 @@ import type { Lang } from '@/i18n';
 import { formatPrecio } from '@/lib/moneda';
 import Alert from '@/components/ui/Alert';
 
-type PedidoTab = 'realizados' | 'en_proceso';
+type PedidoTab = 'realizados' | 'en_proceso' | 'cancelados';
+
+const TABS: PedidoTab[] = ['realizados', 'en_proceso', 'cancelados'];
 
 interface PedidoResumen {
   uuid: string;
@@ -164,15 +166,15 @@ export default function OrdersList({ lang = 'es' }: Props) {
           {tr('auth.dashboard.orders')}
         </h3>
         <p className="text-small mt-2" style={{ color: CSS.textSecondary }}>
-          {tab === 'realizados' ? tr('auth.dashboard.orders_tab_completed') : tr('auth.dashboard.orders_tab_draft')}
+          {tr(tab === 'realizados' ? 'auth.dashboard.orders_tab_completed' : tab === 'en_proceso' ? 'auth.dashboard.orders_tab_draft' : 'auth.dashboard.orders_tab_canceled')}
         </p>
       </header>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b" style={{ borderColor: CSS.formBorder }}>
-        {(['realizados', 'en_proceso'] as PedidoTab[]).map((t) => {
+        {TABS.map((t) => {
           const active = tab === t;
-          const label = t === 'realizados' ? tr('auth.dashboard.orders_tab_completed') : tr('auth.dashboard.orders_tab_draft');
+          const label = tr(t === 'realizados' ? 'auth.dashboard.orders_tab_completed' : t === 'en_proceso' ? 'auth.dashboard.orders_tab_draft' : 'auth.dashboard.orders_tab_canceled');
           return (
             <button
               key={t}

@@ -94,6 +94,7 @@ export const auth: Record<Lang, Record<string, string>> = {
     'auth.dashboard.address_save': 'Guardar dirección',
     'auth.dashboard.orders_tab_completed': 'Realizados',
     'auth.dashboard.orders_tab_draft': 'En proceso',
+    'auth.dashboard.orders_tab_canceled': 'Cancelados',
     'auth.dashboard.orders_empty': 'Aún no tienes pedidos.',
     'auth.dashboard.orders_load_more': 'Cargar más',
     'auth.dashboard.order_detail_title': 'Pedido #{id}',
@@ -104,6 +105,8 @@ export const auth: Record<Lang, Record<string, string>> = {
     'auth.dashboard.order_continue_checkout': 'Continuar compra',
     'auth.dashboard.order_continue_note': 'Este pedido no se ha completado. Puedes continuar donde lo dejaste.',
     'auth.dashboard.order_no_address': 'Sin dirección asociada',
+    'auth.dashboard.order_pickup_title': 'Punto de recogida',
+    'auth.dashboard.order_pickup_note': 'Recoge y paga tu pedido en esta tienda.',
     'auth.forgotPassword.eyebrow': 'Recuperar Acceso',
     'auth.forgotPassword.heading': 'Recuperar Contraseña',
     'auth.forgotPassword.subtitle':
@@ -238,6 +241,7 @@ export const auth: Record<Lang, Record<string, string>> = {
     'auth.dashboard.address_save': 'Save address',
     'auth.dashboard.orders_tab_completed': 'Completed',
     'auth.dashboard.orders_tab_draft': 'In progress',
+    'auth.dashboard.orders_tab_canceled': 'Cancelled',
     'auth.dashboard.orders_empty': 'You have no orders yet.',
     'auth.dashboard.orders_load_more': 'Load more',
     'auth.dashboard.order_detail_title': 'Order #{id}',
@@ -248,6 +252,8 @@ export const auth: Record<Lang, Record<string, string>> = {
     'auth.dashboard.order_continue_checkout': 'Continue checkout',
     'auth.dashboard.order_continue_note': "This order hasn't been completed. You can pick up where you left off.",
     'auth.dashboard.order_no_address': 'No address linked',
+    'auth.dashboard.order_pickup_title': 'Pickup location',
+    'auth.dashboard.order_pickup_note': 'Pick up and pay for your order at this store.',
     'auth.forgotPassword.eyebrow': 'Recover Access',
     'auth.forgotPassword.heading': 'Recover Password',
     'auth.forgotPassword.subtitle':

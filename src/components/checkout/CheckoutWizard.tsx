@@ -2,18 +2,21 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import type { CheckoutOrderDetail, PlaceResult } from '@/lib/nodehive/checkout';
+import type { TiendaInfo } from '@/types/tienda';
 import { formatPrecio } from '@/lib/moneda';
 import CheckoutBillingStep from './CheckoutBillingStep';
 import CheckoutShippingStep from './CheckoutShippingStep';
 import CheckoutPaymentMethodStep from './CheckoutPaymentMethodStep';
 import CheckoutPaymentStep from './CheckoutPaymentStep';
 import CheckoutSuccess from './CheckoutSuccess';
+import Alert from '@/components/ui/Alert';
 
 interface Props {
   initialOrder: CheckoutOrderDetail;
   orderIds: number[];
   cartGroup: string | null;
   lang?: Lang;
+  tiendas?: TiendaInfo[];
 }
 
 type WizardStep = 'billing' | 'shipping' | 'payment_method' | 'payment' | 'success';
@@ -26,7 +29,7 @@ function mapCheckoutStepToWizard(s: string | null | undefined): WizardStep {
   return 'billing';
 }
 
-export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang = 'es' }: Props) {
+export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang = 'es', tiendas = [] }: Props) {
   const tr = useTranslations(lang);
   const [order, setOrder] = useState<CheckoutOrderDetail>(initialOrder);
   const [step, setStep] = useState<WizardStep>(mapCheckoutStepToWizard(initialOrder.checkoutStep));
@@ -75,6 +78,8 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
     return order.items.reduce((a, it) => a + (it.unitPrice ?? 0) * it.quantity, 0);
   })();
 
+  const [navError, setNavError] = useState('');
+
   async function goTo(target: WizardStep) {
     const map: Record<WizardStep, string> = {
       billing: 'egrem_billing',
@@ -83,10 +88,8 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
       payment: 'egrem_payment',
       success: 'complete',
     };
-    if (target === 'success') {
-      setStep('success');
-      return;
-    }
+    if (target === 'success') { setStep('success'); return; }
+    setNavError('');
     try {
       const res = await fetch(`/api/checkout/${order.orderId}/step`, {
         method: 'PATCH',
@@ -97,9 +100,12 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
       if (res.ok && (data as { order?: CheckoutOrderDetail }).order) {
         setOrder((data as { order: CheckoutOrderDetail }).order);
         setStep(target);
+      } else {
+        setNavError('No se pudo cambiar de paso. Intenta de nuevo.');
       }
-    } catch {}
-    setStep(target);
+    } catch {
+      setNavError('No se pudo cambiar de paso. Intenta de nuevo.');
+    }
   }
 
   function handleSaved(updated: CheckoutOrderDetail) {
@@ -127,28 +133,50 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       <div className="flex-1 w-full">
-        <div className="checkout-stepper">
-          {steps.map((s, idx) => {
-            const isActive = step === s.key;
-            const isDone = !isSuccess && currentIdx > idx;
-            const isLast = idx === steps.length - 1;
-            return (
-              <div key={s.key} className="flex items-end flex-1">
-                <div className="flex flex-col items-center gap-1.5 flex-1">
-                  <div className={`checkout-step-dot ${isActive ? 'checkout-step-dot--active' : ''} ${isDone ? 'checkout-step-dot--done' : ''}`}>
-                    {isDone ? <span className="icon text-[18px]">check</span> : idx + 1}
-                  </div>
-                  <span className={`checkout-step-label ${isActive ? 'checkout-step-label--active' : ''} ${isDone ? 'checkout-step-label--done' : ''}`}>{s.label}</span>
+        {!isSuccess && (
+          <div className="checkout-stepper-mobile">
+            <div className="flex justify-between text-caption font-bold uppercase" style={{ color: 'var(--color-text-secondary)' }}>
+              <span>Paso {currentIdx + 1} de {steps.length}</span>
+              <span style={{ color: 'var(--color-brand-primary)' }}>{steps[currentIdx]?.label}</span>
+            </div>
+            <div className="checkout-stepper-mobile-track">
+              <div className="checkout-stepper-mobile-fill" style={{ width: `${((currentIdx + 1) / steps.length) * 100}%` }} />
+            </div>
+          </div>
+        )}
+        {!isSuccess && (
+          <div className="checkout-stepper">
+            {steps.map((s, idx) => {
+              const isActive = step === s.key;
+              const isDone = !isSuccess && currentIdx > idx;
+              const isReachable = !isSuccess && idx <= currentIdx && !isActive;
+              const isLast = idx === steps.length - 1;
+              return (
+                <div key={s.key} className="flex items-end flex-1">
+                  <button
+                    type="button"
+                    disabled={!isReachable}
+                    onClick={() => isReachable && goTo(s.key)}
+                    className="flex flex-col items-center gap-1.5 flex-shrink-0 bg-transparent border-0 p-0"
+                    style={{ cursor: isReachable ? 'pointer' : 'default', width: 'auto' }}
+                    aria-label={s.label}
+                  >
+                    <div className={`checkout-step-dot ${isActive ? 'checkout-step-dot--active' : ''} ${isDone ? 'checkout-step-dot--done' : ''}`}>
+                      {isDone ? <span className="icon text-[18px]">check</span> : idx + 1}
+                    </div>
+                    <span className={`checkout-step-label ${isActive ? 'checkout-step-label--active' : ''} ${isDone ? 'checkout-step-label--done' : ''}`}>{s.label}</span>
+                  </button>
+                  {!isLast && <div className={`checkout-step-line ${isDone ? 'checkout-step-line--done' : ''}`} />}
                 </div>
-                {!isLast && <div className={`checkout-step-line ${isDone ? 'checkout-step-line--done' : ''}`} />}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
+        <Alert type="error" message={navError} />
 
         <div className="checkout-panel">
           {step === 'billing' && <CheckoutBillingStep order={order} lang={lang} onSaved={handleSaved} />}
-          {step === 'shipping' && <CheckoutShippingStep order={order} orderIds={orderIds} lang={lang} snapshot={snapshot} onSaved={handleSaved} onBack={() => goTo('billing')} />}
+          {step === 'shipping' && <CheckoutShippingStep order={order} orderIds={orderIds} lang={lang} snapshot={snapshot} tiendas={tiendas} onSaved={handleSaved} onBack={() => goTo('billing')} />}
           {step === 'payment_method' && <CheckoutPaymentMethodStep order={order} lang={lang} onSaved={handleSaved} onBack={() => goTo('shipping')} />}
           {step === 'payment' && !isSuccess && (
             <CheckoutPaymentStep
@@ -157,6 +185,7 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
               cartGroup={cartGroup}
               lang={lang}
               snapshot={snapshot}
+              tiendas={tiendas}
               onBack={(t) => goTo(t)}
               onPlaced={(r) => {
                 setPlaceResult(r);
@@ -165,7 +194,7 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
             />
           )}
           {isSuccess && (
-            <CheckoutSuccess result={placeResult ?? { placed: orderIds, errors: [], orders: orderIds.map((id) => ({ orderId: id, state: 'completed' })) }} summary={snapshot} lang={lang} />
+            <CheckoutSuccess result={placeResult ?? { placed: orderIds, errors: [], orders: orderIds.map((id) => ({ orderId: id, state: 'completed' })) }} summary={snapshot} lang={lang} tiendas={tiendas} />
           )}
         </div>
       </div>

@@ -12,9 +12,8 @@ export const POST: APIRoute = async ({ cookies }) => {
   if (raw) {
     try { cartGroup = JSON.parse(raw).cartGroup; } catch {}
   }
-  if (!cartGroup) cartGroup = cookies.get('egrem_cart_group')?.value ?? undefined;
   if (!cartGroup) {
-    return new Response(JSON.stringify({ error: 'No hay grupo de carrito.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Tu sesión de checkout expiró. Vuelve a intentarlo desde el carrito.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
   try {
     const result = await confirmarPedido(cartGroup, {

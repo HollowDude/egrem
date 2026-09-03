@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import { formatPrecio } from '@/lib/moneda';
+import { buscarTiendaParaOrden } from '@/lib/checkout/resolverTiendas';
+import type { TiendaInfo } from '@/types/tienda';
 import Alert from '@/components/ui/Alert';
 
 interface PedidoDetalle {
@@ -43,6 +45,7 @@ interface PedidoDetalle {
 interface Props {
   lang?: Lang;
   uuid: string;
+  tiendas?: TiendaInfo[];
 }
 
 const CSS = {
@@ -94,7 +97,7 @@ function formatFecha(dateStr: string | null, lang: Lang): string {
   });
 }
 
-export default function OrderDetail({ lang = 'es', uuid }: Props) {
+export default function OrderDetail({ lang = 'es', uuid, tiendas = [] }: Props) {
   const tr = useTranslations(lang as Lang);
   const [pedido, setPedido] = useState<PedidoDetalle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -205,6 +208,9 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
 
   const estado = estadoInfo(pedido.state, pedido.checkoutStep);
   const idxActual = pedido.checkoutStep ? PASOS.findIndex((p) => p.key === pedido.checkoutStep) : -1;
+  const grupos = pedido.storeGroups?.length
+    ? pedido.storeGroups
+    : [{ storeLabel: pedido.storeLabel, items: pedido.items }];
 
   return (
     <div>
@@ -265,14 +271,27 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
           </span>
           Productos
         </h4>
-        {(pedido.storeGroups && pedido.storeGroups.length > 1 ? pedido.storeGroups : [{ storeLabel: pedido.storeLabel, items: pedido.items }]).map((group, gIdx) => (
+        {grupos.map((group, gIdx) => {
+          const tienda = buscarTiendaParaOrden(tiendas, undefined, group.storeLabel);
+          const ubicacion = tienda?.direccion || [tienda?.municipio, tienda?.provincia].filter(Boolean).join(', ');
+          return (
           <div key={gIdx} className={gIdx > 0 ? 'mt-6 pt-6 border-t' : ''} style={gIdx > 0 ? { borderColor: CSS.formBorder } : undefined}>
-            {pedido.storeGroups && pedido.storeGroups.length > 1 && (
-              <div className="flex items-center gap-2 mb-3">
-                <span className="icon text-[18px]" style={{ color: CSS.egremGold }}>storefront</span>
-                <span className="font-display font-bold text-sm uppercase tracking-wider" style={{ color: 'var(--color-egrem-black)' }}>{group.storeLabel ?? `Tienda ${gIdx + 1}`}</span>
+            <div className="flex items-start gap-2 mb-3">
+              <span className="icon text-[18px] shrink-0" style={{ color: CSS.egremGold, marginTop: '2px' }}>storefront</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-display font-bold text-sm uppercase tracking-wider m-0" style={{ color: 'var(--color-egrem-black)' }}>
+                  {tr('auth.dashboard.order_pickup_title')}{group.storeLabel ? ` — ${group.storeLabel}` : ''}
+                </p>
+                {ubicacion ? (
+                  <p className="text-small m-0" style={{ color: CSS.textSecondary }}>{ubicacion}</p>
+                ) : (
+                  group.storeLabel && (
+                    <p className="text-small m-0" style={{ color: CSS.textSecondary }}>{group.storeLabel}</p>
+                  )
+                )}
+                <p className="text-small m-0" style={{ color: CSS.textSecondary }}>{tr('auth.dashboard.order_pickup_note')}</p>
               </div>
-            )}
+            </div>
             <div className="space-y-4">
               {group.items.map((item, idx) => (
                 <div key={idx} className="flex gap-4 py-3 border-b last:border-0" style={{ borderColor: CSS.formBorder }}>
@@ -304,7 +323,8 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
         <div className="flex justify-end pt-4 mt-4 border-t" style={{ borderColor: CSS.formBorder }}>
           <span className="font-display font-bold text-h3" style={{ color: 'var(--color-egrem-black)' }}>
             {formatPrecio(pedido.total, lang as Lang)}

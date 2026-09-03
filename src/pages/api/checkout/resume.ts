@@ -44,9 +44,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       } catch {}
     }
 
-    if (cartGroup) {
-      cookies.set('egrem_cart_group', cartGroup, { path: '/', maxAge: CART_GROUP_COOKIE_MAX_AGE, httpOnly: true, sameSite: 'lax' });
-    }
     cookies.set('egrem_checkout_orders', JSON.stringify({ cartGroup, orderIds }), {
       path: '/',
       maxAge: CART_GROUP_COOKIE_MAX_AGE,

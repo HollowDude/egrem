@@ -3,17 +3,35 @@ import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import type { CheckoutOrderDetail, PlaceResult } from '@/lib/nodehive/checkout';
 import { formatPrecio } from '@/lib/moneda';
+import { buscarTiendaParaOrden } from '@/lib/checkout/resolverTiendas';
+import type { TiendaInfo } from '@/types/tienda';
 import Alert from '@/components/ui/Alert';
 
 interface Props {
   order: CheckoutOrderDetail;
+  orderIds: number[];
+  snapshot: Record<string, unknown> | null;
+  tiendas: TiendaInfo[];
   subtotal: number;
   lang?: Lang;
   onBack: (step: 'billing' | 'shipping' | 'payment_method') => void;
   onPlaced: (result: PlaceResult) => void;
 }
 
-export default function CheckoutPaymentEfectivo({ order, subtotal, lang = 'es', onBack, onPlaced }: Props) {
+export default function CheckoutPaymentEfectivo({ order, orderIds, snapshot, tiendas, subtotal, lang = 'es', onBack, onPlaced }: Props) {
+  const orders = (() => {
+    const snapOrders = (snapshot as { orders?: Array<{ orderId?: number; storeLabel?: string; storeId?: string; store_id?: string }> } | null)?.orders;
+    if (snapOrders && snapOrders.length > 0) {
+      return snapOrders
+        .map((o) => ({
+          orderId: Number(o.orderId ?? 0),
+          storeLabel: String(o.storeLabel ?? ''),
+          storeId: String(o.storeId ?? o.store_id ?? ''),
+        }))
+        .filter((o) => o.orderId > 0);
+    }
+    return orderIds.map((id) => ({ orderId: id, storeLabel: '', storeId: '' }));
+  })();
   const tr = useTranslations(lang);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState('');
@@ -72,6 +90,37 @@ export default function CheckoutPaymentEfectivo({ order, subtotal, lang = 'es', 
           </div>
           <p className="text-small font-bold m-0" style={{ color: 'var(--color-egrem-black)' }}>Efectivo</p>
           <p className="text-small mt-2" style={{ color: 'var(--color-text-secondary)' }}>Pagarás en efectivo directamente en la tienda al recoger tu pedido.</p>
+        </div>
+        <div className="border rounded-xl p-4" style={{ borderColor: 'var(--color-form-border)' }}>
+          <h4 className="font-display font-bold text-sm uppercase m-0">{tr('checkout.pago.punto_recogida')}</h4>
+          <p className="text-small mt-1 mb-3" style={{ color: 'var(--color-text-secondary)' }}>{tr('checkout.pago.punto_recogida_desc')}</p>
+          {orders.length > 1 && (
+            <p className="text-small font-bold mb-3" style={{ color: 'var(--color-egrem-black)' }}>{tr('checkout.pago.pedidos_a_colocar', { count: orders.length })}</p>
+          )}
+          <div className="space-y-3">
+            {orders.map((o) => {
+              const tienda = buscarTiendaParaOrden(tiendas, o.storeId, o.storeLabel);
+              const label = o.storeLabel || tienda?.label || '';
+              const ubicacion = tienda?.direccion || [tienda?.municipio, tienda?.provincia].filter(Boolean).join(', ');
+              return (
+                <div key={o.orderId} className="flex items-start gap-3">
+                  <span className="icon text-[20px] shrink-0" style={{ color: 'var(--color-egrem-gold)', marginTop: '2px' }}>storefront</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-sm m-0" style={{ color: 'var(--color-egrem-black)' }}>
+                      Pedido #{o.orderId}{label ? ` — ${label}` : ''}
+                    </p>
+                    {ubicacion ? (
+                      <p className="text-small m-0" style={{ color: 'var(--color-text-secondary)' }}>{ubicacion}</p>
+                    ) : (
+                      label && (
+                        <p className="text-small m-0" style={{ color: 'var(--color-text-secondary)' }}>{label}</p>
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
         <div className="border-t pt-4 space-y-2" style={{ borderColor: 'var(--color-form-border)' }}>
           <div className="flex justify-between text-small"><span style={{ color: 'var(--color-text-secondary)' }}>{tr('checkout.pago.subtotal')}</span><span className="font-bold">{formatPrecio(subtotal, lang)}</span></div>

@@ -30,6 +30,7 @@ export const POST: APIRoute = async ({ cookies }) => {
       maxAge: CART_GROUP_COOKIE_MAX_AGE,
       sameSite: 'lax',
     });
+    cookies.delete('egrem_cart_group', { path: '/' });
     return new Response(JSON.stringify({ ok: true, cartGroup: result.cartGroup, orders: result.orders }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

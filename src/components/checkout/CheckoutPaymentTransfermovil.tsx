@@ -5,6 +5,7 @@ import type { CheckoutOrderDetail, TransfermovilQR, PlaceResult } from '@/lib/no
 import { formatPrecio } from '@/lib/moneda';
 import Alert from '@/components/ui/Alert';
 import QRCode from 'qrcode';
+import { esAndroid } from '@/utils/device';
 
 interface Props {
   order: CheckoutOrderDetail;
@@ -23,6 +24,8 @@ export default function CheckoutPaymentTransfermovil({ order, cartGroup, subtota
   const [showManual, setShowManual] = useState(false);
   const pollRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const [mostrarAbrirApp, setMostrarAbrirApp] = useState(false);
+  useEffect(() => { setMostrarAbrirApp(esAndroid()); }, []);
 
   // Crear QR al montar
   useEffect(() => {
@@ -186,10 +189,10 @@ export default function CheckoutPaymentTransfermovil({ order, cartGroup, subtota
                   <div key={o.orderId}>Pedido #{o.orderId} — {o.storeLabel}</div>
                 ))}
               </div>
-              {qr.url && <a href={qr.url} target="_blank" rel="noopener noreferrer" className="text-small font-bold underline" style={{ color: 'var(--color-brand-primary)' }}>Abrir en Transfermóvil</a>}
+              {qr.url && mostrarAbrirApp && <a href={qr.url} target="_blank" rel="noopener noreferrer" className="text-small font-bold underline" style={{ color: 'var(--color-brand-primary)' }}>Abrir en Transfermóvil</a>}
             </div>
 
-            <div className="border rounded-xl p-4 bg-amber-50" style={{ borderColor: 'rgba(204,153,51,0.3)' }}>
+            <div className="border rounded-xl p-4 bg-amber-50" style={{ borderColor: 'rgba(204,153,51,0.3)' }} aria-live="polite">
               <p className="text-small flex items-center gap-2" style={{ color: 'var(--color-text-secondary)' }}>
                 <span className={`inline-block w-3 h-3 rounded-full ${phase === 'polling' ? 'bg-amber-500 animate-pulse' : 'bg-gray-300'}`} />
                 Esperando confirmación de pago… {phase === 'polling' && <span className="icon text-[16px] animate-spin">progress_activity</span>}
