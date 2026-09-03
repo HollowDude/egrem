@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import type { CheckoutOrderDetail } from '@/lib/nodehive/checkout';
+import type { CheckoutOrderDetail, PlaceResult } from '@/lib/nodehive/checkout';
 import { formatPrecio } from '@/lib/moneda';
 import CheckoutBillingStep from './CheckoutBillingStep';
 import CheckoutShippingStep from './CheckoutShippingStep';
 import CheckoutPaymentMethodStep from './CheckoutPaymentMethodStep';
 import CheckoutPaymentStep from './CheckoutPaymentStep';
+import CheckoutSuccess from './CheckoutSuccess';
 
 interface Props {
   initialOrder: CheckoutOrderDetail;
@@ -30,6 +31,7 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
   const [order, setOrder] = useState<CheckoutOrderDetail>(initialOrder);
   const [step, setStep] = useState<WizardStep>(mapCheckoutStepToWizard(initialOrder.checkoutStep));
   const [snapshot, setSnapshot] = useState<Record<string, unknown> | null>(null);
+  const [placeResult, setPlaceResult] = useState<PlaceResult | null>(null);
 
   const [fallbackItems, setFallbackItems] = useState<Record<string, unknown>[] | null>(null);
 
@@ -148,20 +150,22 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
           {step === 'billing' && <CheckoutBillingStep order={order} lang={lang} onSaved={handleSaved} />}
           {step === 'shipping' && <CheckoutShippingStep order={order} orderIds={orderIds} lang={lang} snapshot={snapshot} onSaved={handleSaved} onBack={() => goTo('billing')} />}
           {step === 'payment_method' && <CheckoutPaymentMethodStep order={order} lang={lang} onSaved={handleSaved} onBack={() => goTo('shipping')} />}
-          {step === 'payment' && !isSuccess && <CheckoutPaymentStep order={order} orderIds={orderIds} cartGroup={cartGroup} lang={lang} snapshot={snapshot} onBack={(t) => goTo(t)} onPlaced={() => setStep('success')} />}
+          {step === 'payment' && !isSuccess && (
+            <CheckoutPaymentStep
+              order={order}
+              orderIds={orderIds}
+              cartGroup={cartGroup}
+              lang={lang}
+              snapshot={snapshot}
+              onBack={(t) => goTo(t)}
+              onPlaced={(r) => {
+                setPlaceResult(r);
+                setStep('success');
+              }}
+            />
+          )}
           {isSuccess && (
-            <div className="checkout-panel-body text-center py-10">
-              <span className="icon text-[64px] mb-4" style={{ color: '#16a34a' }}>check_circle</span>
-              <h2 className="text-h2 uppercase mb-2" style={{ color: '#16a34a' }}>{tr('checkout.pago.pedido_confirmado')}</h2>
-              <p className="text-small mb-1" style={{ color: 'var(--color-text-secondary)' }}>
-                {orderIds.length > 1 ? `Pedidos #${orderIds.join(', #')}` : `Pedido #${order.orderId}`} · {formatPrecio(subtotal, lang)}
-              </p>
-              <p className="text-small mb-6" style={{ color: 'var(--color-text-secondary)' }}>{tr('checkout.pago.confirmacion_desc')}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="/mi-cuenta/pedidos" className="btn-primary no-underline" style={{ width: 'auto' } as React.CSSProperties}>{tr('checkout.pago.ver_pedidos')}</a>
-                <a href="/tienda" className="px-6 py-3 rounded-xl border font-display font-bold text-sm uppercase tracking-wider no-underline text-center" style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-text-secondary)' } as React.CSSProperties}>{tr('checkout.pago.volver_tienda')}</a>
-              </div>
-            </div>
+            <CheckoutSuccess result={placeResult ?? { placed: orderIds, errors: [], orders: orderIds.map((id) => ({ orderId: id, state: 'completed' })) }} summary={snapshot} lang={lang} />
           )}
         </div>
       </div>
@@ -175,10 +179,21 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
               const title = String(rec.title ?? (rec.sku as string) ?? '');
               const qty = Number(rec.quantity ?? 1);
               const price = rec.unit_price != null ? Number(rec.unit_price) : (rec.unitPrice as number | null);
+              const talla = rec.talla as string | null;
+              const color = rec.color as string | null;
+              const edicion = rec.edicion as string | null;
+              const formato = rec.formato as string | null;
+              const imagen = rec.imagen as string | null;
+              const vars = [talla && `Talla: ${talla}`, color && `Color: ${color}`, edicion && `Edición: ${edicion}`, formato && `Formato: ${formato}`].filter(Boolean).join(' · ');
               return (
-                <div key={i} className="flex justify-between gap-2 text-small">
-                  <span style={{ color: 'var(--color-text-secondary)' }} className="flex-1">{title} × {qty}</span>
-                  <span className="font-bold">{price != null ? formatPrecio(price * qty, lang) : ''}</span>
+                <div key={i} className="flex gap-2 text-small">
+                  {imagen ? <img src={imagen} alt={title} className="w-10 h-10 rounded-lg object-cover shrink-0 border" style={{ borderColor: 'var(--color-form-border)' }} /> : <span className="w-10 h-10 rounded-lg bg-egrem-gray-light border flex items-center justify-center shrink-0" style={{ borderColor: 'var(--color-form-border)' }}><span className="icon text-[16px]" style={{ color: 'var(--color-egrem-gray)', opacity: 0.5 }}>inventory_2</span></span>}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-sm truncate m-0" style={{ color: 'var(--color-egrem-black)' }}>{title}</p>
+                    {vars && <p className="text-caption m-0" style={{ color: 'var(--color-text-secondary)' }}>{vars}</p>}
+                    <p className="text-caption m-0" style={{ color: 'var(--color-text-secondary)' }}>Cantidad: {qty} · {price != null ? formatPrecio(price, lang) : ''}</p>
+                  </div>
+                  <span className="font-bold shrink-0">{price != null ? formatPrecio(price * qty, lang) : ''}</span>
                 </div>
               );
             })}

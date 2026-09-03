@@ -37,6 +37,12 @@ export interface PedidoDetalle extends PedidoResumen {
     quantity: number;
     unitPrice: number;
     imagen?: string | null;
+    talla?: string | null;
+    color?: string | null;
+    colorHex?: string | null;
+    edicion?: string | null;
+    formato?: string | null;
+    sku?: string | null;
   }>;
   billingProfile: PedidoBillingProfile | null;
   direccion?: { addressLine1: string; locality: string; administrativeArea: string; postalCode?: string };
@@ -221,14 +227,50 @@ function parsePedidoDetalle(
     const qty = parseFloat(String(a.quantity ?? '1'));
     const unitPrice = parseFloat(((a.unit_price as { number?: string } | undefined)?.number as string) ?? '0') || 0;
     const title = (a.title as string) ?? (a.label as string) ?? 'Producto';
+    const sku = (a.sku as string) ?? (a.purchased_entity_sku as string) ?? null;
 
-    // try to resolve imagen via purchased_entity -> field_imagen
+    // try to resolve imagen y variaciones via purchased_entity
     let imagen: string | null = null;
+    let talla: string | null = null;
+    let color: string | null = null;
+    let colorHex: string | null = null;
+    let edicion: string | null = null;
+    let formato: string | null = null;
     const peRel = oi.relationships?.purchased_entity as { data?: { type: string; id: string } } | undefined;
     if (peRel?.data) {
       const pe = included.find((i) => (i as { id: string }).id === peRel.data!.id) as
-        | { relationships?: Record<string, unknown> }
+        | { attributes?: Record<string, unknown>; relationships?: Record<string, unknown> }
         | undefined;
+      const peAttrs = pe?.attributes as Record<string, unknown> | undefined;
+      // variaciones comunes
+      talla = (peAttrs?.field_talla as string) ?? (peAttrs?.talla as string) ?? null;
+      // color puede ser objeto con nombre/hex o string
+      const colorRaw = peAttrs?.field_color ?? peAttrs?.color;
+      if (colorRaw && typeof colorRaw === 'object') {
+        const c = colorRaw as Record<string, unknown>;
+        color = (c.nombre as string) ?? (c.name as string) ?? null;
+        colorHex = (c.hex as string) ?? null;
+      } else if (typeof colorRaw === 'string') {
+        color = colorRaw;
+      }
+      // intentar también vía relaciones de color/talla si son entidades
+      if (!color) {
+        const colorRel = pe?.relationships?.field_color as { data?: { id: string } } | undefined;
+        if (colorRel?.data) {
+          const colorEnt = included.find((i) => (i as { id: string }).id === colorRel.data!.id) as { attributes?: Record<string, unknown> } | undefined;
+          color = (colorEnt?.attributes?.name as string) ?? (colorEnt?.attributes?.label as string) ?? null;
+          colorHex = (colorEnt?.attributes?.field_color_code as string) ?? (colorEnt?.attributes?.color as string) ?? null;
+        }
+      }
+      if (!talla) {
+        const tallaRel = pe?.relationships?.field_talla as { data?: { id: string } } | undefined;
+        if (tallaRel?.data) {
+          const tallaEnt = included.find((i) => (i as { id: string }).id === tallaRel.data!.id) as { attributes?: Record<string, unknown> } | undefined;
+          talla = (tallaEnt?.attributes?.name as string) ?? (tallaEnt?.attributes?.label as string) ?? null;
+        }
+      }
+      edicion = (peAttrs?.field_edicion as string) ?? (peAttrs?.edicion as string) ?? null;
+      formato = (peAttrs?.field_formato as string) ?? (peAttrs?.formato as string) ?? null;
       const imgRel = pe?.relationships?.field_imagen as { data?: { type: string; id: string } | { type: string; id: string }[] } | undefined;
       const imgId = Array.isArray(imgRel?.data) ? imgRel.data[0]?.id : (imgRel?.data as { id: string } | undefined)?.id;
       if (imgId) {
@@ -249,8 +291,13 @@ function parsePedidoDetalle(
         }
       }
     }
+    // fallback: intentar desde atributos del order_item si tiene info de variación
+    if (!talla) talla = (a.field_talla as string) ?? null;
+    if (!color) color = (a.field_color as string) ?? null;
+    if (!edicion) edicion = (a.field_edicion as string) ?? null;
+    if (!formato) formato = (a.field_formato as string) ?? null;
 
-    return { title, quantity: qty, unitPrice, imagen };
+    return { title, quantity: qty, unitPrice, imagen, talla, color, colorHex, edicion, formato, sku };
   });
 
   // isLocked / puedeCancelar logic: try to find attribute that looks like locked

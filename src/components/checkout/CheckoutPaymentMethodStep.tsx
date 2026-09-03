@@ -10,12 +10,13 @@ interface Props {
   onBack: () => void;
 }
 
-const OPTIONS: Array<{ value: PaymentMethodValue; label: string; icon: string }> = [
-  { value: 'efectivo', label: 'Efectivo', icon: 'payments' },
-  { value: 'transferencia', label: 'Transferencia', icon: 'account_balance' },
-  { value: 'enzona', label: 'EnZona', icon: 'qr_code_2' },
-  { value: 'transfermovil', label: 'Transfermóvil', icon: 'phone_iphone' },
+const OPTIONS: Array<{ value: PaymentMethodValue; label: string; icon: string; desc: string }> = [
+  { value: 'efectivo', label: 'Efectivo', icon: 'payments', desc: 'Pagas al recoger tu pedido en tienda.' },
+  { value: 'transfermovil', label: 'Transfermóvil', icon: 'qr_code_2', desc: 'Pago con QR, confirmación al instante.' },
 ];
+// TODO: reactivar transferencia/enzona cuando se habiliten
+// { value: 'transferencia', label: 'Transferencia', icon: 'account_balance' },
+// { value: 'enzona', label: 'EnZona', icon: 'qr_code_2' },
 
 export default function CheckoutPaymentMethodStep({ order, lang = 'es', onSaved, onBack }: Props) {
   const tr = useTranslations(lang);
@@ -51,11 +52,12 @@ export default function CheckoutPaymentMethodStep({ order, lang = 'es', onSaved,
       </div>
       <div className="checkout-panel-body space-y-4">
         {error && <p className="text-small" style={{ color: 'var(--color-form-error)' }}>{error}</p>}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {OPTIONS.map((opt) => (
             <div key={opt.value} onClick={() => setSelected(opt.value)} className={`checkout-option flex-col items-center text-center ${selected === opt.value ? 'checkout-option--selected' : ''}`}>
               <span className="icon text-[28px]" style={{ color: selected === opt.value ? 'var(--color-brand-primary)' : 'var(--color-text-secondary)' }}>{opt.icon}</span>
               <span className="font-display font-bold text-[11px] uppercase tracking-wider">{opt.label}</span>
+              <span className="text-caption text-center" style={{ color: 'var(--color-text-secondary)' }}>{opt.desc}</span>
               <div className="checkout-radio"><div className="checkout-radio-dot" /></div>
             </div>
           ))}

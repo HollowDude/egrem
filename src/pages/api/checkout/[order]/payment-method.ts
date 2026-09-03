@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
 import { guardarMetodoPago, type PaymentMethodValue } from '@/lib/nodehive/checkout';
 
-const ALLOWED: PaymentMethodValue[] = ['efectivo', 'transferencia', 'enzona', 'transfermovil'];
+const ALLOWED: PaymentMethodValue[] = ['efectivo', 'transfermovil'];
 
 export const PATCH: APIRoute = async ({ params, request, cookies }) => {
   const session = await getSession(cookies);
@@ -13,7 +13,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const method = String(body.payment_method ?? body.paymentMethod ?? body.method ?? '').trim() as PaymentMethodValue;
     if (!ALLOWED.includes(method)) {
-      return new Response(JSON.stringify({ error: 'Método de pago inválido.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Método de pago no disponible por ahora.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
     const order = await guardarMetodoPago(orderId, method, {
       accessToken: session.accessToken, csrfToken: session.csrfToken, sessionCookie: session.sessionCookie,

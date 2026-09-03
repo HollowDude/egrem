@@ -29,8 +29,58 @@ export interface CheckoutAuth {
 }
 
 export type ShippingMethod = 'pickup' | 'standard' | 'express';
-export type PaymentMethodValue = 'efectivo' | 'transferencia' | 'enzona' | 'transfermovil';
+export type PaymentMethodValue = 'efectivo' | 'transfermovil';
 export type CheckoutStep = 'egrem_billing' | 'egrem_shipping' | 'egrem_payment_method' | 'egrem_payment' | 'complete';
+
+export class CheckoutApiError extends Error {
+  constructor(
+    public status: number,
+    public body: unknown,
+    message?: string,
+  ) {
+    super(message ?? `checkout_error_${status}`);
+  }
+}
+
+export interface TransfermovilOrderRef {
+  orderId: number;
+  storeLabel: string;
+}
+
+export interface TransfermovilQR {
+  cartGroup: string;
+  total: number;
+  currency: string;
+  url: string;
+  qr: string;
+  qrText: string;
+  orders: TransfermovilOrderRef[];
+  cached: boolean;
+}
+
+export interface TransfermovilStatusOrder {
+  orderId: number;
+  paid: boolean;
+  state: string;
+}
+
+export interface TransfermovilStatus {
+  paid: boolean;
+  orders: TransfermovilStatusOrder[];
+  cartGroup: string;
+}
+
+export interface PlaceErrorItem {
+  orderId?: number;
+  message: string;
+}
+
+export interface PlaceResult {
+  placed: number[];
+  errors: PlaceErrorItem[];
+  orders: Array<{ orderId: number; state: string; storeLabel?: string; total?: number }>;
+  cartGroup?: string;
+}
 
 export interface CheckoutOrderRef {
   orderId: number;
@@ -134,7 +184,11 @@ async function checkoutApiFetch<T = unknown>(
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`Checkout request failed: ${res.status} ${res.statusText} — ${url} — ${text}`);
+    let body: unknown = text;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {}
+    throw new CheckoutApiError(res.status, body, `Checkout request failed: ${res.status} ${res.statusText} — ${url} — ${text}`);
   }
   if (res.status === 204) return undefined as T;
   const text = await res.text().catch(() => '');
@@ -340,9 +394,61 @@ export async function cambiarPaso(
   return parseOrder(data.order);
 }
 
-export async function confirmarPedido(cartGroup: string, auth: CheckoutAuth): Promise<unknown> {
-  return checkoutApiFetch('api/checkout/place', auth, {
+export async function crearQRTransfermovil(cartGroup: string, auth: CheckoutAuth): Promise<TransfermovilQR> {
+  const data = await checkoutApiFetch<Record<string, unknown>>(`api/checkout/group/${cartGroup}/transfermovil/create`, auth, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+  const ordersRaw = (data.orders as unknown as Array<Record<string, unknown>>) ?? [];
+  return {
+    cartGroup: String(data.cart_group ?? cartGroup),
+    total: Number(data.total ?? 0),
+    currency: String(data.currency ?? 'CUP'),
+    url: String(data.url ?? ''),
+    qr: String(data.qr ?? data.qr_text ?? ''),
+    qrText: String((data.qr_text as string) ?? data.qr ?? ''),
+    orders: ordersRaw.map((o) => ({ orderId: Number(o.order_id), storeLabel: String(o.store_label ?? '') })),
+    cached: Boolean(data.cached),
+  };
+}
+
+export async function consultarEstadoTransfermovil(cartGroup: string, auth: CheckoutAuth): Promise<TransfermovilStatus> {
+  const data = await checkoutApiFetch<Record<string, unknown>>(`api/checkout/group/${cartGroup}/transfermovil/status`, auth);
+  const orders = Array.isArray(data.orders) ? (data.orders as Record<string, unknown>[]).map((o) => ({ orderId: Number(o.order_id), paid: Boolean(o.paid), state: String(o.state ?? '') })) : [];
+  return {
+    cartGroup: String(data.cart_group ?? cartGroup),
+    paid: Boolean(data.paid),
+    orders,
+  };
+}
+
+export async function confirmarPedido(cartGroup: string, auth: CheckoutAuth): Promise<PlaceResult> {
+  const data = await checkoutApiFetch<Record<string, unknown>>('api/checkout/place', auth, {
     method: 'POST',
     body: JSON.stringify({ cart_group: cartGroup }),
   });
+  const placed = Array.isArray(data.placed) ? (data.placed as number[]).map(Number) : [];
+  const errors: PlaceErrorItem[] = Array.isArray(data.errors)
+    ? (data.errors as Record<string, unknown>[]).map((e) => ({ orderId: e.order_id != null ? Number(e.order_id) : undefined, message: String(e.error ?? e.message ?? '') }))
+    : [];
+  const orders = Array.isArray(data.orders)
+    ? (data.orders as Record<string, unknown>[]).map((o) => ({ orderId: Number(o.order_id), state: String(o.state ?? ''), storeLabel: o.store_label ? String(o.store_label) : undefined, total: o.total != null ? Number(o.total) : undefined }))
+    : [];
+  return { placed, errors, orders, cartGroup: data.cart_group ? String(data.cart_group) : undefined };
+}
+
+export function mensajeErrorCheckout(status: number): string {
+  switch (status) {
+    case 422:
+      return 'Faltan datos previos (facturación, envío o método de pago). Vuelve a revisar los pasos anteriores.';
+    case 400:
+      return 'No hay pedidos activos en tu carrito.';
+    case 404:
+      return 'No se encontró tu grupo de compra. Vuelve a intentar desde el carrito.';
+    case 500:
+    case 502:
+      return 'El pago con Transfermóvil no está disponible en este momento. Prueba con Efectivo.';
+    default:
+      return 'Ocurrió un error inesperado. Intenta de nuevo.';
+  }
 }

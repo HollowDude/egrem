@@ -18,6 +18,12 @@ interface PedidoDetalle {
     quantity: number;
     unitPrice: number;
     imagen?: string | null;
+    talla?: string | null;
+    color?: string | null;
+    colorHex?: string | null;
+    edicion?: string | null;
+    formato?: string | null;
+    sku?: string | null;
   }>;
   billingProfile: {
     firstName: string;
@@ -29,8 +35,8 @@ interface PedidoDetalle {
   direccion?: { addressLine1: string; locality: string; administrativeArea: string; postalCode?: string };
   puedeCancelar: boolean;
   puedeBorrar: boolean;
-  storeGroups?: Array<{ storeLabel?: string; items: Array<{ title: string; quantity: number; unitPrice: number; imagen?: string | null }> }>;
-  todosItems?: Array<{ title: string; quantity: number; unitPrice: number; imagen?: string | null }>;
+  storeGroups?: Array<{ storeLabel?: string; items: Array<{ title: string; quantity: number; unitPrice: number; imagen?: string | null; talla?: string | null; color?: string | null; colorHex?: string | null; edicion?: string | null; formato?: string | null; sku?: string | null }> }>;
+  todosItems?: Array<{ title: string; quantity: number; unitPrice: number; imagen?: string | null; talla?: string | null; color?: string | null; colorHex?: string | null; edicion?: string | null; formato?: string | null; sku?: string | null }>;
   hermanos?: Array<unknown>;
 }
 
@@ -282,8 +288,14 @@ export default function OrderDetail({ lang = 'es', uuid }: Props) {
                       {item.title}
                     </p>
                     <p className="text-small" style={{ color: CSS.textSecondary }}>
+                      {[item.talla && `Talla: ${item.talla}`, item.color && `Color: ${item.color}`, item.edicion && `Edición: ${item.edicion}`, item.formato && `Formato: ${item.formato}`, item.sku && `SKU: ${item.sku}`].filter(Boolean).join(' · ')}
+                    </p>
+                    <p className="text-small" style={{ color: CSS.textSecondary }}>
                       Cantidad: {item.quantity} · {formatPrecio(item.unitPrice, lang as Lang)}
                     </p>
+                    {item.colorHex && (
+                      <span className="inline-block w-4 h-4 rounded-full border mt-1" style={{ background: item.colorHex, borderColor: 'var(--color-form-border)' }} title={item.color ?? ''} />
+                    )}
                   </div>
                   <p className="font-display font-bold text-sm" style={{ color: 'var(--color-egrem-black)' }}>
                     {formatPrecio(item.unitPrice * item.quantity, lang as Lang)}
