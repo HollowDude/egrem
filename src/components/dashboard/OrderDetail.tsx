@@ -15,6 +15,7 @@ interface PedidoDetalle {
   placed: string | null;
   total: number;
   storeLabel?: string;
+  pagado?: boolean;
   items: Array<{
     title: string;
     quantity: number;
@@ -221,9 +222,18 @@ export default function OrderDetail({ lang = 'es', uuid, tiendas = [] }: Props) 
         <h3 className="text-h2 uppercase m-0 border-b-2 border-egrem-gold pb-2 flex items-baseline gap-2" style={{ borderColor: CSS.egremGold }}>
           <span style={{ color: 'var(--color-egrem-gold)' }}>#</span>{pedido.orderId} <span className="text-h4" style={{ color: CSS.textSecondary, textTransform: 'none' }}>{tr('auth.dashboard.order_detail_title').replace('{id}', String(pedido.orderId)).replace(`#${pedido.orderId}`, '').replace(`Pedido ${pedido.orderId}`, '').trim() || `Pedido #${pedido.orderId}`}</span>
         </h3>
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3 mt-3 flex-wrap">
           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${estado.variant}`}>
             {estado.label}
+          </span>
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+              pedido.pagado
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-gray-100 text-gray-600 border-gray-200'
+            }`}
+          >
+            {pedido.pagado ? tr('auth.dashboard.order_paid') : tr('auth.dashboard.order_unpaid')}
           </span>
           <span className="text-small" style={{ color: CSS.textSecondary }}>
             {formatFecha(pedido.placed, lang as Lang)}

@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
 import { guardarEnvio, type ShippingMethod } from '@/lib/nodehive/checkout';
 
-const ALLOWED: ShippingMethod[] = ['pickup'];
+const ALLOWED: ShippingMethod[] = ['pickup', 'standard', 'express'];
 
 export const PATCH: APIRoute = async ({ params, request, cookies }) => {
   const session = await getSession(cookies);
@@ -13,7 +13,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const method = String(body.shipping_method ?? body.shippingMethod ?? body.method ?? '').trim() as ShippingMethod;
     if (!ALLOWED.includes(method)) {
-      return new Response(JSON.stringify({ error: 'Método de envío no permitido. Solo pickup disponible.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Método de envío no permitido.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
     const order = await guardarEnvio(orderId, method, {
       accessToken: session.accessToken, csrfToken: session.csrfToken, sessionCookie: session.sessionCookie,

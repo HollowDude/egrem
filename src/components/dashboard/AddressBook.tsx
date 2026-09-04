@@ -6,6 +6,7 @@ import AddressForm from './AddressForm';
 
 interface Direccion {
   uuid: string;
+  addressType?: 'billing' | 'shipping' | null;
   countryCode: string;
   administrativeArea: string;
   locality: string;
@@ -39,6 +40,14 @@ export default function AddressBook({ lang = 'es' }: Props) {
   const [success, setSuccess] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Direccion | null>(null);
+  const [filtro, setFiltro] = useState<'todas' | 'shipping' | 'billing'>('todas');
+
+  const visibles = direcciones.filter((d) => {
+    if (filtro === 'todas') return true;
+    // Legacy sin tipo se trata como envío (igual que el backend)
+    const tipo = d.addressType ?? 'shipping';
+    return tipo === filtro;
+  });
 
   async function load() {
     setFetching(true);
@@ -124,7 +133,24 @@ export default function AddressBook({ lang = 'es' }: Props) {
       <Alert type="success" message={success} />
       <Alert type="error" message={error} />
 
-      <div className="flex justify-end mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <div className="flex gap-2">
+          {(['todas', 'shipping', 'billing'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFiltro(f)}
+              className="px-4 py-2 rounded-full font-display font-bold text-[11px] uppercase tracking-wider border transition-colors"
+              style={{
+                borderColor: filtro === f ? CSS.brandPrimary : CSS.formBorder,
+                background: filtro === f ? CSS.brandPrimary : 'transparent',
+                color: filtro === f ? '#fff' : CSS.textSecondary,
+              }}
+            >
+              {f === 'todas' ? 'Todas' : f === 'shipping' ? tr('auth.dashboard.address_type_shipping') : tr('auth.dashboard.address_type_billing')}
+            </button>
+          ))}
+        </div>
         {!showForm && !editing && (
           <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
             <span className="icon text-[18px]">add_location</span>
@@ -147,7 +173,7 @@ export default function AddressBook({ lang = 'es' }: Props) {
         </div>
       )}
 
-      {direcciones.length === 0 ? (
+      {visibles.length === 0 ? (
         <div className="empty-state">
           <span className="icon text-[48px] mb-4" style={{ color: 'var(--color-egrem-gray)', opacity: 0.4 }}>
             location_off
@@ -163,7 +189,7 @@ export default function AddressBook({ lang = 'es' }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {direcciones.map((d) => (
+          {visibles.map((d) => (
             <div
               key={d.uuid}
               className="bg-white border rounded-xl p-6 shadow-sm flex flex-col"
@@ -180,6 +206,9 @@ export default function AddressBook({ lang = 'es' }: Props) {
                       {tr('auth.dashboard.address_default')}
                     </span>
                   )}
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border" style={{ borderColor: CSS.formBorder, color: CSS.textSecondary }}>
+                    {d.addressType === 'billing' ? tr('auth.dashboard.address_type_billing') : tr('auth.dashboard.address_type_shipping')}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   {!d.isDefault && (

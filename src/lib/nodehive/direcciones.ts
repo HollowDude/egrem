@@ -1,4 +1,5 @@
 import { getApiKeyValue, getBaseUrlValue } from './client';
+import { normalizeAdminArea } from '@/lib/geo/drupalZones';
 
 export interface DireccionAuth {
   uid: string;
@@ -8,8 +9,11 @@ export interface DireccionAuth {
   lang?: 'es' | 'en';
 }
 
+export type AddressType = 'billing' | 'shipping';
+
 export interface Direccion {
   uuid: string;
+  addressType: AddressType | null; // null = perfil viejo sin tipo (legacy)
   countryCode: string;
   administrativeArea: string;
   locality: string;
@@ -82,6 +86,7 @@ function parseDireccionResource(resource: {
         : '';
   return {
     uuid: resource.id,
+    addressType: (resource.attributes.field_address_type as AddressType) ?? null,
     countryCode: (raw.country_code as string) ?? 'CU',
     administrativeArea: (raw.administrative_area as string) ?? '',
     locality: (raw.locality as string) ?? '',
@@ -143,13 +148,14 @@ export async function crearDireccion(
   // o si se requiere, se resuelve el UUID del usuario.
   const userUuid = await getUserUuid(auth);
   // given_name y family_name son obligatorios en el address de Drupal
+  // administrative_area se normaliza: países sin subdivisiones en Drupal la exigen vacía
   const body: Record<string, unknown> = {
     data: {
       type: 'profile--customer',
       attributes: {
         address: {
-          country_code: data.countryCode || 'CU',
-          administrative_area: data.administrativeArea,
+          country_code: data.countryCode,
+          administrative_area: normalizeAdminArea(data.countryCode, data.administrativeArea),
           locality: data.locality,
           address_line1: data.addressLine1,
           address_line2: data.addressLine2 ?? '',
@@ -158,6 +164,7 @@ export async function crearDireccion(
           family_name: data.lastName || 'EGREM',
           organization: '',
         },
+        field_address_type: data.addressType,
         field_first_name: data.firstName || '',
         field_last_name: data.lastName || '',
         field_phone: toPhonePayload(data.phone || ''),
@@ -210,7 +217,10 @@ export async function actualizarDireccion(
     }
     addressPatch = {
       country_code: data.countryCode !== undefined ? data.countryCode : (current?.countryCode ?? 'CU'),
-      administrative_area: data.administrativeArea !== undefined ? data.administrativeArea : (current?.administrativeArea ?? ''),
+      administrative_area: normalizeAdminArea(
+        data.countryCode !== undefined ? data.countryCode : (current?.countryCode ?? 'CU'),
+        data.administrativeArea !== undefined ? data.administrativeArea : (current?.administrativeArea ?? ''),
+      ),
       locality: data.locality !== undefined ? data.locality : (current?.locality ?? ''),
       address_line1: data.addressLine1 !== undefined ? data.addressLine1 : (current?.addressLine1 ?? ''),
       address_line2: data.addressLine2 !== undefined ? data.addressLine2 : (current?.addressLine2 ?? ''),
@@ -223,6 +233,7 @@ export async function actualizarDireccion(
 
   const attributesPatch: Record<string, unknown> = {};
   if (addressPatch) attributesPatch.address = addressPatch;
+  if (data.addressType !== undefined) attributesPatch.field_address_type = data.addressType;
   if (data.firstName !== undefined) attributesPatch.field_first_name = data.firstName;
   if (data.lastName !== undefined) attributesPatch.field_last_name = data.lastName;
   if (data.phone !== undefined) attributesPatch.field_phone = toPhonePayload(data.phone);

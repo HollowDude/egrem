@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth/session';
 import { listarDirecciones, crearDireccion } from '@/lib/nodehive/direcciones';
+import { countryUsesAdminArea } from '@/lib/geo/drupalZones';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 
 export const GET: APIRoute = async ({ cookies }) => {
@@ -53,7 +54,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const addressLine1 = String(body.addressLine1 ?? '').trim();
     const administrativeArea = String(body.administrativeArea ?? '').trim();
     const locality = String(body.locality ?? '').trim();
-    const countryCode = String(body.countryCode ?? 'CU').trim() || 'CU';
+    const countryCode = String(body.countryCode ?? body.country_code ?? '').trim();
+    const addressType = String(body.addressType ?? body.field_address_type ?? 'shipping').trim() as 'billing' | 'shipping';
+    if (addressType !== 'billing' && addressType !== 'shipping') {
+      return new Response(JSON.stringify({ error: 'Tipo de dirección inválido.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (!countryCode) {
+      return new Response(JSON.stringify({ error: 'Falta el país.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (addressType === 'shipping' && countryCode !== 'CU') {
+      return new Response(JSON.stringify({ error: 'Las direcciones de envío deben estar en Cuba.' }), {
+        status: 422,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     const addressLine2 = String(body.addressLine2 ?? '').trim();
     const postalCode = String(body.postalCode ?? '').trim();
     const firstName = String(body.firstName ?? '').trim();
@@ -86,15 +106,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    if (!addressLine1 || !administrativeArea || !locality) {
+    if (!addressLine1 || !locality || (countryUsesAdminArea(countryCode) && !administrativeArea)) {
       return new Response(
-        JSON.stringify({ error: 'Faltan campos obligatorios: dirección, provincia y municipio.' }),
+        JSON.stringify({
+          error: countryUsesAdminArea(countryCode)
+            ? 'Faltan campos obligatorios: dirección, provincia y municipio.'
+            : 'Faltan campos obligatorios: dirección y municipio.',
+        }),
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
     const nueva = await crearDireccion(
       {
+        addressType,
         countryCode,
         administrativeArea,
         locality,
@@ -125,6 +150,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (msg.includes('403')) {
       return new Response(JSON.stringify({ error: 'No autorizado para crear dirección.' }), {
         status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (msg.includes('422')) {
+      const m = msg.match(/"detail":"((?:[^"\\]|\\.)*)"/);
+      let detail = 'Datos de dirección inválidos para ese país.';
+      if (m) {
+        try { detail = JSON.parse(`"${m[1]}"`); } catch { detail = m[1]; }
+      }
+      return new Response(JSON.stringify({ error: detail }), {
+        status: 422,
         headers: { 'Content-Type': 'application/json' },
       });
     }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import type { CheckoutOrderDetail } from '@/lib/nodehive/checkout';
+import type { CheckoutOrderDetail, ShippingMethod } from '@/lib/nodehive/checkout';
 import { buscarTiendaParaOrden } from '@/lib/checkout/resolverTiendas';
 import type { TiendaInfo } from '@/types/tienda';
 
@@ -13,10 +13,13 @@ interface Props {
   tiendas: TiendaInfo[];
   onSaved: (order: CheckoutOrderDetail) => void;
   onBack: () => void;
+  /** Si se elige domicilio, se deriva al paso de dirección en vez de guardar directo. */
+  onSelectDomicilio?: (method: ShippingMethod) => void;
 }
 
-export default function CheckoutShippingStep({ order, lang = 'es', snapshot, tiendas, onSaved, onBack }: Props) {
+export default function CheckoutShippingStep({ order, lang = 'es', snapshot, tiendas, onSaved, onBack, onSelectDomicilio }: Props) {
   const tr = useTranslations(lang);
+  const [method, setMethod] = useState<ShippingMethod>(order.shippingMethod ?? 'pickup');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,12 +41,23 @@ export default function CheckoutShippingStep({ order, lang = 'es', snapshot, tie
 
   async function handleContinue() {
     setError('');
+    if (method !== 'pickup') {
+      // Domicilio: primero la dirección; el método se guarda al completar ese paso.
+      if (onSelectDomicilio) {
+        onSelectDomicilio(method);
+        return;
+      }
+      if (!order.shippingProfile) {
+        setError(tr('checkout.pago.falta_direccion_envio'));
+        return;
+      }
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/checkout/${order.orderId}/shipping`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shipping_method: 'pickup' }),
+        body: JSON.stringify({ shipping_method: method }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((data as { error?: string }).error || 'Error');
@@ -63,17 +77,59 @@ export default function CheckoutShippingStep({ order, lang = 'es', snapshot, tie
       </div>
       <div className="checkout-panel-body space-y-4">
         {error && <p className="text-small" style={{ color: 'var(--color-form-error)' }}>{error}</p>}
-        {aMostrar.map((t) => (
-          <div key={t.id} className="checkout-option checkout-option--selected checkout-option--static">
+        <div
+          onClick={() => setMethod('pickup')}
+          className={`checkout-option ${method === 'pickup' ? 'checkout-option--selected' : ''}`}
+        >
+          <div className="checkout-radio"><div className="checkout-radio-dot" /></div>
+          <span className="icon text-[20px]" style={{ color: 'var(--color-brand-primary)', marginTop: '2px' } as React.CSSProperties}>storefront</span>
+          <div className="flex-1">
+            <p className="font-display font-bold text-sm m-0">{tr('checkout.pago.recogida_tienda')}{aMostrar.length > 0 ? ` — ${aMostrar[0].label}` : ''}</p>
+            {aMostrar.length > 0 && (
+              <p className="text-small m-0" style={{ color: 'var(--color-text-secondary)' }}>{aMostrar[0].direccion ?? `${aMostrar[0].municipio}, ${aMostrar[0].provincia}`}</p>
+            )}
+            <p className="text-small font-bold m-0" style={{ color: '#16a34a' }}>Gratis</p>
+          </div>
+        </div>
+        {aMostrar.slice(1).map((t) => (
+          <div key={t.id} className="checkout-option checkout-option--static">
             <span className="icon text-[20px]" style={{ color: 'var(--color-brand-primary)', marginTop: '2px' } as React.CSSProperties}>storefront</span>
             <div className="flex-1">
               <p className="font-display font-bold text-sm m-0">{tr('checkout.pago.recogida_tienda')} — {t.label}</p>
               <p className="text-small m-0" style={{ color: 'var(--color-text-secondary)' }}>{t.direccion ?? `${t.municipio}, ${t.provincia}`}</p>
-              <p className="text-small font-bold m-0" style={{ color: '#16a34a' }}>Gratis</p>
             </div>
           </div>
         ))}
-        <p className="text-caption">{tr('checkout.pago.domicilio_proximamente')}</p>
+        <div
+          onClick={() => setMethod('standard')}
+          className={`checkout-option ${method === 'standard' ? 'checkout-option--selected' : ''}`}
+        >
+          <div className="checkout-radio"><div className="checkout-radio-dot" /></div>
+          <span className="icon text-[20px]" style={{ color: 'var(--color-brand-primary)', marginTop: '2px' } as React.CSSProperties}>local_shipping</span>
+          <div className="flex-1">
+            <p className="font-display font-bold text-sm m-0">{tr('checkout.pago.envio_domicilio')} — {tr('checkout.pago.envio_estandar')}</p>
+            {order.shippingProfile?.address && (
+              <p className="text-small m-0" style={{ color: 'var(--color-text-secondary)' }}>
+                {order.shippingProfile.address.addressLine1}, {order.shippingProfile.address.locality}
+              </p>
+            )}
+          </div>
+        </div>
+        <div
+          onClick={() => setMethod('express')}
+          className={`checkout-option ${method === 'express' ? 'checkout-option--selected' : ''}`}
+        >
+          <div className="checkout-radio"><div className="checkout-radio-dot" /></div>
+          <span className="icon text-[20px]" style={{ color: 'var(--color-brand-primary)', marginTop: '2px' } as React.CSSProperties}>electric_bolt</span>
+          <div className="flex-1">
+            <p className="font-display font-bold text-sm m-0">{tr('checkout.pago.envio_domicilio')} — {tr('checkout.pago.envio_expres')}</p>
+            {order.shippingProfile?.address && (
+              <p className="text-small m-0" style={{ color: 'var(--color-text-secondary)' }}>
+                {order.shippingProfile.address.addressLine1}, {order.shippingProfile.address.locality}
+              </p>
+            )}
+          </div>
+        </div>
         <div className="flex justify-between pt-2 gap-3">
           <button type="button" onClick={onBack} className="px-6 py-3 rounded-xl border font-display font-bold text-sm uppercase tracking-wider" style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-text-secondary)' } as React.CSSProperties}>{tr('checkout.pago.regresar')}</button>
           <button type="button" onClick={handleContinue} disabled={saving} className="btn-primary" style={{ width: 'auto', opacity: saving ? 0.6 : 1 } as React.CSSProperties}>{saving ? <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : tr('checkout.pago.continuar')}</button>

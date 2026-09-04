@@ -1,8 +1,12 @@
-import { useState } from 'react';
+// NOTA: componente listo para cuando se habilite envío a domicilio (standard/express).
+// Se debe renderizar entre CheckoutBillingStep y CheckoutShippingStep cuando el usuario
+// elija un método distinto a "pickup". Mientras domicilio esté deshabilitado, este paso
+// se salta siempre gracias al atajo de Drupal (PATCH /shipping {pickup} funciona
+// estando aún en egrem_shipping_address).
+import { useState, useEffect } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import CountryStateCityFields from '@/components/ui/CountryStateCityFields';
-import { countryUsesAdminArea } from '@/lib/geo/drupalZones';
+import { PROVINCE_CODES } from '@/lib/cuba';
 import PhoneInputField from '@/components/ui/PhoneInputField';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 
@@ -12,7 +16,7 @@ interface Props {
   saving: boolean;
 }
 
-export default function CheckoutBillingForm({ lang = 'es', onSave, saving }: Props) {
+export default function CheckoutShippingAddressForm({ lang = 'es', onSave, saving }: Props) {
   const tr = useTranslations(lang);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -20,12 +24,38 @@ export default function CheckoutBillingForm({ lang = 'es', onSave, saving }: Pro
   const [ciPassport, setCiPassport] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [addressLine2, setAddressLine2] = useState('');
-  const [countryCode, setCountryCode] = useState('');
   const [province, setProvince] = useState('');
   const [municipio, setMunicipio] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [isDefault, setIsDefault] = useState(false);
+  const [municipios, setMunicipios] = useState<string[]>([]);
+  const [loadingMunicipios, setLoadingMunicipios] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!province) { setMunicipios([]); return; }
+    let cancelled = false;
+    async function load() {
+      setLoadingMunicipios(true);
+      try {
+        const res = await fetch('/api/direcciones/municipios');
+        if (!res.ok) return;
+        const data = await res.json();
+        let list: string[] = [];
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          const provincias = ((data as Record<string, unknown>).provincias as Array<{ id: string; nombre: string; municipios: string[] }>) ?? [];
+          const especiales = ((data as Record<string, unknown>).municipios_especiales as Array<{ id: string; nombre: string; municipios: string[] }>) ?? [];
+          const all = [...provincias, ...especiales];
+          const found = all.find((p) => p.id === province) ?? all.find((p) => p.nombre === province);
+          if (found) list = found.municipios;
+        }
+        if (!cancelled) setMunicipios(list);
+      } catch { if (!cancelled) setMunicipios([]); }
+      finally { if (!cancelled) setLoadingMunicipios(false); }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [province]);
 
   function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -34,13 +64,10 @@ export default function CheckoutBillingForm({ lang = 'es', onSave, saving }: Pro
     if (!phone.trim()) { setError('El teléfono es obligatorio.'); return; }
     if (!isValidPhoneNumber(phone)) { setError(tr('auth.register.error.phone_invalid')); return; }
     if (!ciPassport.trim()) { setError('El CI/Pasaporte es obligatorio.'); return; }
-    if (!countryCode.trim()) { setError('Selecciona un país.'); return; }
-    // Drupal exige provincia vacía para países sin subdivisiones: no pedirla en ese caso
-    const requiereProvincia = countryUsesAdminArea(countryCode);
-    if (!addressLine1.trim() || !municipio.trim() || (requiereProvincia && !province.trim())) { setError(tr('auth.dashboard.address_empty')); return; }
+    if (!addressLine1.trim() || !province.trim() || !municipio.trim()) { setError(tr('auth.dashboard.address_empty')); return; }
     onSave({
       firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim(), ciPassport: ciPassport.trim(),
-      countryCode: countryCode.trim(), administrativeArea: province.trim(), locality: municipio.trim(),
+      countryCode: 'CU', administrativeArea: province.trim(), locality: municipio.trim(),
       addressLine1: addressLine1.trim(), addressLine2: addressLine2.trim(), postalCode: postalCode.trim(),
       isDefault, is_default: isDefault,
     });
@@ -60,7 +87,7 @@ export default function CheckoutBillingForm({ lang = 'es', onSave, saving }: Pro
           <input value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputCls} style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-egrem-black)' }} />
         </div>
       </div>
-      <PhoneInputField id="checkout-phone" value={phone} onChange={(v) => setPhone(v?.toString() ?? '')} label={tr('auth.dashboard.address_phone')} placeholder="+53 5 1234567" />
+      <PhoneInputField id="shipping-address-phone" value={phone} onChange={(v) => setPhone(v?.toString() ?? '')} label={tr('auth.dashboard.address_phone')} placeholder="+53 5 1234567" />
       <div className="space-y-2">
         <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{tr('auth.dashboard.address_ci_passport')}</label>
         <input value={ciPassport} onChange={(e) => setCiPassport(e.target.value)} className={inputCls} style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-egrem-black)' }} />
@@ -73,15 +100,22 @@ export default function CheckoutBillingForm({ lang = 'es', onSave, saving }: Pro
         <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{tr('auth.dashboard.address_line2')}</label>
         <input value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} className={inputCls} style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-egrem-black)' }} />
       </div>
-      <CountryStateCityFields
-        countryCode={countryCode}
-        administrativeArea={province}
-        locality={municipio}
-        onChange={(v) => { setCountryCode(v.countryCode); setProvince(v.administrativeArea); setMunicipio(v.locality); }}
-        labelCountry={tr('auth.dashboard.address_country')}
-        labelProvince={tr('auth.dashboard.address_province')}
-        labelCity={tr('auth.dashboard.address_municipality')}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{tr('auth.dashboard.address_province')}</label>
+          <select value={province} onChange={(e) => { setProvince(e.target.value); setMunicipio(''); }} className={inputCls} style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-egrem-black)' }}>
+            <option value="">{tr('auth.dashboard.address_province')}</option>
+            {Object.entries(PROVINCE_CODES).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{tr('auth.dashboard.address_municipality')}</label>
+          <select value={municipio} onChange={(e) => setMunicipio(e.target.value)} disabled={!province || loadingMunicipios} className={`${inputCls} disabled:opacity-50`} style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-egrem-black)' }}>
+            <option value="">{loadingMunicipios ? 'Cargando...' : tr('auth.dashboard.address_municipality')}</option>
+            {municipios.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+      </div>
       <div className="space-y-2">
         <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{tr('auth.dashboard.address_postal_code')}</label>
         <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={inputCls} style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-egrem-black)' }} />

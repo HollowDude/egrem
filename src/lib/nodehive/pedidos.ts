@@ -21,6 +21,14 @@ export interface PedidoResumen {
   total: number;
   storeLabel?: string;
   billingKey: string;
+  /** Total pagado según Drupal (commerce payment). `total_paid` del pedido. */
+  totalPaid: number;
+  /** Balance pendiente según Drupal (`balance`). 0 = sin deuda. */
+  balance: number;
+  /** true si existe payment en Drupal y cubre el total (total_paid >= total y balance <= 0). */
+  pagado: boolean;
+  /** Gateway del payment (ej. transfermovil, manual). Viene de `payment_instrument`. */
+  paymentGatewayId?: string | null;
 }
 
 export interface PedidoBillingProfile {
@@ -72,6 +80,10 @@ export interface PedidoAgrupado {
   total: number;
   pedidos: PedidoResumen[];
   storeLabels: string[];
+  /** true solo si TODOS los pedidos del grupo están pagados en Drupal. */
+  pagado: boolean;
+  totalPaid: number;
+  balance: number;
 }
 
 function sessionCookieHeader(raw?: string): string | undefined {
@@ -123,6 +135,51 @@ function billingKeyFromAttrs(attrs: Record<string, unknown>): string {
   ].join('|');
 }
 
+function priceNumber(value: unknown): number {
+  if (value == null) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return parseFloat(value) || 0;
+  if (typeof value === 'object') {
+    const n = (value as { number?: string | number }).number;
+    if (typeof n === 'number') return n;
+    if (typeof n === 'string') return parseFloat(n) || 0;
+  }
+  return 0;
+}
+
+/**
+ * Estado de pago según el pedido en Drupal.
+ *
+ * Drupal Commerce crea un `commerce_payment` cuando se paga (ej. Transfermóvil).
+ * JSONAPI no expone `commerce_payment` al usuario autenticado (requiere
+ * `administer commerce_payment`), pero el pedido sí refleja el payment en:
+ * - `total_paid` (suma de payments con estado completed)
+ * - `balance` (total - pagado)
+ * - `payment_instrument.payment_gateway_id`
+ * Consultar estos campos del pedido ES consultar el payment en Drupal.
+ */
+function pagoInfoFromAttrs(attrs: Record<string, unknown>): {
+  total: number;
+  totalPaid: number;
+  balance: number;
+  pagado: boolean;
+  paymentGatewayId: string | null;
+} {
+  const total = priceNumber(attrs.total_price);
+  const totalPaid = priceNumber(attrs.total_paid);
+  let balance = priceNumber(attrs.balance);
+  // Si Drupal no manda balance pero sí total y pagado, derivarlo
+  if (attrs.balance == null && (attrs.total_price != null || attrs.total_paid != null)) {
+    balance = Math.max(0, total - totalPaid);
+  }
+  const instrument = attrs.payment_instrument as Record<string, unknown> | null | undefined;
+  const paymentGatewayId = typeof instrument?.payment_gateway_id === 'string' ? (instrument.payment_gateway_id as string) : null;
+  // Pagado = hay payment (totalPaid > 0) y cubre el total (balance ~ 0).
+  // Efectivo contra entrega queda como No pagado (totalPaid 0, balance == total).
+  const pagado = totalPaid > 0 && balance <= 0.009 && (total <= 0 || totalPaid + 0.009 >= total);
+  return { total, totalPaid, balance, pagado, paymentGatewayId };
+}
+
 function parsePedidoResumen(
   resource: Record<string, unknown>,
   included: Record<string, unknown>[],
@@ -140,6 +197,7 @@ function parsePedidoResumen(
     storeLabel = (storeRes?.attributes?.label as string) ?? (storeRes?.attributes?.name as string);
   }
 
+  const pago = pagoInfoFromAttrs(attrs);
   return {
     uuid: resource.id as string,
     orderId: (attrs.drupal_internal__order_id as number) ?? (attrs.order_id as number) ?? 0,
@@ -148,9 +206,13 @@ function parsePedidoResumen(
     cartGroupUuid: (attrs.field_cart_group_uuid as string) ?? null,
     placed: (attrs.placed as string) ?? (attrs.created as string) ?? null,
     changed: (attrs.changed as string) ?? null,
-    total: parseFloat(((attrs.total_price as { number?: string } | undefined)?.number as string) ?? '0') || 0,
+    total: pago.total,
     storeLabel,
     billingKey: billingKeyFromAttrs(attrs),
+    totalPaid: pago.totalPaid,
+    balance: pago.balance,
+    pagado: pago.pagado,
+    paymentGatewayId: pago.paymentGatewayId,
   };
 }
 
@@ -327,6 +389,12 @@ function sameChanged(a: PedidoResumen, b: PedidoResumen): boolean {
   if (!ca || !cb) return false;
   return ca === cb;
 }
+function grupoPago(pedidos: PedidoResumen[]): { pagado: boolean; totalPaid: number; balance: number } {
+  const totalPaid = pedidos.reduce((s, x) => s + (x.totalPaid ?? 0), 0);
+  const balance = pedidos.reduce((s, x) => s + (x.balance ?? 0), 0);
+  const pagado = pedidos.length > 0 && pedidos.every((x) => x.pagado);
+  return { pagado, totalPaid, balance };
+}
 function agruparPedidos(pedidos: PedidoResumen[]): PedidoAgrupado[] {
   // Agrupar solo si coinciden estrictamente: mismo cartGroup, mismo state, mismo checkoutStep,
   // misma facturación, mismo changed, y números consecutivos
@@ -342,6 +410,7 @@ function agruparPedidos(pedidos: PedidoResumen[]): PedidoAgrupado[] {
   for (const [, arrAll] of byCart) {
     if (arrAll.length === 1) {
       const p = arrAll[0];
+      const pago = grupoPago([p]);
       grupos.push({
         uuid: p.uuid,
         orderId: p.orderId,
@@ -354,6 +423,7 @@ function agruparPedidos(pedidos: PedidoResumen[]): PedidoAgrupado[] {
         total: p.total,
         pedidos: [p],
         storeLabels: p.storeLabel ? [p.storeLabel] : [],
+        ...pago,
       });
       continue;
     }
@@ -392,6 +462,7 @@ function agruparPedidos(pedidos: PedidoResumen[]): PedidoAgrupado[] {
           total,
           pedidos: [...current],
           storeLabels: [...new Set(current.map((x) => x.storeLabel).filter(Boolean) as string[])],
+          ...grupoPago(current),
         });
         current = [cur];
       }
@@ -417,6 +488,7 @@ function agruparPedidos(pedidos: PedidoResumen[]): PedidoAgrupado[] {
         total,
         pedidos: [...current],
         storeLabels: [...new Set(current.map((x) => x.storeLabel).filter(Boolean) as string[])],
+        ...grupoPago(current),
       });
     }
   }
@@ -552,10 +624,16 @@ export async function obtenerPedidoAgrupado(uuid: string, auth: PedidoAuth): Pro
     const storeGroups = [...byStore.entries()].map(([storeLabel, items]) => ({ storeLabel, items }));
     const todosItems = validos.flatMap((d) => d.items);
     const total = validos.reduce((s, d) => s + d.total, 0);
+    const totalPaid = validos.reduce((s, d) => s + (d.totalPaid ?? 0), 0);
+    const balance = validos.reduce((s, d) => s + (d.balance ?? 0), 0);
+    const pagado = validos.length > 0 && validos.every((d) => d.pagado);
     const billing = validos.find((d) => d.billingProfile)?.billingProfile ?? base.billingProfile;
     return {
       ...base,
       total,
+      totalPaid,
+      balance,
+      pagado,
       billingProfile: billing,
       direccion: billing?.address ?? base.direccion,
       hermanos: validos.filter((d) => d.uuid !== uuid),

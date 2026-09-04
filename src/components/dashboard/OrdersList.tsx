@@ -17,6 +17,7 @@ interface PedidoResumen {
   placed: string | null;
   total: number;
   storeLabel?: string;
+  pagado?: boolean;
 }
 interface PedidoAgrupado {
   uuid: string;
@@ -30,6 +31,7 @@ interface PedidoAgrupado {
   total: number;
   pedidos: PedidoResumen[];
   storeLabels: string[];
+  pagado?: boolean;
 }
 
 interface Props {
@@ -109,6 +111,7 @@ function agruparPedidosClient(pedidos: PedidoResumen[]): PedidoAgrupado[] {
       total,
       pedidos: arr,
       storeLabels: [...new Set(arr.map((x) => x.storeLabel).filter(Boolean) as string[])],
+      pagado: arr.length > 0 && arr.every((x) => x.pagado === true),
     });
   }
   grupos.sort((a, b) => {
@@ -235,20 +238,33 @@ export default function OrdersList({ lang = 'es' }: Props) {
                   </div>
                   {(() => {
                     const e = estadoInfo(p.state, p.checkoutStep);
+                    const pagado = p.pagado ?? p.pedidos?.every((x) => x.pagado) ?? false;
                     return (
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shrink-0 ${
-                          e.variant === 'green'
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : e.variant === 'red'
-                              ? 'bg-red-50 text-red-700 border-red-200'
-                              : e.variant === 'gold'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-white text-text-secondary border-black/10'
-                        }`}
-                      >
-                        {e.label}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                            e.variant === 'green'
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : e.variant === 'red'
+                                ? 'bg-red-50 text-red-700 border-red-200'
+                                : e.variant === 'gold'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-white text-text-secondary border-black/10'
+                          }`}
+                        >
+                          {e.label}
+                        </span>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                            pagado
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : 'bg-gray-100 text-gray-600 border-gray-200'
+                          }`}
+                          title={pagado ? tr('auth.dashboard.order_paid') : tr('auth.dashboard.order_unpaid')}
+                        >
+                          {pagado ? tr('auth.dashboard.order_paid') : tr('auth.dashboard.order_unpaid')}
+                        </span>
+                      </div>
                     );
                   })()}
                 </div>

@@ -20,6 +20,7 @@
  * Contrato confirmado contra Drupal (egrem_checkout.routing.yml) 2026-09-01.
  */
 import { getApiKeyValue, getBaseUrlValue } from './client';
+import { normalizeAdminArea } from '@/lib/geo/drupalZones';
 
 export interface CheckoutAuth {
   accessToken: string;
@@ -30,7 +31,7 @@ export interface CheckoutAuth {
 
 export type ShippingMethod = 'pickup' | 'standard' | 'express';
 export type PaymentMethodValue = 'efectivo' | 'transfermovil';
-export type CheckoutStep = 'egrem_billing' | 'egrem_shipping' | 'egrem_payment_method' | 'egrem_payment' | 'complete';
+export type CheckoutStep = 'egrem_billing' | 'egrem_shipping_address' | 'egrem_shipping' | 'egrem_payment_method' | 'egrem_payment' | 'complete';
 
 export class CheckoutApiError extends Error {
   constructor(
@@ -102,15 +103,17 @@ export interface CheckoutAddress {
   postalCode?: string;
 }
 
-export interface CheckoutBillingProfile {
+export interface CheckoutProfile {
   profileId: string;
   profileUuid: string;
+  addressType: 'billing' | 'shipping' | null;
   firstName: string;
   lastName: string;
   phone: string;
   ciPassport: string;
   address: CheckoutAddress | null;
 }
+export type CheckoutBillingProfile = CheckoutProfile; // alias, no rompe imports existentes
 
 export interface CheckoutLineItem {
   orderItemId?: number;
@@ -133,6 +136,7 @@ export interface CheckoutOrderDetail {
   total: number;
   currency: string | null;
   billingProfile: CheckoutBillingProfile | null;
+  shippingProfile: CheckoutProfile | null;
   shippingMethod: ShippingMethod | null;
   paymentMethod: PaymentMethodValue | null;
   items: CheckoutLineItem[];
@@ -197,7 +201,7 @@ async function checkoutApiFetch<T = unknown>(
 }
 
 // ---- parsers defensivos ----
-function parseBillingProfile(raw: unknown): CheckoutBillingProfile | null {
+function parseProfileBlock(raw: unknown): CheckoutProfile | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   const addr = r.address as Record<string, unknown> | null | undefined;
@@ -208,6 +212,7 @@ function parseBillingProfile(raw: unknown): CheckoutBillingProfile | null {
   return {
     profileId: String(r.profile_id ?? ''),
     profileUuid: String(r.profile_uuid ?? ''),
+    addressType: (r.field_address_type as 'billing' | 'shipping') ?? null,
     firstName: String(r.field_first_name ?? ''),
     lastName: String(r.field_last_name ?? ''),
     phone,
@@ -224,6 +229,8 @@ function parseBillingProfile(raw: unknown): CheckoutBillingProfile | null {
       : null,
   };
 }
+/** Alias histórico: billing y shipping comparten forma. */
+const parseBillingProfile = parseProfileBlock;
 
 function parseOrder(raw: Record<string, unknown>): CheckoutOrderDetail {
   return {
@@ -239,6 +246,7 @@ function parseOrder(raw: Record<string, unknown>): CheckoutOrderDetail {
     total: Number(raw.total ?? 0),
     currency: raw.currency ? String(raw.currency) : null,
     billingProfile: parseBillingProfile(raw.billing_profile),
+    shippingProfile: raw.shipping_profile ? parseProfileBlock(raw.shipping_profile) : null,
     shippingMethod: (raw.field_shipping_method as ShippingMethod) ?? null,
     paymentMethod: (raw.field_payment_method as PaymentMethodValue) ?? null,
     items: Array.isArray(raw.items)
@@ -321,10 +329,13 @@ export async function guardarFacturacionInline(
   auth: CheckoutAuth,
 ): Promise<CheckoutOrderDetail> {
   // Backend acepta tanto address anidado como campos sueltos; mandamos ambos para compat
+  // administrative_area se normaliza: países sin subdivisiones en Drupal la exigen vacía
   const body: Record<string, unknown> = {
+    address_type: 'billing',
+    addressType: 'billing',
     address: {
-      country_code: payload.countryCode || 'CU',
-      administrative_area: payload.administrativeArea,
+      country_code: payload.countryCode,
+      administrative_area: normalizeAdminArea(payload.countryCode, payload.administrativeArea),
       locality: payload.locality,
       address_line1: payload.addressLine1,
       address_line2: payload.addressLine2 ?? '',
@@ -342,13 +353,80 @@ export async function guardarFacturacionInline(
     field_phone: payload.phone,
     field_ci_passport: payload.ciPassport,
     countryCode: payload.countryCode,
-    administrativeArea: payload.administrativeArea,
+    administrativeArea: normalizeAdminArea(payload.countryCode, payload.administrativeArea),
     locality: payload.locality,
     addressLine1: payload.addressLine1,
     ...(payload.isDefault !== undefined ? { is_default: payload.isDefault, isDefault: payload.isDefault } : {}),
   };
   const data = await checkoutApiFetch<{ order: Record<string, unknown> }>(
     `api/checkout/${orderId}/billing`,
+    auth,
+    { method: 'PATCH', body: JSON.stringify(body) },
+  );
+  return parseOrder(data.order);
+}
+
+export interface ShippingAddressInlinePayload {
+  countryCode: string;
+  administrativeArea: string;
+  locality: string;
+  addressLine1: string;
+  addressLine2?: string;
+  postalCode?: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  ciPassport: string;
+  isDefault?: boolean;
+}
+
+export async function guardarDireccionEnvioConPerfil(
+  orderId: number | string,
+  profileId: string,
+  auth: CheckoutAuth,
+): Promise<CheckoutOrderDetail> {
+  const data = await checkoutApiFetch<{ order: Record<string, unknown> }>(
+    `api/checkout/${orderId}/shipping-address`,
+    auth,
+    { method: 'PATCH', body: JSON.stringify({ profile_id: profileId }) },
+  );
+  return parseOrder(data.order);
+}
+
+export async function guardarDireccionEnvioInline(
+  orderId: number | string,
+  payload: ShippingAddressInlinePayload,
+  auth: CheckoutAuth,
+): Promise<CheckoutOrderDetail> {
+  const body: Record<string, unknown> = {
+    address_type: 'shipping',
+    addressType: 'shipping',
+    address: {
+      country_code: 'CU',
+      administrative_area: payload.administrativeArea,
+      locality: payload.locality,
+      address_line1: payload.addressLine1,
+      address_line2: payload.addressLine2 ?? '',
+      postal_code: payload.postalCode ?? '',
+      given_name: payload.firstName,
+      family_name: payload.lastName,
+    },
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    phone: payload.phone,
+    ciPassport: payload.ciPassport,
+    field_first_name: payload.firstName,
+    field_last_name: payload.lastName,
+    field_phone: payload.phone,
+    field_ci_passport: payload.ciPassport,
+    countryCode: 'CU',
+    administrativeArea: payload.administrativeArea,
+    locality: payload.locality,
+    addressLine1: payload.addressLine1,
+    ...(payload.isDefault !== undefined ? { is_default: payload.isDefault, isDefault: payload.isDefault } : {}),
+  };
+  const data = await checkoutApiFetch<{ order: Record<string, unknown> }>(
+    `api/checkout/${orderId}/shipping-address`,
     auth,
     { method: 'PATCH', body: JSON.stringify(body) },
   );

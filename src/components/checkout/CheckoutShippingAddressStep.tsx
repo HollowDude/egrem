@@ -1,9 +1,12 @@
+// Flujo: el usuario elige primero el método en CheckoutShippingStep; si es
+// domicilio se muestra este paso y, al guardar la dirección, se aplica el
+// método pendiente (standard/express) antes de avanzar al pago.
 import { useEffect, useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import type { CheckoutOrderDetail } from '@/lib/nodehive/checkout';
+import type { CheckoutOrderDetail, ShippingMethod } from '@/lib/nodehive/checkout';
 import Alert from '@/components/ui/Alert';
-import CheckoutBillingForm from './CheckoutBillingForm';
+import CheckoutShippingAddressForm from './CheckoutShippingAddressForm';
 
 interface Direccion {
   uuid: string;
@@ -24,10 +27,13 @@ interface Direccion {
 interface Props {
   order: CheckoutOrderDetail;
   lang?: Lang;
+  /** Método de domicilio elegido en el paso anterior; se aplica tras guardar la dirección. */
+  pendingMethod?: ShippingMethod | null;
   onSaved: (order: CheckoutOrderDetail) => void;
+  onBack: () => void;
 }
 
-export default function CheckoutBillingStep({ order, lang = 'es', onSaved }: Props) {
+export default function CheckoutShippingAddressStep({ order, lang = 'es', pendingMethod = null, onSaved, onBack }: Props) {
   const tr = useTranslations(lang);
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -43,14 +49,16 @@ export default function CheckoutBillingStep({ order, lang = 'es', onSaved }: Pro
         const res = await fetch('/api/user/direcciones');
         if (res.ok) {
           const data = (await res.json()) as Direccion[];
-          const list = (Array.isArray(data) ? data : []).filter((d) => d.addressType === 'billing');
+          const list = (Array.isArray(data) ? data : []).filter(
+            (d) => d.addressType === 'shipping' || d.addressType == null,
+          );
           setDirecciones(list);
-          // Auto-seleccionar la predeterminada si existe y aún no hay selección
           const def = list.find((d) => d.isDefault);
           if (def && !selected && !showForm) setSelected(def.uuid);
-          // Si el pedido ya tiene billing, preseleccionar ese
-          if (order.billingProfile?.profileId) {
-            const match = list.find((d) => d.uuid === order.billingProfile?.profileUuid || d.uuid === order.billingProfile?.profileId);
+          if (order.shippingProfile?.profileId) {
+            const match = list.find(
+              (d) => d.uuid === order.shippingProfile?.profileUuid || d.uuid === order.shippingProfile?.profileId,
+            );
             if (match) setSelected(match.uuid);
           }
         }
@@ -58,27 +66,48 @@ export default function CheckoutBillingStep({ order, lang = 'es', onSaved }: Pro
       setLoadingList(false);
     }
     load();
-  }, [order.billingProfile?.profileId]);
+  }, [order.shippingProfile?.profileId]);
+
+  async function afterAddressSaved(savedOrder: CheckoutOrderDetail) {
+    // Si venimos de elegir domicilio, aplicar el método pendiente antes de avanzar.
+    if (pendingMethod && pendingMethod !== 'pickup') {
+      setSaving(true);
+      try {
+        const res = await fetch(`/api/checkout/${order.orderId}/shipping`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shipping_method: pendingMethod }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error((data as { error?: string }).error || 'Error');
+        onSaved((data as { order: CheckoutOrderDetail }).order);
+      } catch (e) {
+        setError(String((e as Error).message ?? 'No se pudo guardar.'));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    onSaved(savedOrder);
+  }
 
   async function handleContinue() {
     setError('');
     if (showForm) return;
     let profileId = selected;
     if (!profileId) {
-      // Usar la predeterminada si existe
       const def = direcciones.find((d) => d.isDefault);
       if (def) profileId = def.uuid;
       else {
-        // Intentar con body vacío para que Drupal use default si existe
         try {
-          const res = await fetch(`/api/checkout/${order.orderId}/billing`, {
+          const res = await fetch(`/api/checkout/${order.orderId}/shipping-address`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({}),
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error((data as { error?: string }).error || 'Error');
-          onSaved((data as { order: CheckoutOrderDetail }).order);
+          afterAddressSaved((data as { order: CheckoutOrderDetail }).order);
           return;
         } catch (e) {
           setError(tr('checkout.pago.selecciona_direccion'));
@@ -92,14 +121,14 @@ export default function CheckoutBillingStep({ order, lang = 'es', onSaved }: Pro
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/checkout/${order.orderId}/billing`, {
+      const res = await fetch(`/api/checkout/${order.orderId}/shipping-address`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile_id: profileId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((data as { error?: string }).error || 'Error');
-      onSaved((data as { order: CheckoutOrderDetail }).order);
+      afterAddressSaved((data as { order: CheckoutOrderDetail }).order);
     } catch (e) {
       setError(String((e as Error).message ?? 'No se pudo guardar.'));
     } finally {
@@ -111,14 +140,14 @@ export default function CheckoutBillingStep({ order, lang = 'es', onSaved }: Pro
     setSaving(true);
     setError('');
     try {
-      const res = await fetch(`/api/checkout/${order.orderId}/billing`, {
+      const res = await fetch(`/api/checkout/${order.orderId}/shipping-address`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((data as { error?: string }).error || 'Error');
-      onSaved((data as { order: CheckoutOrderDetail }).order);
+      afterAddressSaved((data as { order: CheckoutOrderDetail }).order);
     } catch (e) {
       setError(String((e as Error).message ?? 'No se pudo guardar.'));
     } finally {
@@ -129,11 +158,16 @@ export default function CheckoutBillingStep({ order, lang = 'es', onSaved }: Pro
   return (
     <div>
       <div className="checkout-panel-header">
-        <span className="icon text-[20px]" style={{ color: 'var(--color-brand-primary)' }}>home</span>
-        <h3 className="font-display font-bold text-h4 uppercase m-0">{tr('checkout.pago.paso_facturacion')}</h3>
+        <span className="icon text-[20px]" style={{ color: 'var(--color-brand-primary)' }}>local_shipping</span>
+        <h3 className="font-display font-bold text-h4 uppercase m-0">{tr('checkout.pago.paso_direccion_envio')}</h3>
       </div>
       <div className="checkout-panel-body space-y-4">
         <Alert type="error" message={error} />
+        {pendingMethod && pendingMethod !== 'pickup' && (
+          <p className="text-small m-0" style={{ color: 'var(--color-text-secondary)' }}>
+            {tr('checkout.pago.envio_domicilio')} — {tr(pendingMethod === 'express' ? 'checkout.pago.envio_expres' : 'checkout.pago.envio_estandar')}
+          </p>
+        )}
         {loadingList ? (
           <div className="flex justify-center py-6"><span className="inline-block w-6 h-6 border-2 border-[var(--color-brand-primary)]/30 border-t-[var(--color-brand-primary)] rounded-full animate-spin" /></div>
         ) : (
@@ -156,9 +190,10 @@ export default function CheckoutBillingStep({ order, lang = 'es', onSaved }: Pro
               ))}
             </div>
             <button type="button" onClick={() => { setShowForm((v) => !v); setSelected(null); }} className="text-small font-bold uppercase tracking-wider" style={{ color: 'var(--color-brand-primary)' }}>{showForm ? 'Cancelar' : tr('checkout.pago.nueva_direccion')}</button>
-            {showForm && <CheckoutBillingForm lang={lang} onSave={handleInlineSave} saving={saving} />}
+            {showForm && <CheckoutShippingAddressForm lang={lang} onSave={handleInlineSave} saving={saving} />}
             {!showForm && (
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-between pt-2 gap-3">
+                <button type="button" onClick={onBack} className="px-6 py-3 rounded-xl border font-display font-bold text-sm uppercase tracking-wider" style={{ borderColor: 'var(--color-form-border)', color: 'var(--color-text-secondary)' }}>{tr('checkout.pago.regresar')}</button>
                 <button type="button" onClick={handleContinue} disabled={saving || !selected} className="btn-primary" style={{ width: 'auto', opacity: saving || !selected ? 0.6 : 1 } as React.CSSProperties}>{saving ? <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : tr('checkout.pago.continuar')}</button>
               </div>
             )}

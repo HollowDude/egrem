@@ -3,11 +3,14 @@ import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
 import Alert from '@/components/ui/Alert';
 import { PROVINCE_CODES } from '@/lib/cuba';
+import CountryStateCityFields from '@/components/ui/CountryStateCityFields';
+import { countryUsesAdminArea } from '@/lib/geo/drupalZones';
 import PhoneInputField from '@/components/ui/PhoneInputField';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 
 interface Direccion {
   uuid: string;
+  addressType?: 'billing' | 'shipping' | null;
   countryCode: string;
   administrativeArea: string;
   locality: string;
@@ -55,6 +58,10 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
   })();
   const [province, setProvince] = useState(initialProvinceCode);
   const [municipio, setMunicipio] = useState(direccion?.locality ?? '');
+  const [countryCode, setCountryCode] = useState(
+    direccion?.countryCode || ((direccion?.addressType ?? 'shipping') === 'billing' ? '' : 'CU'),
+  );
+  const [addressType, setAddressType] = useState<'billing' | 'shipping'>(direccion?.addressType ?? 'shipping');
   const [postalCode, setPostalCode] = useState(direccion?.postalCode ?? '');
   const [phone, setPhone] = useState(direccion?.phone ?? '');
   const [ciPassport, setCiPassport] = useState(direccion?.ciPassport ?? '');
@@ -67,8 +74,9 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
   const provinceEntries = Object.entries(PROVINCE_CODES);
 
   useEffect(() => {
-    if (!province) {
-      setMunicipios([]);
+    if (addressType !== 'shipping' || !province) {
+      if (addressType !== 'shipping') setMunicipios([]);
+      else if (!province) setMunicipios([]);
       return;
     }
     let cancelled = false;
@@ -112,7 +120,7 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
     return () => {
       cancelled = true;
     };
-  }, [province]);
+  }, [province, addressType]);
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -134,15 +142,22 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
       setError('El CI/Pasaporte es obligatorio.');
       return;
     }
-    if (!addressLine1.trim() || !province.trim() || !municipio.trim()) {
+    // Envío (Cuba) siempre exige provincia; en facturación solo si Drupal la usa para ese país
+    const requiereProvincia = addressType === 'shipping' || countryUsesAdminArea(countryCode);
+    if (!addressLine1.trim() || !municipio.trim() || (requiereProvincia && !province.trim())) {
       setError(tr('auth.dashboard.address_empty'));
+      return;
+    }
+    if (addressType === 'billing' && !countryCode.trim()) {
+      setError('Selecciona un país.');
       return;
     }
 
     setLoading(true);
     try {
       const payload: Record<string, unknown> = {
-        countryCode: 'CU',
+        addressType,
+        countryCode: addressType === 'shipping' ? 'CU' : countryCode.trim(),
         administrativeArea: province.trim(),
         locality: municipio.trim(),
         addressLine1: addressLine1.trim(),
@@ -190,6 +205,30 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
       <Alert type="error" message={error} />
 
        <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="flex gap-3 p-1 rounded-xl" style={{ background: 'var(--color-egrem-gray-light)' }}>
+          {(['shipping', 'billing'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => {
+                setAddressType(t);
+                if (t === 'shipping') {
+                  setCountryCode('CU');
+                  setProvince('');
+                  setMunicipio('');
+                } else {
+                  setCountryCode('');
+                  setProvince('');
+                  setMunicipio('');
+                }
+              }}
+              className="flex-1 py-2 rounded-lg font-display font-bold text-[11px] uppercase tracking-wider transition-colors"
+              style={{ background: addressType === t ? 'var(--color-brand-primary)' : 'transparent', color: addressType === t ? '#fff' : 'var(--color-text-secondary)' }}
+            >
+              {t === 'shipping' ? tr('auth.dashboard.address_type_shipping') : tr('auth.dashboard.address_type_billing')}
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: CSS.textSecondary }}>
@@ -264,6 +303,7 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
           />
         </div>
 
+        {addressType === 'shipping' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: CSS.textSecondary }}>
@@ -309,6 +349,17 @@ export default function AddressForm({ lang = 'es', direccion = null, onSuccess, 
             </select>
           </div>
         </div>
+        ) : (
+          <CountryStateCityFields
+            countryCode={countryCode}
+            administrativeArea={province}
+            locality={municipio}
+            onChange={(v) => { setCountryCode(v.countryCode); setProvince(v.administrativeArea); setMunicipio(v.locality); }}
+            labelCountry={tr('auth.dashboard.address_country')}
+            labelProvince={tr('auth.dashboard.address_province')}
+            labelCity={tr('auth.dashboard.address_municipality')}
+          />
+        )}
 
         <div className="space-y-2">
           <label className="block font-display font-bold text-[11px] uppercase tracking-wider" style={{ color: CSS.textSecondary }}>

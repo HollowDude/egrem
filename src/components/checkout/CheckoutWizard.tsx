@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from '@/i18n/translations';
 import type { Lang } from '@/i18n';
-import type { CheckoutOrderDetail, PlaceResult } from '@/lib/nodehive/checkout';
+import type { CheckoutOrderDetail, PlaceResult, ShippingMethod } from '@/lib/nodehive/checkout';
 import type { TiendaInfo } from '@/types/tienda';
 import { formatPrecio } from '@/lib/moneda';
 import CheckoutBillingStep from './CheckoutBillingStep';
+import CheckoutShippingAddressStep from './CheckoutShippingAddressStep';
 import CheckoutShippingStep from './CheckoutShippingStep';
 import CheckoutPaymentMethodStep from './CheckoutPaymentMethodStep';
 import CheckoutPaymentStep from './CheckoutPaymentStep';
@@ -22,7 +23,7 @@ interface Props {
 type WizardStep = 'billing' | 'shipping' | 'payment_method' | 'payment' | 'success';
 
 function mapCheckoutStepToWizard(s: string | null | undefined): WizardStep {
-  if (s === 'egrem_shipping') return 'shipping';
+  if (s === 'egrem_shipping_address' || s === 'egrem_shipping') return 'shipping';
   if (s === 'egrem_payment_method') return 'payment_method';
   if (s === 'egrem_payment') return 'payment';
   if (s === 'complete') return 'success';
@@ -33,6 +34,9 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
   const tr = useTranslations(lang);
   const [order, setOrder] = useState<CheckoutOrderDetail>(initialOrder);
   const [step, setStep] = useState<WizardStep>(mapCheckoutStepToWizard(initialOrder.checkoutStep));
+  // Sub-fase dentro del cajón "Envío": primero método; dirección solo si es domicilio.
+  const [shippingPhase, setShippingPhase] = useState<'method' | 'address'>('method');
+  const [pendingShippingMethod, setPendingShippingMethod] = useState<ShippingMethod | null>(null);
   const [snapshot, setSnapshot] = useState<Record<string, unknown> | null>(null);
   const [placeResult, setPlaceResult] = useState<PlaceResult | null>(null);
 
@@ -81,20 +85,29 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
   const [navError, setNavError] = useState('');
 
   async function goTo(target: WizardStep) {
-    const map: Record<WizardStep, string> = {
-      billing: 'egrem_billing',
-      shipping: 'egrem_shipping',
-      payment_method: 'egrem_payment_method',
-      payment: 'egrem_payment',
-      success: 'complete',
-    };
+    let backendStep: string;
+    if (target === 'shipping') {
+      // Al cajón de envío siempre se entra por el método; la dirección viene después si es domicilio.
+      setShippingPhase('method');
+      setPendingShippingMethod(null);
+      backendStep = order.shippingProfile ? 'egrem_shipping' : 'egrem_shipping_address';
+    } else {
+      const map: Record<WizardStep, string> = {
+        billing: 'egrem_billing',
+        shipping: 'egrem_shipping_address', // antes: 'egrem_shipping'
+        payment_method: 'egrem_payment_method',
+        payment: 'egrem_payment',
+        success: 'complete',
+      };
+      backendStep = map[target];
+    }
     if (target === 'success') { setStep('success'); return; }
     setNavError('');
     try {
       const res = await fetch(`/api/checkout/${order.orderId}/step`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkout_step: map[target] }),
+        body: JSON.stringify({ checkout_step: backendStep }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && (data as { order?: CheckoutOrderDetail }).order) {
@@ -111,10 +124,21 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
   function handleSaved(updated: CheckoutOrderDetail) {
     setOrder(updated);
     const next = mapCheckoutStepToWizard(updated.checkoutStep);
-    if (next !== step) setStep(next);
-    else {
-      if (step === 'billing') setStep('shipping');
-      else if (step === 'shipping') setStep('payment_method');
+    if (next !== step) {
+      // Al entrar al cajón de envío se empieza por el método
+      if (next === 'shipping') {
+        setShippingPhase('method');
+        setPendingShippingMethod(null);
+      }
+      setStep(next);
+    } else {
+      if (step === 'billing') {
+        setShippingPhase('method');
+        setPendingShippingMethod(null);
+        setStep('shipping');
+      }
+      // En 'shipping' no se avanza a ciegas: método y dirección comparten cajón
+      // y el re-render sigue a la fase local (method ↔ address).
       else if (step === 'payment_method') setStep('payment');
     }
   }
@@ -176,7 +200,30 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
 
         <div className="checkout-panel">
           {step === 'billing' && <CheckoutBillingStep order={order} lang={lang} onSaved={handleSaved} />}
-          {step === 'shipping' && <CheckoutShippingStep order={order} orderIds={orderIds} lang={lang} snapshot={snapshot} tiendas={tiendas} onSaved={handleSaved} onBack={() => goTo('billing')} />}
+          {step === 'shipping' && shippingPhase === 'method' && (
+            <CheckoutShippingStep
+              order={order}
+              orderIds={orderIds}
+              lang={lang}
+              snapshot={snapshot}
+              tiendas={tiendas}
+              onSaved={handleSaved}
+              onBack={() => goTo('billing')}
+              onSelectDomicilio={(m) => {
+                setPendingShippingMethod(m);
+                setShippingPhase('address');
+              }}
+            />
+          )}
+          {step === 'shipping' && shippingPhase === 'address' && (
+            <CheckoutShippingAddressStep
+              order={order}
+              lang={lang}
+              pendingMethod={pendingShippingMethod}
+              onSaved={handleSaved}
+              onBack={() => setShippingPhase('method')}
+            />
+          )}
           {step === 'payment_method' && <CheckoutPaymentMethodStep order={order} lang={lang} onSaved={handleSaved} onBack={() => goTo('shipping')} />}
           {step === 'payment' && !isSuccess && (
             <CheckoutPaymentStep
@@ -229,7 +276,7 @@ export default function CheckoutWizard({ initialOrder, orderIds, cartGroup, lang
           </div>
           <div className="border-t pt-3 space-y-2" style={{ borderColor: 'var(--color-form-border)' }}>
             <div className="flex justify-between text-small"><span style={{ color: 'var(--color-text-secondary)' }}>{tr('checkout.pago.subtotal')}</span><span className="font-bold">{formatPrecio(subtotal, lang)}</span></div>
-            <div className="flex justify-between text-small"><span style={{ color: 'var(--color-text-secondary)' }}>Envío</span><span style={{ color: '#16a34a' }}>{tr('checkout.pago.envio_gratis')}</span></div>
+            <div className="flex justify-between text-small"><span style={{ color: 'var(--color-text-secondary)' }}>Envío</span><span style={{ color: '#16a34a' }}>{order.shippingMethod && order.shippingMethod !== 'pickup' ? tr('checkout.pago.envio_metodo_domicilio').replace('{metodo}', tr(order.shippingMethod === 'express' ? 'checkout.pago.envio_expres' : 'checkout.pago.envio_estandar')) : tr('checkout.pago.envio_gratis')}</span></div>
             <div className="flex justify-between font-display font-bold text-h4 pt-2 border-t" style={{ borderColor: 'var(--color-form-border)' }}><span>{tr('checkout.pago.total')}</span><span style={{ color: 'var(--color-brand-primary)' }}>{formatPrecio(subtotal, lang)}</span></div>
           </div>
         </div>
